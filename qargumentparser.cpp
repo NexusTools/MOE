@@ -24,10 +24,8 @@ QArgumentParser::QArgumentParser(int argc, char *argv[])
     for(int i=1; i<argc; i++)
     {
         if(!argv[i])
-        {
-            _error = QString("Argument %1 is Null").arg(i+1);
-            return;
-        }
+            continue;
+
         _args.append(argv[i]);
     }
 
@@ -88,28 +86,29 @@ inline QVariant listToValue(QStringList val)
                 return _val;
             break;
         }
-
-        default:
-            return val;
-            break;
     }
+
+    return val;
 }
 
-bool QArgumentParser::parse(QStringList args)
+QStringList QArgumentParser::keys() const
 {
-    //qDebug() << args;
+    QStringList keys;
+    foreach(QString key, _args.keys())
+        keys.append(key);
+    return keys;
+}
 
+void QArgumentParser::parse(QStringList args)
+{
     QString key;
     QStringList val;
     const QRegExp keyValuePair("^(\\-|\\-\\-|/)['\"]?([^=]+)['\"]?(=['\"]?(.+)['\"]?)?$");
 
     foreach(QString arg, args)
     {
-        qDebug() << arg;
         if(keyValuePair.exactMatch(arg))
         {
-            qDebug() << keyValuePair.capturedTexts();
-            qDebug() << key << val;
 
             if(!key.isEmpty() || !val.isEmpty())
             {
@@ -123,15 +122,10 @@ bool QArgumentParser::parse(QStringList args)
             else
                 insert(keyValuePair.cap(2).toLower(), listToValue(keyValuePair.cap(4).split(',')));
 
-            qDebug() << key;
         } else
             val.append(arg);
     }
 
     if(!key.isEmpty() || !val.isEmpty())
         insert(key, listToValue(val));
-
-    qDebug() << _args;
-    exit(0);
-    return true;
 }

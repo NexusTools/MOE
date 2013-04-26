@@ -1,5 +1,6 @@
 #include "moe.h"
 #include "qargumentparser.h"
+#include "moeengineview.h"
 
 #include <QApplication>
 
@@ -8,8 +9,9 @@ int main(int argc, char *argv[])
     QArgumentParser parser(argc, argv);
     QApplication a(argc, argv);
 
-    //MOE w;
-    //w.show();
-    
+    MoeEngineView* engine = new MoeEngineView();
+    engine->inject("args", &parser);
+    engine->start();
+
     return a.exec();
 }

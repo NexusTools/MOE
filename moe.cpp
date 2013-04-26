@@ -1,7 +1,17 @@
 #include "moe.h"
 
 MOE::MOE(QWidget *parent) :
-    QMainWindow(parent)
+    QGraphicsView(parent)
 {
-    setupUi(this);
+
+}
+
+void MOE::drawBackground(QPainter *painter, const QRectF &rect)
+{
+
+}
+
+void MOE::drawForeground(QPainter *painter, const QRectF &rect)
+{
+
 }

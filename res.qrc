@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>data/content-select/init.js</file>
+    </qresource>
+</RCC>
