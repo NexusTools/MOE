@@ -7,7 +7,7 @@
 #include <QDebug>
 #include <QFile>
 
-QThreadStorage<MoeEngine*> MoeEngine::_engine;
+QThreadStorage<MoeEnginePointer> MoeEngine::_engine;
 
 MoeEngine::MoeEngine() {
     makeCurrent();
@@ -21,6 +21,7 @@ MoeEngine::MoeEngine() {
 
 MoeEngine::~MoeEngine()
 {
+    throw "";
     qDebug() << "Destroying MoeEngine";
     if(isRunning())
     {

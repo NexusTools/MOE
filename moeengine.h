@@ -3,8 +3,13 @@
 
 #include <QThreadStorage>
 #include <QScriptValue>
+#include <QPointer>
 #include <QThread>
 #include <QMap>
+
+class MoeEngine;
+
+typedef QPointer<MoeEngine> MoeEnginePointer;
 
 class QScriptEngine;
 class QEventLoop;
@@ -26,10 +31,10 @@ public:
     MoeEngine();
     virtual ~MoeEngine();
 
-    static inline MoeEngine* threadEngine() {return _engine.localData();}
+    static inline QPointer<MoeEngine> threadEngine() {return _engine.localData();}
     inline QScriptEngine* scriptEngine() const{return _scriptEngine;}
     inline MoeEngine* engine() const{return (MoeEngine*)this;}
-    inline void makeCurrent() const{_engine.setLocalData(engine());}
+    inline void makeCurrent() const{_engine.setLocalData(MoeEnginePointer(engine()));}
 
     void inject(QString key, QObject* obj);
 
@@ -57,7 +62,7 @@ private:
     QEventLoop* _eventLoop;
     QScriptEngine* _scriptEngine;
     QMap<QString, QObject*> _environment;
-    static QThreadStorage<MoeEngine*> _engine;
+    static QThreadStorage<MoeEnginePointer> _engine;
 };
 
 #endif // MOEENGINE_H
