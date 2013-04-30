@@ -7,7 +7,7 @@
 
 class MoeEngine;
 
-class MoeObject : public QObject
+class MoeObject : public QObject, public QScriptable
 {
     Q_OBJECT
 public:

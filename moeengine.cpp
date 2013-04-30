@@ -1,4 +1,7 @@
 #include "moeengine.h"
+#include "renderrecorder.h"
+#include "moeresourcerequest.h"
+#include "moescriptregisters.h"
 
 #include <QScriptEngine>
 #include <QElapsedTimer>
@@ -21,7 +24,6 @@ MoeEngine::MoeEngine() {
 
 MoeEngine::~MoeEngine()
 {
-    throw "";
     qDebug() << "Destroying MoeEngine";
     if(isRunning())
     {
@@ -46,9 +48,9 @@ void MoeEngine::quit()
     QThread::quit();
 }
 
-void MoeEngine::debug(QString string)
+void MoeEngine::debug(QVariant data)
 {
-    qDebug() << string;
+    qDebug() << data;
 }
 
 void MoeEngine::exceptionThrown(QScriptValue exception)
@@ -56,69 +58,97 @@ void MoeEngine::exceptionThrown(QScriptValue exception)
     abort(exception.toString());
 }
 
+void MoeEngine::includeFile(QString filePath){
+    qDebug() << "Reading File" << filePath;
+
+    QFile file(filePath);
+    if(file.open(QFile::ReadOnly)) {
+        _scriptEngine->evaluate(QString(file.readAll()), filePath);
+        qDebug() << filePath;
+    } else
+        _scriptEngine->currentContext()->throwError(QScriptContext::UnknownError, QString("File Not Found: %1").arg(filePath));
+}
+
 void MoeEngine::run()
 {
     setState(Starting);
     makeCurrent();
 
-    qDebug() << "Reading Init File";
-    QFile initFile(":/data/content-select/init.js");
-    if(initFile.open(QFile::ReadOnly))
+    qDebug() << "Creating script engine";
+
+    QScriptEngine scriptEngine;
+    _scriptEngine = &scriptEngine;
+
+    __moe_registerScriptConverters(_scriptEngine);
+
+    QScriptValue globalObject = scriptEngine.newObject();
+
+    QMapIterator<QString, QMetaObject*> classIterator(_classes);
+    while(classIterator.hasNext())
     {
-        qDebug() << "Creating script engine";
+        classIterator.next();
 
-        QScriptEngine scriptEngine;
-        _scriptEngine = &scriptEngine;
-        QScriptValue globalObject = scriptEngine.newObject();
-        QMapIterator<QString, QObject*> iterator(_environment);
-        while(iterator.hasNext())
+        qDebug() << "Injecting" << classIterator.key();
+        globalObject.setProperty(classIterator.value()->className(),
+                                 scriptEngine.newQMetaObject(classIterator.value()));
+    }
+
+    QMapIterator<QString, QObject*> iterator(_environment);
+    while(iterator.hasNext())
+    {
+        iterator.next();
+
+        qDebug() << "Injecting" << iterator.key();
+        globalObject.setProperty(iterator.key(), scriptEngine.newQObject(iterator.value()));
+    }
+
+    globalObject.setProperty("engine", scriptEngine.newQObject(this));
+    globalObject.setProperty("ResourceRequest", scriptEngine.newQMetaObject(&MoeResourceRequest::staticMetaObject));
+    globalObject.setProperty("RenderRecorder", scriptEngine.newQMetaObject((QMetaObject*)&RenderRecorder::staticMetaObject));
+    scriptEngine.setGlobalObject(globalObject);
+
+    includeFile(":/data/shared.js");
+    if(scriptEngine.hasUncaughtException()) {
+        exceptionThrown(scriptEngine.uncaughtException());
+        return;
+    }
+
+    includeFile(":/data/content-select/init.js");
+    if(scriptEngine.hasUncaughtException()) {
+        exceptionThrown(scriptEngine.uncaughtException());
+        return;
+    }
+
+    connect(&scriptEngine, SIGNAL(signalHandlerException(QScriptValue)), this, SLOT(exceptionThrown(QScriptValue)));
+    qDebug() << "Entering Main Loop";
+    QElapsedTimer timer;
+
+    QEventLoop eventLoop;
+    _eventLoop = &eventLoop;
+    timer.start();
+    int sleepTime;
+    int nextWait = _tickWait;
+    setState(Running);
+    while(_state != Stopped && _state != Crashed)
+    {
+        if(_state != Running)
         {
-            iterator.next();
-
-            qDebug() << "Injecting" << iterator.value()->metaObject()->className();
-            globalObject.setProperty(iterator.value()->metaObject()->className(),
-                                     scriptEngine.newQMetaObject(iterator.value()->metaObject()));
-            globalObject.setProperty(iterator.key(), scriptEngine.newQObject(iterator.value()));
-        }
-        globalObject.setProperty("engine", scriptEngine.newQObject(this));
-        scriptEngine.setGlobalObject(globalObject);
-        scriptEngine.evaluate(QString(initFile.readAll()));
-
-        if(scriptEngine.hasUncaughtException())
-        {
-            exceptionThrown(scriptEngine.uncaughtException());
+            while((sleepTime = nextWait - timer.elapsed()) > 0)
+                msleep(sleepTime);
         } else {
-            connect(&scriptEngine, SIGNAL(signalHandlerException(QScriptValue)), this, SLOT(exceptionThrown(QScriptValue)));
-            qDebug() << "Entering Main Loop";
-            QElapsedTimer timer;
+            while((sleepTime = nextWait - timer.elapsed()) > 0 && _state == Running)
+                eventLoop.processEvents(QEventLoop::AllEvents | QEventLoop::WaitForMoreEvents, sleepTime);
 
-            QEventLoop eventLoop;
-            _eventLoop = &eventLoop;
-            timer.start();
-            int sleepTime;
-            int nextWait = _tickWait;
-            setState(Running);
-            while(_state != Stopped && _state != Crashed)
-            {
-                if(_state != Running)
-                {
-                    while((sleepTime = nextWait - timer.elapsed()) > 0)
-                        msleep(sleepTime);
-                } else {
-                    while((sleepTime = nextWait - timer.elapsed()) > 0 && _state == Running)
-                        eventLoop.processEvents(QEventLoop::AllEvents | QEventLoop::WaitForMoreEvents, sleepTime);
-
-                    emit tick();
-                }
-
-                nextWait += _tickWait - timer.restart();
-            }
-            _eventLoop = 0;
-            qDebug() << "Engine Exited Main Loop";
+            emit tick();
         }
-        _scriptEngine = 0;
-    } else
-        qWarning() << "Failed to open";
+
+        nextWait += _tickWait - timer.restart();
+    }
+    _eventLoop = 0;
+    qDebug() << "Engine Exited Main Loop";
+
+    _scriptEngine = 0;
+
     qDebug() << "Engine Thread Exited";
 
     setState(Stopped);
@@ -126,16 +156,23 @@ void MoeEngine::run()
 
 void MoeEngine::abort(QString reason)
 {
+    qCritical() << "Execution Aborted" << reason;
     if(!_eventLoop)
         return;
 
-    qCritical() << "Execution Aborted" << reason;
     _scriptEngine->abortEvaluation();
     _eventLoop->exit(1);
     setState(Crashed);
 }
 
+void MoeEngine::registerClass(QMetaObject* metaObject)
+{
+    _classes.insert(metaObject->className(), metaObject);
+}
+
 void MoeEngine::inject(QString key, QObject* val)
 {
+    val->moveToThread(this);
     _environment.insert(key, val);
+    registerClass((QMetaObject*)val->metaObject());
 }

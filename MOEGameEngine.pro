@@ -19,7 +19,9 @@ SOURCES += main.cpp\
 	moegraphicscontainer.cpp \
 	moeengine.cpp \
 	moeengineview.cpp \
-	moegraphicssurface.cpp
+	moegraphicssurface.cpp \
+    renderrecorder.cpp \
+    transferdelegate.cpp
 
 HEADERS  += moe.h \
 	qargumentparser.h \
@@ -28,12 +30,18 @@ HEADERS  += moe.h \
 	moegraphicscontainer.h \
 	moeengine.h \
 	moeengineview.h \
-	moegraphicssurface.h
+	moegraphicssurface.h \
+    renderrecorder.h \
+    moeresourcerequest.h \
+    transferdelegate.h \
+    moescriptregisters.h
 
 FORMS    +=
 
 OTHER_FILES += \
-	data/content-select/init.js
+	data/content-select/init.js \
+    data/shared.js \
+    data/rgb.txt
 
 RESOURCES += \
 	res.qrc

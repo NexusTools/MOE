@@ -3,7 +3,7 @@
 
 MoeObject::MoeObject()
 {
-    setParent((QObject*)MoeEngine::threadEngine());
+    setParent(MoeEngine::threadEngine().data());
 }
 
 MoeEngine* MoeObject::engine() const

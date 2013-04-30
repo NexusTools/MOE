@@ -11,6 +11,7 @@ int main(int argc, char *argv[])
 
     MoeEngineView* engine = new MoeEngineView();
     engine->inject("args", &parser);
+    engine->show();
     engine->start();
 
     return a.exec();

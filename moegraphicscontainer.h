@@ -5,6 +5,7 @@
 
 class MoeGraphicsContainer : public MoeGraphicsObject
 {
+    Q_OBJECT
 public:
     MoeGraphicsContainer();
 };
