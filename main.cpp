@@ -1,4 +1,3 @@
-#include "moe.h"
 #include "qargumentparser.h"
 #include "moeengineview.h"
 

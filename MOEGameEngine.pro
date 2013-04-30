@@ -12,7 +12,6 @@ TARGET = MOEGameEngine
 TEMPLATE = app
 
 SOURCES += main.cpp\
-		moe.cpp \
 	qargumentparser.cpp \
 	moeobject.cpp \
 	moegraphicsobject.cpp \
@@ -20,10 +19,11 @@ SOURCES += main.cpp\
 	moeengine.cpp \
 	moeengineview.cpp \
 	moegraphicssurface.cpp \
-    renderrecorder.cpp \
-    transferdelegate.cpp
+    transferdelegate.cpp \
+    moegraphicstext.cpp \
+    moescriptregisters.cpp
 
-HEADERS  += moe.h \
+HEADERS  += \
 	qargumentparser.h \
 	moeobject.h \
 	moegraphicsobject.h \
@@ -34,7 +34,8 @@ HEADERS  += moe.h \
     renderrecorder.h \
     moeresourcerequest.h \
     transferdelegate.h \
-    moescriptregisters.h
+    moescriptregisters.h \
+    moegraphicstext.h
 
 FORMS    +=
 

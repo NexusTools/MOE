@@ -3,31 +3,35 @@
 
 MoeGraphicsSurface::MoeGraphicsSurface()
 {
-    paintTimer.setInterval(0);
-    paintTimer.setSingleShot(true);
-    connect(&paintTimer, SIGNAL(timeout()), this, SLOT(renderNow()));
+    _background = qRgb(0, 0, 0);
     qRegisterMetaType<RenderInstructions>("RenderInstructions");
+
+    renderTimer.setInterval(0);
+    renderTimer.setSingleShot(true);
+    renderTimer.moveToThread(thread());
+    connect(&renderTimer, SIGNAL(timeout()), this, SLOT(renderNow()));
 }
 
-void MoeGraphicsSurface::render(RenderRecorder*, QRect region)
+void MoeGraphicsSurface::render(RenderRecorder* p, QRect region)
 {
-    RenderRecorder* p = new RenderRecorder();
-    MoeGraphicsObject::render(p, region);
+    if(region.isNull())
+        region = _localGeometry;
+    if(!p)
+        p = new RenderRecorder(_localGeometry);
+    MoeGraphicsContainer::render(p, region);
+    if(repaintDebug) {
+        foreach(QRect rect, repaintRegions) {
+            p->fillRect(rect, qRgba(0, 250, 0, 60));
+        }
+        repaintRegions.clear();
+        p->fillRect(region, qRgba(0, 250, 0, 60));
+    }
     emit renderReady(p->instructions());
     p->deleteLater();
 }
 
-void MoeGraphicsSurface::renderNow()
-{
-    render();
-}
-
 void MoeGraphicsSurface::updateSize(QSize size)
 {
+    qDebug() << "Updating Size" << size;
     setGeometry(QRect(QPoint(0, 0), size));
-}
-
-void MoeGraphicsSurface::repaintImpl()
-{
-    paintTimer.start();
 }

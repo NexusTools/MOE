@@ -2,6 +2,8 @@
 #include "renderrecorder.h"
 #include "moeresourcerequest.h"
 #include "moescriptregisters.h"
+#include "moegraphicscontainer.h"
+#include "moegraphicstext.h"
 
 #include <QScriptEngine>
 #include <QElapsedTimer>
@@ -40,6 +42,14 @@ void MoeEngine::setState(State state)
 
     _state = state;
     emit stateChanged(_state);
+}
+
+QScriptValue MoeEngine::eval(QString script)
+{
+    scriptEngine()->pushContext();
+    QScriptValue val = scriptEngine()->evaluate(script);
+    scriptEngine()->popContext();
+    return val;
 }
 
 void MoeEngine::quit()
@@ -104,6 +114,9 @@ void MoeEngine::run()
 
     globalObject.setProperty("engine", scriptEngine.newQObject(this));
     globalObject.setProperty("ResourceRequest", scriptEngine.newQMetaObject(&MoeResourceRequest::staticMetaObject));
+    globalObject.setProperty("GraphicsObject", scriptEngine.newQMetaObject(&MoeGraphicsObject::staticMetaObject));
+    globalObject.setProperty("GraphicsContainer", scriptEngine.newQMetaObject(&MoeGraphicsContainer::staticMetaObject));
+    globalObject.setProperty("GraphicsText", scriptEngine.newQMetaObject(&MoeGraphicsText::staticMetaObject));
     globalObject.setProperty("RenderRecorder", scriptEngine.newQMetaObject((QMetaObject*)&RenderRecorder::staticMetaObject));
     scriptEngine.setGlobalObject(globalObject);
 
@@ -131,16 +144,14 @@ void MoeEngine::run()
     setState(Running);
     while(_state != Stopped && _state != Crashed)
     {
-        if(_state != Running)
-        {
-            while((sleepTime = nextWait - timer.elapsed()) > 0)
-                msleep(sleepTime);
-        } else {
-            while((sleepTime = nextWait - timer.elapsed()) > 0 && _state == Running)
-                eventLoop.processEvents(QEventLoop::AllEvents | QEventLoop::WaitForMoreEvents, sleepTime);
-
+        if(_state == Running) {
             emit tick();
+            if((sleepTime = nextWait - timer.elapsed()) > 0)
+                eventLoop.processEvents(QEventLoop::WaitForMoreEvents, sleepTime);
         }
+
+        while((sleepTime = nextWait - timer.elapsed()) > 0)
+            msleep(sleepTime);
 
         nextWait += _tickWait - timer.restart();
     }

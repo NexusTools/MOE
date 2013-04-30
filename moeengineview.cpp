@@ -8,8 +8,9 @@ MoeEngineView::MoeEngineView(QWidget *parent) :
     repaintTimer.setSingleShot(true);
     connect(&repaintTimer, SIGNAL(timeout()), this, SLOT(repaint()));
     connect(this, SIGNAL(repaintSurface()), &surface, SLOT(repaint()), Qt::QueuedConnection);
-    connect(this, SIGNAL(sizeChanged(QSize)), &surface, SLOT(updateSize(QSize)));
-    connect(&surface, SIGNAL(renderReady(RenderInstructions)), this, SLOT(renderInstructions(RenderInstructions)));
+    connect(this, SIGNAL(sizeChanged(QSize)), &surface, SLOT(updateSize(QSize)), Qt::QueuedConnection);
+    connect(this, SIGNAL(readyForFrame()), &surface, SLOT(prepareNextFrame()), Qt::QueuedConnection);
+    connect(&surface, SIGNAL(renderReady(RenderInstructions)), this, SLOT(renderInstructions(RenderInstructions)), Qt::QueuedConnection);
 }
 
 void MoeEngineView::paintEvent(QPaintEvent *){
@@ -27,6 +28,7 @@ void MoeEngineView::paintEvent(QPaintEvent *){
     p.drawPixmap(QPoint(0, 0), buffer);
     p.end();
 
+    emit readyForFrame();
 }
 
 void MoeEngineView::resizeEvent(QResizeEvent *)
@@ -50,6 +52,7 @@ void MoeEngineView::start()
 {
     engine.inject("surface", &surface);
     emit repaintSurface();
+    emit readyForFrame();
     engine.start();
 }
 
@@ -60,8 +63,6 @@ void MoeEngineView::quit()
 
 void MoeEngineView::renderInstructions(RenderInstructions instructions)
 {
-    foreach(RenderInstruction inst, instructions) {
-        storedInstructions.append(inst);
-    }
+    storedInstructions = instructions;
     repaintTimer.start();
 }

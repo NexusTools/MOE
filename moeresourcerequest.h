@@ -11,9 +11,9 @@ class MoeResourceRequest : public MoeObject
 public:
     Q_INVOKABLE explicit MoeResourceRequest(QString resource){
         transferDelegate = TransferDelegate::getInstance(resource);
-        connect(transferDelegate.data(), SIGNAL(progress(float)), this, SLOT(progressCallback(float)));
-        connect(transferDelegate.data(), SIGNAL(complete(QByteArray)), this, SLOT(completeCallback(QByteArray)));
-        connect(transferDelegate.data(), SIGNAL(error(QString)), this, SLOT(errorCallback(QString)));
+        connect(transferDelegate.data(), SIGNAL(progress(float)), this, SLOT(progressCallback(float)), Qt::QueuedConnection);
+        connect(transferDelegate.data(), SIGNAL(complete(QByteArray)), this, SLOT(completeCallback(QByteArray)), Qt::QueuedConnection);
+        connect(transferDelegate.data(), SIGNAL(error(QString)), this, SLOT(errorCallback(QString)), Qt::QueuedConnection);
     }
 
 protected slots:

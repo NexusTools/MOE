@@ -1,9 +1,13 @@
 
+function Font(family, size) {
+    return {"family": family, "size": size};
+}
+
 function Point(x, y){
     return {"x": x, "y": y};
 }
 
-function Size(x, y, width, height){
+function Size(width, height){
     return {"width": width, "height": height};
 }
 

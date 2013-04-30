@@ -3,10 +3,11 @@
 
 MoeObject::MoeObject()
 {
-    setParent(MoeEngine::threadEngine().data());
+    moveToThread(MoeEngine::threadEngine().data());
+    connect(engine(), SIGNAL(destroyed()), this, SLOT(deleteLater()));
 }
 
 MoeEngine* MoeObject::engine() const
 {
-    return qobject_cast<MoeEngine*>(parent());
+    return qobject_cast<MoeEngine*>(thread());
 }

@@ -44,6 +44,8 @@ public slots:
     void quit();
     void abort(QString reason);
 
+    QScriptValue eval(QString script);
+
     void debug(QVariant);
     inline void setTicksPerSecond(uchar ticks) {_tickWait=1000/ticks;}
 

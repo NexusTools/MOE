@@ -27,6 +27,7 @@ protected slots:
 signals:
     void sizeChanged(QSize);
     void repaintSurface();
+    void readyForFrame();
 
 private:
     QPixmap buffer;
