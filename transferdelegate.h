@@ -71,6 +71,7 @@ protected slots:
 
 private:
     TransferDelegate(QString);
+    TransferDelegateReference self;
 
     QMutex mutex;
     const QString _url;

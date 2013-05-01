@@ -1,7 +1,7 @@
 #include "moegraphicssurface.h"
 #include "renderrecorder.h"
 
-MoeGraphicsSurface::MoeGraphicsSurface()
+MoeGraphicsSurface::MoeGraphicsSurface(QSize size)
 {
     _background = qRgb(0, 0, 0);
     _foreground = qRgba(0, 0, 0, 0);
@@ -13,11 +13,13 @@ MoeGraphicsSurface::MoeGraphicsSurface()
     renderTimer.setSingleShot(true);
     renderTimer.moveToThread(thread());
     connect(&renderTimer, SIGNAL(timeout()), this, SLOT(renderNow()));
+    updateSize(size);
 }
 
 void MoeGraphicsSurface::render(RenderRecorder* p, QRect region)
 {
-    if(!p)
+    bool renderForParent = p != NULL;
+    if(!renderForParent)
         p = new RenderRecorder(repaintDebug == RepaintDebugFrame ? _localGeometry : region);
 
     MoeGraphicsContainer::render(p, repaintDebug == RepaintDebugFrame ? _localGeometry : region);
@@ -27,8 +29,10 @@ void MoeGraphicsSurface::render(RenderRecorder* p, QRect region)
         }
         repaintRegions.clear();
     }
-    emit renderReady(p->instructions(), repaintDebug == RepaintDebugFrame ? _localGeometry : region);
-    p->deleteLater();
+    if(!renderForParent) {
+        emit renderReady(p->instructions(), repaintDebug == RepaintDebugFrame ? _localGeometry : region, _localGeometry.size());
+        p->deleteLater();
+    }
 }
 
 void MoeGraphicsSurface::updateSize(QSize size)

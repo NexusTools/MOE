@@ -17,12 +17,14 @@ class MoeGraphicsObject : public MoeObject
     Q_OBJECT
     Q_PROPERTY(QRgb background READ background WRITE setBackground)
     Q_PROPERTY(QRgb foreground READ foreground WRITE setForeground)
+    Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity)
     Q_PROPERTY(QRgb border READ border WRITE setBorder)
 public:
     Q_INVOKABLE MoeGraphicsObject(MoeGraphicsContainer* parent =0) : _scale(1, 1) {
         _background = qRgba(0, 0, 0, 0);
         _foreground = qRgb(0, 0, 0);
         _border = qRgba(0, 0, 0, 0);
+        _opacity = 1;
         setContainer(parent);
     }
 
@@ -53,6 +55,19 @@ public:
 
     Q_INVOKABLE void setContainer(MoeGraphicsContainer*);
     Q_INVOKABLE MoeGraphicsContainer* container() const;
+    Q_INVOKABLE void setOpacity(qreal opacity);
+
+    inline qreal opacity() const{
+        return _opacity;
+    }
+
+    Q_INVOKABLE inline void show() {
+        setOpacity(1);
+    }
+
+    Q_INVOKABLE inline void hide() {
+        setOpacity(0);
+    }
 
     inline QPoint mapToParent(QPoint p){
         return localTransform.map(p);
@@ -73,6 +88,7 @@ public:
     QPoint mapFromSurface(QPoint rect);
     Q_INVOKABLE QRect mapFromSurface(QRect rect);
 
+    Q_INVOKABLE virtual bool isVisible();
     Q_INVOKABLE virtual bool isVisibleToSurface();
     Q_INVOKABLE inline virtual bool isSurface() const{return false;}
     Q_INVOKABLE virtual MoeGraphicsSurface* surface();
@@ -103,6 +119,9 @@ signals:
     void mouseEntered();
     void mouseLeft();
 
+    void keyFocusGained();
+    void keyFocusLost();
+
     void keyTyped(char);
     void keyPressed(int);
     void keyReleased(int);
@@ -129,6 +148,8 @@ protected:
     void takeKeyFocus();
     void takeMouseFocus();
     void takeHoverFocus();
+
+    void notifyParentOfUpdate();
 
     virtual inline bool requireHook(EventHook) {
         return false;
@@ -173,8 +194,13 @@ protected:
         emit keyPressed(k);
     }
 
-    void connectNotify(const QMetaMethod &);
-    void disconnectNotify(const QMetaMethod &);
+    inline void connectNotify(const QMetaMethod &) {
+        notifyParentOfUpdate();
+    }
+
+    inline void disconnectNotify(const QMetaMethod &) {
+        notifyParentOfUpdate();
+    }
 
     bool usePixmapBuffer;
 
@@ -190,6 +216,7 @@ protected:
     QRectF _geometry;
     QPointF _scale;
     QPointF _rotate;
+    qreal _opacity;
 };
 
 #endif // MOEGRAPHICSOBJECT_H

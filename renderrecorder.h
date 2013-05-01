@@ -40,9 +40,13 @@ class RenderRecorder : public MoeObject
     Q_OBJECT
 public:
     explicit inline RenderRecorder(QRect rect) {
-        clipRect = rect;
         cbrush = qRgba(0,0,0,0);
+        brush = qRgba(0,0,0,0);
         cpen = qRgb(0,0,0);
+        pen = qRgb(0,0,0);
+        clipRect = rect;
+        copacity = 1;
+        opacity = 1;
     }
 
     inline static void paint(RenderInstructions instructions, QPainter& p, QRect clipRect) {
@@ -89,6 +93,10 @@ public:
                     p.setClipRect(inst.arguments.first().toRect(), Qt::ReplaceClip);
                 break;
 
+            case RenderInstruction::UpdateOpacity:
+                p.setOpacity(inst.arguments.first().toFloat());
+                break;
+
             case RenderInstruction::UpdateFont:
                 p.setFont(QFont(inst.arguments.at(0).toString(), inst.arguments.at(1).toInt()));
                 break;
@@ -110,6 +118,7 @@ public slots:
         rect &= clipRect;
 
         noClipRect();
+        updateOpacity();
         RenderInstruction instruction;
         instruction.type = RenderInstruction::FillRect;
         instruction.arguments.append(rect);
@@ -125,6 +134,7 @@ public slots:
 
         updatePen();
         updateFont();
+        updateOpacity();
         if(clipRect.contains(rect))
             noClipRect();
         else
@@ -146,6 +156,7 @@ public slots:
 
         updatePen();
         updateBrush();
+        updateOpacity();
         if(clipRect.contains(rect))
             noClipRect();
         else if(!hasBorder) {
@@ -171,6 +182,7 @@ public slots:
             return;
 
         updatePen();
+        updateOpacity();
         if(clipRect.contains(rect))
             noClipRect();
         else
@@ -212,6 +224,15 @@ public:
 
     inline void popTransform() {
         transform = transformStack.takeLast();
+    }
+
+    inline void pushOpacity(qreal opac) {
+        opacityStack.append(opacity);
+        opacity *= opac;
+    }
+
+    inline void popOpacity() {
+        opacity = opacityStack.takeLast();
     }
 
 protected:
@@ -267,9 +288,22 @@ protected:
         }
     }
 
+    inline void updateOpacity() {
+        if(copacity != opacity) {
+            RenderInstruction instruction;
+            instruction.type = RenderInstruction::UpdateOpacity;
+            instruction.arguments.append(opacity);
+            _instructions.append(instruction);
+            copacity = opacity;
+        }
+    }
+
 private:
     QRect clipRect;
     QList<QRect> clipRectStack;
+
+    qreal opacity, copacity;
+    QList<qreal> opacityStack;
 
     QTransform transform;
     QList<QTransform> transformStack;

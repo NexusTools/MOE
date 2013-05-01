@@ -32,6 +32,12 @@ void MoeGraphicsObject::takeHoverFocus(){
         s->giveMouseHoverFocus(this);
 }
 
+void MoeGraphicsObject::notifyParentOfUpdate()
+{
+    if(container())
+        container()->markChildCacheDirty();
+}
+
 bool MoeGraphicsObject::event(QEvent * ev)
 {
     switch(ev->type()) {
@@ -59,9 +65,11 @@ bool MoeGraphicsObject::event(QEvent * ev)
 
 void MoeGraphicsObject::render(RenderRecorder *p, QRect region)
 {
+    p->pushOpacity(_opacity);
     p->setPen(_foreground);
     paintImpl(p, region);
     emit paint(p);
+    p->popOpacity();
 }
 
 void MoeGraphicsObject::paintImpl(RenderRecorder* p, QRect)
@@ -125,9 +133,13 @@ QRect MoeGraphicsObject::mapFromSurface(QRect rect){
     return rect;
 }
 
+bool MoeGraphicsObject::isVisible() {
+    return !_localGeometry.isEmpty() && _opacity > 0;
+}
+
 bool MoeGraphicsObject::isVisibleToSurface()
 {
-    return container() && container()->childVisible(this) && container()->isVisibleToSurface();
+    return container() && isVisible() && container()->childVisible(this) && container()->isVisibleToSurface();
 }
 
 MoeGraphicsSurface* MoeGraphicsObject::surface() {
@@ -161,16 +173,6 @@ void MoeGraphicsObject::updateLayoutTransform() {
     }
 }
 
-void MoeGraphicsObject::connectNotify(const QMetaMethod &){
-    if(container())
-        container()->markChildCacheDirty();
-}
-
-void MoeGraphicsObject::disconnectNotify(const QMetaMethod &){
-    if(container())
-        container()->markChildCacheDirty();
-}
-
 void MoeGraphicsObject::setContainer(MoeGraphicsContainer* contain)
 {
     if(container())
@@ -184,4 +186,16 @@ void MoeGraphicsObject::setContainer(MoeGraphicsContainer* contain)
 MoeGraphicsContainer* MoeGraphicsObject::container() const
 {
     return qobject_cast<MoeGraphicsContainer*>(parent());
+}
+
+void MoeGraphicsObject::setOpacity(qreal opacity) {
+    opacity = qBound<qreal>(0, opacity, 1);
+    if(opacity == _opacity)
+        return;
+
+    _opacity = opacity;
+    if((_opacity == 0 && opacity < 0) ||
+            (opacity == 0 && _opacity < 0))
+        notifyParentOfUpdate();
+    repaint();
 }

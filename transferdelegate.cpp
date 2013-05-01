@@ -19,6 +19,7 @@ TransferDelegateReference TransferDelegate::getInstance(QString res) {
 
     delegate = TransferDelegateReference(new TransferDelegate(res));
     activeDelegates.insert(res, delegate.toWeakRef());
+    delegate.data()->self = delegate;
     return delegate;
 }
 
@@ -47,4 +48,5 @@ void TransferDelegate::startRequest(){
     reply = netMan->get(QNetworkRequest(QUrl(_url)));
     connect(reply, SIGNAL(finished()), this, SLOT(finishedCallback()));
     connect(reply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(progressCallback(qint64,qint64)));
+    self.clear();
 }

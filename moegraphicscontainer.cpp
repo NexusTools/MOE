@@ -79,7 +79,7 @@ void MoeGraphicsContainer::updateChildCache(){
         MoeGraphicsContainer* contain = qobject_cast<MoeGraphicsContainer*>(child);
         if(contain)
             contain->updateChildCache();
-        if(_localGeometry.intersects(child->realGeometry())) {
+        if(_localGeometry.intersects(child->realGeometry()) && child->isVisible()) {
             _visibleChildren.append(child);
             if(!visibleChildren.contains(child)) {
                 SET_SIGNAL_CACHE(mousePressed, "int", child)

@@ -18,7 +18,7 @@ public:
         if(obj->parent() != this) {
             obj->setParent(this);
             if(!children.contains(obj)) {
-                children.prepend(obj);
+                children.append(obj);
                 obj->updateLayoutTransform();
                 obj->repaint();
             }
@@ -85,8 +85,8 @@ protected:
     void mouseMovedImpl(QPoint p);
 
     void updateWatcherCache(MoeGraphicsObject* obj);
-    void updateChildCache();
     void markChildCacheDirty();
+    void updateChildCache();
 
     inline void removeWatchers(MoeGraphicsObject* obj) {
         mouseMovedWatchers.removeOne(obj);

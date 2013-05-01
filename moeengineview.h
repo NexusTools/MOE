@@ -20,12 +20,14 @@ public:
     void mousePressEvent(QMouseEvent *);
     void mouseReleaseEvent(QMouseEvent *);
 
+    void keyPressEvent(QKeyEvent *);
+
 public slots:
     void start();
     void quit();
 
 protected slots:
-    void renderInstructions(RenderInstructions, QRect);
+    void renderInstructions(RenderInstructions, QRect, QSize);
     inline void repaintRect(){repaint(_repaintRect);}
 
 signals:
@@ -41,11 +43,12 @@ private:
     QPixmap buffer;
 
     MoeEngine engine;
-    MoeGraphicsSurface surface;
+    QPointer<MoeGraphicsSurface> surface;
     RenderInstructions storedInstructions;
 
     QTimer repaintTimer;
     QRect _repaintRect;
+    QSize _bufferSize;
 };
 
 #endif // MOEENGINEVIEW_H

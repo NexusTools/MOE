@@ -24,7 +24,7 @@ public:
     };
     Q_DECLARE_FLAGS(RenderState, RenderStateFlag)
 
-    MoeGraphicsSurface();
+    MoeGraphicsSurface(QSize size);
     void render(RenderRecorder*, QRect);
 
     Q_INVOKABLE inline bool isVisibleToSurface() {return true;}
@@ -33,7 +33,7 @@ public:
     Q_INVOKABLE inline void setTitle(QString title) {emit titleChanged(title);}
 
 signals:
-    void renderReady(RenderInstructions, QRect);
+    void renderReady(RenderInstructions, QRect, QSize);
     void titleChanged(QString);
 
 public slots:
@@ -117,7 +117,6 @@ private slots:
         renderState = NotReady;
         render(0, repaintRegion);
         repaintRegion = QRect();
-        renderState = NotReady;
     }
 
 protected:

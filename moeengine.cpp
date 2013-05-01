@@ -40,6 +40,10 @@ void MoeEngine::setState(State state)
     if(_state == state)
         return;
 
+    if(state == Running)
+        emit started();
+    if(state == Stopped)
+        emit stopped();
     _state = state;
     emit stateChanged(_state);
 }
@@ -83,6 +87,7 @@ void MoeEngine::run()
 {
     setState(Starting);
     makeCurrent();
+    _error = QString();
 
     qDebug() << "Creating script engine";
 
@@ -166,6 +171,7 @@ void MoeEngine::run()
 void MoeEngine::abort(QString reason)
 {
     qCritical() << "Execution Aborted" << reason;
+    _error = QString("Uncaught Exception:\n%1").arg(reason);
     if(!_eventLoop)
         return;
 

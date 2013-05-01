@@ -37,6 +37,8 @@ public:
     inline MoeEnginePointer engine() const{return MoeEnginePointer((MoeEngine*)this);}
     inline void makeCurrent() const{_engine.setLocalData(MoeEnginePointer(engine()));}
 
+    inline QString error() const{return _error;}
+
     void registerClass(QMetaObject* metaObject);
     void inject(QString key, QObject* obj);
 
@@ -55,7 +57,9 @@ protected slots:
 
 signals:
     void tick();
-    void stateChanged(State state);
+    void stopped();
+    void started();
+    void stateChanged(MoeEngine::State state);
 
 protected:
     void setState(State);
@@ -66,6 +70,7 @@ protected:
 private:
     State _state;
     int _tickWait;
+    QString _error;
     QEventLoop* _eventLoop;
     QScriptEngine* _scriptEngine;
     QMap<QString, QObject*> _environment;
