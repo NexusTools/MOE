@@ -101,7 +101,8 @@ QScriptValue qrgbToScriptValue(QScriptEngine *engine, QRgb const &in)
     rgb.setProperty("red", qRed(in));
     rgb.setProperty("green", qGreen(in));
     rgb.setProperty("blue", qBlue(in));
-    rgb.setProperty("alpha", qAlpha(in));
+    if(qAlpha(in) < 255)
+        rgb.setProperty("alpha", qAlpha(in));
     return rgb;
 }
 
@@ -122,7 +123,11 @@ void qrgbFromScriptValue(const QScriptValue &object, QRgb &out)
 
         static QRegExp cssRgb("rgba?\\(\\s*(\\d)+\\s*,\\s*(\\d)+\\s*,\\s*(\\d+)\\s*(,\\s*(\\d+(\\.\\d+)?))?\\)", Qt::CaseInsensitive, QRegExp::RegExp2);
         if(cssRgb.exactMatch(string)) {
-            out = qRgba(cssRgb.cap(1).toInt(), cssRgb.cap(2).toInt(), cssRgb.cap(3).toInt(), (int)(cssRgb.cap(5).toFloat() * 255));
+            bool alphaOkay;
+            out = qRgba(cssRgb.cap(1).toInt(), cssRgb.cap(2).toInt(), cssRgb.cap(3).toInt(), (int)(cssRgb.cap(5).toFloat(&alphaOkay) * 255));
+            if(!alphaOkay)
+                out = qRgb(cssRgb.cap(1).toInt(), cssRgb.cap(2).toInt(), cssRgb.cap(3).toInt());
+
             return;
         }
 
@@ -146,18 +151,18 @@ void qrgbFromScriptValue(const QScriptValue &object, QRgb &out)
             out = namedColors.value(string);
             return;
         }
+    } else if(object.isObject()) {
+        if(object.property("alpha").isValid())
+            out = qRgba(object.property("red").toInt32(), object.property("green").toInt32(), object.property("blue").toInt32(), object.property("alpha").toInt32());
+        else
+            out = qRgb(object.property("red").toInt32(), object.property("green").toInt32(), object.property("blue").toInt32());
+        return;
     } else if(object.isArray()) {
         int len = object.property("length").toInt32();
         if(len == 4)
             out = qRgba(object.property(0).toInt32(), object.property(1).toInt32(), object.property(2).toInt32(), object.property(3).toInt32());
         else if(len == 3)
-            out = qRgb(object.property(0).toInt32(), object.property(1).toInt32(), object.property(2).toInt32());
-        return;
-    } else if(object.isObject()) {
-        if(object.property("alpha").isNull())
-            out = qRgb(object.property("red").toInt32(), object.property("green").toInt32(), object.property("blue").toInt32());
-        else
-            out = qRgba(object.property("red").toInt32(), object.property("green").toInt32(), object.property("blue").toInt32(), object.property("alpha").toInt32());
+            out = qRgba(object.property(0).toInt32(), object.property(1).toInt32(), object.property(2).toInt32(), 255);
         return;
     } else if(object.isNumber() || object.isNumber()) {
         out = (QRgb)object.toInt32();

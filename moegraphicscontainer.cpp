@@ -4,12 +4,6 @@
 #include <QMetaMethod>
 
 void MoeGraphicsContainer::render(RenderRecorder * p, QRect region) {
-    if(region.isNull())
-        region = _localGeometry;
-
-    if(region.isEmpty()) // Nothing to Render
-        return;
-
     p->setPen(_foreground);
 
     paintImpl(p, region);
@@ -19,19 +13,26 @@ void MoeGraphicsContainer::render(RenderRecorder * p, QRect region) {
 }
 
 void MoeGraphicsContainer::renderChildren(RenderRecorder * p, QRect region){
-    if(region.isNull())
-        region = _localGeometry;
-
-    if(region.isEmpty()) // Nothing to Render
-        return;
     updateChildCache();
     foreach(MoeGraphicsObject* graphicsObject, visibleChildren) {
+        if(!region.intersects(graphicsObject->realGeometry()))
+            continue;
+
         p->pushClipRect(graphicsObject->realGeometry());
         p->pushTransform(graphicsObject->localTransform);
         graphicsObject->render(p, graphicsObject->mapFromParent(graphicsObject->realGeometry() & region));
         p->popTransform();
         p->popClipRect();
     }
+}
+
+void MoeGraphicsContainer::mouseMovedImpl(QPoint p){
+    updateChildCache();
+    foreach(MoeGraphicsObject* child, mouseMovedWatchers)
+        if(child->realGeometry().contains(p)) {
+            child->mouseMovedImpl(child->mapFromParent(p));
+            break;
+        }
 }
 
 #define UPDATE_SIGNAL_CACHE(signal, params, object) \
@@ -52,10 +53,15 @@ void MoeGraphicsContainer::renderChildren(RenderRecorder * p, QRect region){
         signal##Watchers.removeOne(object);
 
 void MoeGraphicsContainer::updateWatcherCache(MoeGraphicsObject* obj){
-    UPDATE_SIGNAL_CACHE(mousePress, "int", obj)
-    UPDATE_SIGNAL_CACHE(mouseRelease, "int", obj)
-    UPDATE_SIGNAL_CACHE(mouseMove, "QPoint", obj)
-    UPDATE_SIGNAL_CACHE(mouseScroll, "QPoint", obj)
+    UPDATE_SIGNAL_CACHE(mousePressed, "int", obj)
+    UPDATE_SIGNAL_CACHE(mouseReleased, "int", obj)
+    UPDATE_SIGNAL_CACHE(mouseMoved, "QPoint", obj)
+    UPDATE_SIGNAL_CACHE(mouseDragged, "QPoint", obj)
+    UPDATE_SIGNAL_CACHE(mouseScrolled, "QPoint", obj)
+
+    UPDATE_SIGNAL_CACHE(keyPressed, "int", obj)
+    UPDATE_SIGNAL_CACHE(keyReleased, "int", obj)
+    UPDATE_SIGNAL_CACHE(keyTyped, "char", obj)
 }
 
 void MoeGraphicsContainer::markChildCacheDirty() {
@@ -76,10 +82,15 @@ void MoeGraphicsContainer::updateChildCache(){
         if(_localGeometry.intersects(child->realGeometry())) {
             _visibleChildren.append(child);
             if(!visibleChildren.contains(child)) {
-                SET_SIGNAL_CACHE(mousePress, "int", child)
-                SET_SIGNAL_CACHE(mouseRelease, "int", child)
-                SET_SIGNAL_CACHE(mouseMove, "QPoint", child)
-                SET_SIGNAL_CACHE(mouseScroll, "QPoint", child)
+                SET_SIGNAL_CACHE(mousePressed, "int", child)
+                SET_SIGNAL_CACHE(mouseReleased, "int", child)
+                SET_SIGNAL_CACHE(mouseMoved, "QPoint", child)
+                SET_SIGNAL_CACHE(mouseDragged, "QPoint", child)
+                SET_SIGNAL_CACHE(mouseScrolled, "QPoint", child)
+
+                SET_SIGNAL_CACHE(keyPressed, "int", child)
+                SET_SIGNAL_CACHE(keyReleased, "int", child)
+                SET_SIGNAL_CACHE(keyTyped, "char", child)
             }
         } else if(visibleChildren.contains(child))
             removeWatchers(child);
@@ -88,7 +99,7 @@ void MoeGraphicsContainer::updateChildCache(){
     childCacheDirty = false;
 }
 
-void MoeGraphicsContainer::updateLayoutCaches(){
-    MoeGraphicsObject::updateLayoutCaches();
+void MoeGraphicsContainer::updateLayoutTransform(){
+    MoeGraphicsObject::updateLayoutTransform();
     markChildCacheDirty();
 }

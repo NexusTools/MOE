@@ -6,6 +6,32 @@
 #include <qmath.h>
 #include <QEvent>
 
+bool MoeGraphicsObject::usesKeyboardEvents(){
+    return container() && container()->hasKeyoardEvent(this);
+}
+
+bool MoeGraphicsObject::usesDragEvent(){
+    return container() && container()->hasDragEvent(this);
+}
+
+void MoeGraphicsObject::takeKeyFocus(){
+    MoeGraphicsSurface* s = surface();
+    if(s)
+        s->giveKeyFocus(this);
+}
+
+void MoeGraphicsObject::takeMouseFocus(){
+    MoeGraphicsSurface* s = surface();
+    if(s)
+        s->giveMouseDragFocus(this);
+}
+
+void MoeGraphicsObject::takeHoverFocus(){
+    MoeGraphicsSurface* s = surface();
+    if(s)
+        s->giveMouseHoverFocus(this);
+}
+
 bool MoeGraphicsObject::event(QEvent * ev)
 {
     switch(ev->type()) {
@@ -33,12 +59,6 @@ bool MoeGraphicsObject::event(QEvent * ev)
 
 void MoeGraphicsObject::render(RenderRecorder *p, QRect region)
 {
-    if(region.isNull())
-        region = _localGeometry;
-
-    if(region.isEmpty()) // Nothing to Render
-        return;
-
     p->setPen(_foreground);
     paintImpl(p, region);
     emit paint(p);
@@ -49,7 +69,7 @@ void MoeGraphicsObject::paintImpl(RenderRecorder* p, QRect)
     if(qAlpha(_border) > 0) {
         p->setPen(_border);
         p->setBrush(_background);
-        p->drawRect(QRect(QPoint(0,0),_localGeometry.size()-QSize(1,1)));
+        p->drawRect(_localGeometry);
     } else if(qAlpha(_background) > 0)
         p->fillRect(_localGeometry, _background);
 }
@@ -62,13 +82,14 @@ void MoeGraphicsObject::repaint(QRect region)
     if(region.isNull())
         region = _localGeometry;
     else
-        region = _localGeometry & region;
+        region &= _localGeometry;
+
     region = localTransform.mapRect(region);
 
     if(region.isEmpty())
         return;
 
-    container()->repaint(region);
+    container()->repaint(QRect(region.topLeft()-QPoint(1,1),region.size()+QSize(2,2)));
 }
 
 void MoeGraphicsObject::setGeometry(QRectF geom){
@@ -82,8 +103,26 @@ void MoeGraphicsObject::setGeometry(QRectF geom){
         emit resized(geom.size());
     if(old.topLeft() != geom.topLeft())
         emit moved(geom.topLeft());
-    updateLayoutCaches();
+    updateLayoutTransform();
     repaint();
+}
+
+QPoint MoeGraphicsObject::mapFromSurface(QPoint p){
+    MoeGraphicsContainer* contain = container();
+    while(contain) {
+        p = contain->mapFromParent(p);
+        contain = contain->container();
+    }
+    return p;
+}
+
+QRect MoeGraphicsObject::mapFromSurface(QRect rect){
+    MoeGraphicsContainer* contain = container();
+    while(contain) {
+        rect = contain->mapFromParent(rect);
+        contain = contain->container();
+    }
+    return rect;
 }
 
 bool MoeGraphicsObject::isVisibleToSurface()
@@ -104,7 +143,7 @@ MoeGraphicsSurface* MoeGraphicsObject::surface() {
     return NULL;
 }
 
-void MoeGraphicsObject::updateLayoutCaches() {
+void MoeGraphicsObject::updateLayoutTransform() {
     if(isSurface() || container()) {
         _localGeometry = QRect(QPoint(0,0),QSize((int)qCeil(_geometry.width()),(int)qCeil(_geometry.height())));
 

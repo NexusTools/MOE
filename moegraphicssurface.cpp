@@ -4,6 +4,9 @@
 MoeGraphicsSurface::MoeGraphicsSurface()
 {
     _background = qRgb(0, 0, 0);
+    _foreground = qRgba(0, 0, 0, 0);
+    _border = qRgba(0, 0, 0, 0);
+    repaintDebug = RepaintDebugOff;
     qRegisterMetaType<RenderInstructions>("RenderInstructions");
 
     renderTimer.setInterval(0);
@@ -14,24 +17,21 @@ MoeGraphicsSurface::MoeGraphicsSurface()
 
 void MoeGraphicsSurface::render(RenderRecorder* p, QRect region)
 {
-    if(region.isNull())
-        region = _localGeometry;
     if(!p)
-        p = new RenderRecorder(_localGeometry);
-    MoeGraphicsContainer::render(p, region);
+        p = new RenderRecorder(repaintDebug == RepaintDebugFrame ? _localGeometry : region);
+
+    MoeGraphicsContainer::render(p, repaintDebug == RepaintDebugFrame ? _localGeometry : region);
     if(repaintDebug) {
         foreach(QRect rect, repaintRegions) {
             p->fillRect(rect, qRgba(0, 250, 0, 60));
         }
         repaintRegions.clear();
-        p->fillRect(region, qRgba(0, 250, 0, 60));
     }
-    emit renderReady(p->instructions());
+    emit renderReady(p->instructions(), repaintDebug == RepaintDebugFrame ? _localGeometry : region);
     p->deleteLater();
 }
 
 void MoeGraphicsSurface::updateSize(QSize size)
 {
-    qDebug() << "Updating Size" << size;
     setGeometry(QRect(QPoint(0, 0), size));
 }

@@ -90,8 +90,7 @@ void MoeEngine::run()
     _scriptEngine = &scriptEngine;
 
     __moe_registerScriptConverters(_scriptEngine);
-
-    QScriptValue globalObject = scriptEngine.newObject();
+    QScriptValue globalObject = scriptEngine.globalObject();
 
     QMapIterator<QString, QMetaObject*> classIterator(_classes);
     while(classIterator.hasNext())
@@ -118,7 +117,6 @@ void MoeEngine::run()
     globalObject.setProperty("GraphicsContainer", scriptEngine.newQMetaObject(&MoeGraphicsContainer::staticMetaObject));
     globalObject.setProperty("GraphicsText", scriptEngine.newQMetaObject(&MoeGraphicsText::staticMetaObject));
     globalObject.setProperty("RenderRecorder", scriptEngine.newQMetaObject((QMetaObject*)&RenderRecorder::staticMetaObject));
-    scriptEngine.setGlobalObject(globalObject);
 
     includeFile(":/data/shared.js");
     if(scriptEngine.hasUncaughtException()) {

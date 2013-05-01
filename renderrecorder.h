@@ -10,6 +10,8 @@
 
 struct RenderInstruction {
     enum Type {
+        Initialize,
+
         FillRect,
         FillPolygon,
 
@@ -37,11 +39,16 @@ class RenderRecorder : public MoeObject
 {
     Q_OBJECT
 public:
-    inline RenderRecorder(QRect rect) {
+    explicit inline RenderRecorder(QRect rect) {
         clipRect = rect;
+        cbrush = qRgba(0,0,0,0);
+        cpen = qRgb(0,0,0);
     }
 
-    inline static void paint(RenderInstructions instructions, QPainter& p) {
+    inline static void paint(RenderInstructions instructions, QPainter& p, QRect clipRect) {
+        p.setPen(Qt::black);
+        p.setBrush(Qt::NoBrush);
+
         foreach(RenderInstruction inst, instructions) {
             switch(inst.type){
             case RenderInstruction::FillRect:
@@ -77,9 +84,9 @@ public:
 
             case RenderInstruction::UpdateClipRect:
                 if(inst.arguments.isEmpty())
-                    p.setClipRect(QRect(), Qt::NoClip);
+                    p.setClipRect(clipRect, Qt::ReplaceClip);
                 else
-                    p.setClipRect(inst.arguments.first().toRect());
+                    p.setClipRect(inst.arguments.first().toRect(), Qt::ReplaceClip);
                 break;
 
             case RenderInstruction::UpdateFont:
@@ -100,7 +107,7 @@ public slots:
 
         if(!clipRect.intersects(rect))
             return;
-        rect = clipRect.intersected(rect);
+        rect &= clipRect;
 
         noClipRect();
         RenderInstruction instruction;
@@ -120,10 +127,8 @@ public slots:
         updateFont();
         if(clipRect.contains(rect))
             noClipRect();
-        else {
-            rect = clipRect.intersected(rect);
+        else
             requireClipRect();
-        }
 
         RenderInstruction instruction;
         instruction.type = RenderInstruction::DrawText;
@@ -134,6 +139,7 @@ public slots:
 
     inline void drawRect(QRect rect){
         rect = transform.mapRect(rect);
+        bool hasBorder = qAlpha(pen) > 0;
 
         if(!clipRect.intersects(rect))
             return;
@@ -142,13 +148,16 @@ public slots:
         updateBrush();
         if(clipRect.contains(rect))
             noClipRect();
-        else {
-            rect = clipRect.intersected(rect);
+        else if(!hasBorder) {
+            rect &= clipRect;
+            noClipRect();
+        } else
             requireClipRect();
-        }
 
         RenderInstruction instruction;
         instruction.type = RenderInstruction::DrawRect;
+        if(hasBorder)
+            rect = QRect(rect.topLeft(), rect.size() - QSize(1, 1));
         instruction.arguments.append(rect);
         _instructions.append(instruction);
     }
@@ -164,10 +173,8 @@ public slots:
         updatePen();
         if(clipRect.contains(rect))
             noClipRect();
-        else {
-            rect = clipRect.intersected(rect);
+        else
             requireClipRect();
-        }
 
         RenderInstruction instruction;
         instruction.type = RenderInstruction::DrawLine;

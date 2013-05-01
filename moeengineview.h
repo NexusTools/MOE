@@ -16,18 +16,26 @@ public:
     void inject(QString key, QObject* obj);
     void resizeEvent(QResizeEvent *);
     void paintEvent(QPaintEvent *);
+    void mouseMoveEvent(QMouseEvent *);
+    void mousePressEvent(QMouseEvent *);
+    void mouseReleaseEvent(QMouseEvent *);
 
 public slots:
     void start();
     void quit();
 
 protected slots:
-    void renderInstructions(RenderInstructions);
+    void renderInstructions(RenderInstructions, QRect);
+    inline void repaintRect(){repaint(_repaintRect);}
 
 signals:
     void sizeChanged(QSize);
     void repaintSurface();
     void readyForFrame();
+
+    void mouseMove(QPoint);
+    void mousePress(QPoint,int);
+    void mouseRelease(QPoint,int);
 
 private:
     QPixmap buffer;
@@ -37,6 +45,7 @@ private:
     RenderInstructions storedInstructions;
 
     QTimer repaintTimer;
+    QRect _repaintRect;
 };
 
 #endif // MOEENGINEVIEW_H

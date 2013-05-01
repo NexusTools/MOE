@@ -11,15 +11,15 @@ public:
         setContainer(parent);
     }
 
-    virtual void render(RenderRecorder*, QRect =QRect());
-    Q_INVOKABLE void renderChildren(RenderRecorder*, QRect =QRect());
+    virtual void render(RenderRecorder*, QRect);
+    Q_INVOKABLE void renderChildren(RenderRecorder*, QRect);
 
     Q_INVOKABLE inline void add(MoeGraphicsObject* obj) {
         if(obj->parent() != this) {
             obj->setParent(this);
             if(!children.contains(obj)) {
                 children.prepend(obj);
-                obj->updateLayoutCaches();
+                obj->updateLayoutTransform();
                 obj->repaint();
             }
         }
@@ -46,48 +46,72 @@ public:
     }
 
 protected slots:
-    virtual void updateLayoutCaches();
+    virtual void updateLayoutTransform();
 
 protected:
     friend class MoeGraphicsObject;
+    friend class MoeGraphicsSurface;
 
     virtual inline bool requireHook(EventHook event) {
         switch(event) {
-        case mouseMoveHook:
-            return !mouseMoveWatchers.isEmpty();
-        case mousePressHook:
-            return !mousePressWatchers.isEmpty();
-        case mouseReleaseHook:
-            return !mouseReleaseWatchers.isEmpty();
-        case mouseScrollHook:
-            return !mouseReleaseWatchers.isEmpty();
+        case mouseMovedHook:
+            return !mouseMovedWatchers.isEmpty();
+
+        case mousePressedHook:
+            return !mousePressedWatchers.isEmpty();
+
+        case mouseReleasedHook:
+            return !mouseReleasedWatchers.isEmpty();
+
+        case mouseScrolledHook:
+            return !mouseScrolledWatchers.isEmpty();
+
+        default:
+            return false;
         }
 
-        return false;
     }
+
+    inline bool hasKeyoardEvent(MoeGraphicsObject* obj){
+        return keyTypedWatchers.contains(obj)
+                && keyPressedWatchers.contains(obj)
+                && keyReleasedWatchers.contains(obj);
+    }
+
+    inline bool hasDragEvent(MoeGraphicsObject* obj) {
+        return mouseDraggedWatchers.contains(obj);
+    }
+
+    void mouseMovedImpl(QPoint p);
 
     void updateWatcherCache(MoeGraphicsObject* obj);
     void updateChildCache();
     void markChildCacheDirty();
 
     inline void removeWatchers(MoeGraphicsObject* obj) {
-        if(mouseMoveWatchers.contains(obj))
-            mouseMoveWatchers.removeOne(obj);
-        if(mousePressWatchers.contains(obj))
-            mousePressWatchers.removeOne(obj);
-        if(mouseReleaseWatchers.contains(obj))
-            mouseReleaseWatchers.removeOne(obj);
-        if(mouseScrollWatchers.contains(obj))
-            mouseScrollWatchers.removeOne(obj);
+        mouseMovedWatchers.removeOne(obj);
+        mouseDraggedWatchers.removeOne(obj);
+        mousePressedWatchers.removeOne(obj);
+        mouseReleasedWatchers.removeOne(obj);
+        mouseScrolledWatchers.removeOne(obj);
+
+        keyTypedWatchers.removeOne(obj);
+        keyPressedWatchers.removeOne(obj);
+        keyReleasedWatchers.removeOne(obj);
     }
 
 private:
     bool childCacheDirty;
 
-    QList<MoeGraphicsObject*> mouseMoveWatchers;
-    QList<MoeGraphicsObject*> mousePressWatchers;
-    QList<MoeGraphicsObject*> mouseReleaseWatchers;
-    QList<MoeGraphicsObject*> mouseScrollWatchers;
+    QList<MoeGraphicsObject*> mouseMovedWatchers;
+    QList<MoeGraphicsObject*> mouseDraggedWatchers;
+    QList<MoeGraphicsObject*> mousePressedWatchers;
+    QList<MoeGraphicsObject*> mouseReleasedWatchers;
+    QList<MoeGraphicsObject*> mouseScrolledWatchers;
+
+    QList<MoeGraphicsObject*> keyTypedWatchers;
+    QList<MoeGraphicsObject*> keyPressedWatchers;
+    QList<MoeGraphicsObject*> keyReleasedWatchers;
 
     QList<MoeGraphicsObject*> visibleChildren;
     QList<MoeGraphicsObject*> children;

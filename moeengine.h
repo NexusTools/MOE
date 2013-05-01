@@ -44,6 +44,7 @@ public slots:
     void quit();
     void abort(QString reason);
 
+    inline qreal random() {return (qreal)qrand()/(qreal)INT_MAX;}
     QScriptValue eval(QString script);
 
     void debug(QVariant);
@@ -67,8 +68,8 @@ private:
     int _tickWait;
     QEventLoop* _eventLoop;
     QScriptEngine* _scriptEngine;
-    QMap<QString, QMetaObject*> _classes;
     QMap<QString, QObject*> _environment;
+    QMap<QString, QMetaObject*> _classes;
     static QThreadStorage<MoeEnginePointer> _engine;
 };
 

@@ -2,6 +2,8 @@
 #include "moeengineview.h"
 
 #include <QApplication>
+#include <QColor>
+#include <QDebug>
 
 int main(int argc, char *argv[])
 {

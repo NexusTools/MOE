@@ -20,12 +20,14 @@ class MoeGraphicsObject : public MoeObject
     Q_PROPERTY(QRgb border READ border WRITE setBorder)
 public:
     Q_INVOKABLE MoeGraphicsObject(MoeGraphicsContainer* parent =0) : _scale(1, 1) {
+        _background = qRgba(0, 0, 0, 0);
         _foreground = qRgb(0, 0, 0);
+        _border = qRgba(0, 0, 0, 0);
         setContainer(parent);
     }
 
     bool event(QEvent *);
-    virtual void render(RenderRecorder*, QRect =QRect());
+    virtual void render(RenderRecorder*, QRect);
     Q_INVOKABLE virtual void paintImpl(RenderRecorder*, QRect);
 
     Q_INVOKABLE inline qreal x() const{return _geometry.x();}
@@ -52,13 +54,24 @@ public:
     Q_INVOKABLE void setContainer(MoeGraphicsContainer*);
     Q_INVOKABLE MoeGraphicsContainer* container() const;
 
-    Q_INVOKABLE QRect mapToParent(QRect rect){
+    inline QPoint mapToParent(QPoint p){
+        return localTransform.map(p);
+    }
+
+    Q_INVOKABLE inline QRect mapToParent(QRect rect){
         return localTransform.mapRect(rect);
     }
 
-    Q_INVOKABLE QRect mapFromParent(QRect rect){
+    inline QPoint mapFromParent(QPoint p){
+        return parentTransform.map(p);
+    }
+
+    Q_INVOKABLE inline QRect mapFromParent(QRect rect){
         return parentTransform.mapRect(rect);
     }
+
+    QPoint mapFromSurface(QPoint rect);
+    Q_INVOKABLE QRect mapFromSurface(QRect rect);
 
     Q_INVOKABLE virtual bool isVisibleToSurface();
     Q_INVOKABLE inline virtual bool isSurface() const{return false;}
@@ -75,17 +88,20 @@ public slots:
     void setGeometry(QRectF);
 
 protected slots:
-    virtual void updateLayoutCaches();
+    virtual void updateLayoutTransform();
 
 signals:
     void paint(RenderRecorder*);
     void resized(QSizeF);
     void moved(QPointF);
 
-    void mousePress(int);
-    void mouseRelease(int);
+    void mousePressed(QPoint, int);
+    void mouseReleased(QPoint, int);
     void mouseMoved(QPoint);
-    void mouseScroll(QPoint);
+    void mouseDragged(QPoint);
+    void mouseScrolled(QPoint);
+    void mouseEntered();
+    void mouseLeft();
 
     void keyTyped(char);
     void keyPressed(int);
@@ -93,25 +109,69 @@ signals:
 
 protected:
     friend class MoeGraphicsContainer;
+    friend class MoeGraphicsSurface;
 
     enum EventHook {
-        mouseMoveHook,
-        mousePressHook,
-        mouseReleaseHook,
-        mouseScrollHook
+        mouseMovedHook,
+        mouseDraggedHook,
+        mousePressedHook,
+        mouseReleasedHook,
+        mouseScrolledHook,
+
+        keyTypedHook,
+        keyPressedHook,
+        keyReleasedHook
     };
+
+    bool usesKeyboardEvents();
+    bool usesDragEvent();
+
+    void takeKeyFocus();
+    void takeMouseFocus();
+    void takeHoverFocus();
 
     virtual inline bool requireHook(EventHook) {
         return false;
     }
 
-    virtual inline void mousePressImpl(int) {}
-    virtual inline void mouseReleaseImpl(int) {}
-    virtual inline void mouseMoveImpl(QPoint) {}
+    virtual inline void mouseEnterImpl(){
+        emit mouseEntered();
+    }
 
-    virtual inline void keyTypedImpl(char) {}
-    virtual inline void keyReleaseImpl(int) {}
-    virtual inline void keyPressImpl(int) {}
+    virtual inline void mouseLeaveImpl(){
+        emit mouseLeft();
+    }
+
+    virtual inline void mousePressedImpl(QPoint p, int i) {
+        if(usesKeyboardEvents())
+            takeKeyFocus();
+        if(usesDragEvent())
+            takeMouseFocus();
+        emit mousePressed(p, i);
+    }
+    virtual inline void mouseReleasedImpl(QPoint p, int i) {
+        emit mouseReleased(p, i);
+    }
+    virtual inline void mouseMovedImpl(QPoint p) {
+        takeHoverFocus();
+        emit mouseMoved(p);
+    }
+    virtual inline void mouseDraggedImpl(QPoint p) {
+        emit mouseDragged(p);
+    }
+    virtual inline void mouseScrolledImpl(QPoint s){
+        emit mouseScrolled(s);
+    }
+
+    virtual inline void keyTypedImpl(char c) {
+        emit keyTyped(c);
+    }
+    virtual inline void keyReleasedImpl(int k) {
+        emit keyReleased(k);
+    }
+    virtual inline void keyPressedImpl(int k) {
+        emit keyPressed(k);
+    }
 
     void connectNotify(const QMetaMethod &);
     void disconnectNotify(const QMetaMethod &);
@@ -124,6 +184,7 @@ protected:
 
     QTransform localTransform;
     QTransform parentTransform;
+    QTransform surfaceTransform;
     QRect _realGeometry;
     QRect _localGeometry;
     QRectF _geometry;

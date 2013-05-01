@@ -16,9 +16,9 @@ function Rect(x, y, width, height){
 }
 
 function Rgb(r, g, b) {
-    return {"r": r, "g": g, "b": b};
+    return {"red": r, "green": g, "blue": b};
 }
 
 function Rgba(r, g, b, a) {
-    return {"r": r, "g": g, "b": b, "b": a};
+    return {"red": r, "green": g, "blue": b, "alpha": a};
 }
