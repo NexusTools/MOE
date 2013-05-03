@@ -35,7 +35,4 @@ void MoeGraphicsSurface::render(RenderRecorder* p, QRect region)
     }
 }
 
-void MoeGraphicsSurface::updateSize(QSize size)
-{
-    setGeometry(QRect(QPoint(0, 0), size));
-}
+QThreadStorage<MoeGraphicsSurfacePointer> MoeGraphicsSurface::_currentSurface;

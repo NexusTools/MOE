@@ -1,3 +1,4 @@
+function Noop(){}
 
 function Font(family, size) {
     return {"family": family, "size": size};
@@ -21,4 +22,18 @@ function Rgb(r, g, b) {
 
 function Rgba(r, g, b, a) {
     return {"red": r, "green": g, "blue": b, "alpha": a};
+}
+
+//Dummy Console
+var Console = {
+    supportsColor: false,
+    supportsOutput: false,
+    supportsMovingCursor: false,
+
+
+
+    log: Noop,
+    warn: Noop,
+    error: Noop
+
 }

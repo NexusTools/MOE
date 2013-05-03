@@ -31,7 +31,7 @@ public:
 
     void paintImpl(RenderRecorder *, QRect);
 
-private:
+public:
     QFont _font;
     QString _text;
     int _margin;

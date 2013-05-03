@@ -77,7 +77,12 @@ void MoeEngine::includeFile(QString filePath){
 
     QFile file(filePath);
     if(file.open(QFile::ReadOnly)) {
+        _scriptEngine->pushContext();
+        _scriptEngine->currentContext()->pushScope(_scriptEngine->globalObject());
+        _scriptEngine->currentContext()->setActivationObject(_scriptEngine->globalObject());
         _scriptEngine->evaluate(QString(file.readAll()), filePath);
+        _scriptEngine->currentContext()->popScope();
+        _scriptEngine->popContext();
         qDebug() << filePath;
     } else
         _scriptEngine->currentContext()->throwError(QScriptContext::UnknownError, QString("File Not Found: %1").arg(filePath));

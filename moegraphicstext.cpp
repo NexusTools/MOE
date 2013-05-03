@@ -9,5 +9,5 @@ void MoeGraphicsText::sizeToText() {
 
 void MoeGraphicsText::paintImpl(RenderRecorder* p, QRect) {
     p->setFont(_font);
-    p->drawText(QRect(QPoint(_margin, _margin), _localGeometry.size()-QSize(_margin*2, _margin*2)), _text);
+    p->drawText(QRect(QPoint(_margin, _margin), localSize()-QSize(_margin*2, _margin*2)), _text);
 }

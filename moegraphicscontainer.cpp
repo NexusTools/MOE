@@ -26,42 +26,16 @@ void MoeGraphicsContainer::renderChildren(RenderRecorder * p, QRect region){
     }
 }
 
-void MoeGraphicsContainer::mouseMovedImpl(QPoint p){
+void MoeGraphicsContainer::mouseMovedEvent(QPoint p){
     updateChildCache();
+    if(canUseMouseFocus())
+        MoeGraphicsObject::mouseMovedEvent(p);
+    qDebug() << "Mouse Moved Event" << p << mouseMovedWatchers.size();
     foreach(MoeGraphicsObject* child, mouseMovedWatchers)
         if(child->realGeometry().contains(p)) {
-            child->mouseMovedImpl(child->mapFromParent(p));
-            break;
+            child->mouseMovedEvent(child->mapFromParent(p));
+            return;
         }
-}
-
-#define UPDATE_SIGNAL_CACHE(signal, params, object) \
-    static const QMetaMethod signal##Meta = metaObject()->method(metaObject()->indexOfSignal(#signal "(" params ")")); \
-    if(visibleChildren.contains(object) && (object->requireHook(signal##Hook) \
-                || object->isSignalConnected(signal##Meta))) { \
-        if(!signal##Watchers.contains(object)) \
-            signal##Watchers.append(object); \
-    } else if(signal##Watchers.contains(object)) \
-        signal##Watchers.removeOne(object);
-
-#define SET_SIGNAL_CACHE(signal, params, object) \
-    static const QMetaMethod signal##Meta = metaObject()->method(metaObject()->indexOfSignal(#signal "(" params ")")); \
-    if(object->requireHook(signal##Hook) || object->isSignalConnected(signal##Meta)) { \
-        if(!signal##Watchers.contains(object)) \
-            signal##Watchers.append(object); \
-    } else if(signal##Watchers.contains(object)) \
-        signal##Watchers.removeOne(object);
-
-void MoeGraphicsContainer::updateWatcherCache(MoeGraphicsObject* obj){
-    UPDATE_SIGNAL_CACHE(mousePressed, "int", obj)
-    UPDATE_SIGNAL_CACHE(mouseReleased, "int", obj)
-    UPDATE_SIGNAL_CACHE(mouseMoved, "QPoint", obj)
-    UPDATE_SIGNAL_CACHE(mouseDragged, "QPoint", obj)
-    UPDATE_SIGNAL_CACHE(mouseScrolled, "QPoint", obj)
-
-    UPDATE_SIGNAL_CACHE(keyPressed, "int", obj)
-    UPDATE_SIGNAL_CACHE(keyReleased, "int", obj)
-    UPDATE_SIGNAL_CACHE(keyTyped, "char", obj)
 }
 
 void MoeGraphicsContainer::markChildCacheDirty() {
@@ -74,28 +48,21 @@ void MoeGraphicsContainer::updateChildCache(){
     if(!childCacheDirty)
         return;
 
-    QList<MoeGraphicsObject*> _visibleChildren;
+    visibleChildren.clear();
     foreach(MoeGraphicsObject* child, children) {
         MoeGraphicsContainer* contain = qobject_cast<MoeGraphicsContainer*>(child);
         if(contain)
             contain->updateChildCache();
         if(_localGeometry.intersects(child->realGeometry()) && child->isVisible()) {
-            _visibleChildren.append(child);
-            if(!visibleChildren.contains(child)) {
-                SET_SIGNAL_CACHE(mousePressed, "int", child)
-                SET_SIGNAL_CACHE(mouseReleased, "int", child)
-                SET_SIGNAL_CACHE(mouseMoved, "QPoint", child)
-                SET_SIGNAL_CACHE(mouseDragged, "QPoint", child)
-                SET_SIGNAL_CACHE(mouseScrolled, "QPoint", child)
-
-                SET_SIGNAL_CACHE(keyPressed, "int", child)
-                SET_SIGNAL_CACHE(keyReleased, "int", child)
-                SET_SIGNAL_CACHE(keyTyped, "char", child)
-            }
-        } else if(visibleChildren.contains(child))
-            removeWatchers(child);
+            visibleChildren.append(child);
+            if(child->canUseMouseFocus()) {
+                if(!mouseMovedWatchers.contains(child))
+                    mouseMovedWatchers.append(child);
+            } else if(mouseMovedWatchers.contains(child))
+                mouseMovedWatchers.removeOne(child);
+        } else if(mouseMovedWatchers.contains(child))
+            mouseMovedWatchers.removeOne(child);
     }
-    visibleChildren = _visibleChildren;
     childCacheDirty = false;
 }
 

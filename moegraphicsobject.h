@@ -15,10 +15,14 @@ class MoeGraphicsSurface;
 class MoeGraphicsObject : public MoeObject
 {
     Q_OBJECT
+    Q_PROPERTY(Qt::CursorShape cursor READ cursor WRITE setCursor)
     Q_PROPERTY(QRgb background READ background WRITE setBackground)
     Q_PROPERTY(QRgb foreground READ foreground WRITE setForeground)
     Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity)
     Q_PROPERTY(QRgb border READ border WRITE setBorder)
+
+    friend class MoeGraphicsContainer;
+    friend class MoeGraphicsSurface;
 public:
     Q_INVOKABLE MoeGraphicsObject(MoeGraphicsContainer* parent =0) : _scale(1, 1) {
         _background = qRgba(0, 0, 0, 0);
@@ -127,9 +131,6 @@ signals:
     void keyReleased(int);
 
 protected:
-    friend class MoeGraphicsContainer;
-    friend class MoeGraphicsSurface;
-
     enum EventHook {
         mouseMovedHook,
         mouseDraggedHook,
@@ -142,81 +143,82 @@ protected:
         keyReleasedHook
     };
 
-    bool usesKeyboardEvents();
-    bool usesDragEvent();
-
-    void takeKeyFocus();
-    void takeMouseFocus();
-    void takeHoverFocus();
-
+    bool canUseKeyFocus();
+    bool canUseMouseFocus();
+    void updateHoverFocus();
     void notifyParentOfUpdate();
+    bool isHookConnected(EventHook);
 
-    virtual inline bool requireHook(EventHook) {
+    virtual inline bool isHookRequired(EventHook) {
         return false;
     }
 
-    virtual inline void mouseEnterImpl(){
-        emit mouseEntered();
-    }
-
-    virtual inline void mouseLeaveImpl(){
-        emit mouseLeft();
-    }
-
-    virtual inline void mousePressedImpl(QPoint p, int i) {
-        if(usesKeyboardEvents())
-            takeKeyFocus();
-        if(usesDragEvent())
-            takeMouseFocus();
-        emit mousePressed(p, i);
-    }
-    virtual inline void mouseReleasedImpl(QPoint p, int i) {
-        emit mouseReleased(p, i);
-    }
-    virtual inline void mouseMovedImpl(QPoint p) {
-        takeHoverFocus();
-        emit mouseMoved(p);
-    }
-    virtual inline void mouseDraggedImpl(QPoint p) {
-        emit mouseDragged(p);
-    }
-    virtual inline void mouseScrolledImpl(QPoint s){
-        emit mouseScrolled(s);
-    }
-
-    virtual inline void keyTypedImpl(char c) {
-        emit keyTyped(c);
-    }
-    virtual inline void keyReleasedImpl(int k) {
-        emit keyReleased(k);
-    }
-    virtual inline void keyPressedImpl(int k) {
-        emit keyPressed(k);
-    }
-
-    inline void connectNotify(const QMetaMethod &) {
+    void connectNotify(const QMetaMethod &) {
         notifyParentOfUpdate();
     }
 
-    inline void disconnectNotify(const QMetaMethod &) {
+    void disconnectNotify(const QMetaMethod &) {
         notifyParentOfUpdate();
     }
 
-    bool usePixmapBuffer;
+    inline QSize localSize() const{
+        return _localGeometry.size();
+    }
 
+    inline QRect localGeometry() const{
+        return _localGeometry;
+    }
+
+    Qt::CursorShape _cursor;
     QRgb _background;
     QRgb _foreground;
     QRgb _border;
+    QPointF _scale;
+    QPointF _rotate;
+    qreal _opacity;
+
+private:
+    inline void mouseEnterEvent(){
+        emit mouseEntered();
+    }
+    inline void mouseLeaveEvent(){
+        emit mouseLeft();
+    }
+
+    inline void mousePressedEvent(QPoint p, int i) {
+        emit mousePressed(p, i);
+    }
+    inline void mouseReleasedEvent(QPoint p, int i) {
+        emit mouseReleased(p, i);
+    }
+    virtual inline void mouseMovedEvent(QPoint p) {
+        updateHoverFocus();
+        emit mouseMoved(p);
+    }
+    inline void mouseDraggedEvent(QPoint p) {
+        emit mouseDragged(p);
+    }
+    inline void mouseScrolledEvent(QPoint s){
+        emit mouseScrolled(s);
+    }
+
+    inline void keyTypedEvent(char c) {
+        emit keyTyped(c);
+    }
+    inline void keyReleasedEvent(int k) {
+        emit keyReleased(k);
+    }
+    inline void keyPressedEvent(int k) {
+        emit keyPressed(k);
+    }
+
+    QRectF _geometry;
+    QRect _realGeometry;
+    QRect _localGeometry;
 
     QTransform localTransform;
     QTransform parentTransform;
     QTransform surfaceTransform;
-    QRect _realGeometry;
-    QRect _localGeometry;
-    QRectF _geometry;
-    QPointF _scale;
-    QPointF _rotate;
-    qreal _opacity;
 };
 
 #endif // MOEGRAPHICSOBJECT_H
