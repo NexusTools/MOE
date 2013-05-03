@@ -42,7 +42,8 @@ FORMS    +=
 OTHER_FILES += \
 	data/content-select/init.js \
     data/shared.js \
-    data/rgb.txt
+    data/rgb.txt \
+    data/prototype.js
 
 RESOURCES += \
 	res.qrc

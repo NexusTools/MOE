@@ -95,6 +95,7 @@ void MoeEngineView::start()
     connect(this, SIGNAL(mousePress(QPoint,int)), surface.data(), SLOT(mousePress(QPoint,int)), Qt::QueuedConnection);
     connect(this, SIGNAL(mouseRelease(QPoint,int)), surface.data(), SLOT(mouseRelease(QPoint,int)), Qt::QueuedConnection);
 
+    connect(surface.data(), SIGNAL(cursorChanged(QCursor)), this, SLOT(setCursor(QCursor)), Qt::QueuedConnection);
     connect(surface.data(), SIGNAL(titleChanged(QString)), this, SLOT(setWindowTitle(QString)), Qt::QueuedConnection);
     connect(surface.data(), SIGNAL(renderReady(RenderInstructions, QRect, QSize)), this, SLOT(renderInstructions(RenderInstructions, QRect, QSize)), Qt::QueuedConnection);
     connect(&engine, SIGNAL(stopped()), surface.data(), SLOT(deleteLater()));
@@ -107,6 +108,10 @@ void MoeEngineView::start()
 void MoeEngineView::quit()
 {
     engine.quit();
+}
+
+void MoeEngineView::setCursor(QCursor cur) {
+    QWidget::setCursor(cur);
 }
 
 void MoeEngineView::renderInstructions(RenderInstructions instructions, QRect repaintRect, QSize size)

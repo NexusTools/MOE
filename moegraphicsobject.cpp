@@ -190,6 +190,13 @@ void MoeGraphicsObject::updateLayoutTransform() {
     }
 }
 
+void MoeGraphicsObject::setCursor(QCursor cursor){
+    MoeGraphicsSurface* s;
+    if((s = surface()) && s->isHoverTarget(this))
+        s->updateCursor(cursor);
+    _cursor = cursor;
+}
+
 void MoeGraphicsObject::setContainer(MoeGraphicsContainer* contain)
 {
     if(container() == contain)

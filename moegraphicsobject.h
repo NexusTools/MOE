@@ -4,6 +4,7 @@
 #include "moeobject.h"
 
 #include <QTransform>
+#include <QCursor>
 #include <qmath.h>
 #include <QRectF>
 #include <QRgb>
@@ -15,7 +16,11 @@ class MoeGraphicsSurface;
 class MoeGraphicsObject : public MoeObject
 {
     Q_OBJECT
-    Q_PROPERTY(Qt::CursorShape cursor READ cursor WRITE setCursor)
+    Q_PROPERTY(qreal x READ x WRITE setPosX)
+    Q_PROPERTY(qreal y READ y WRITE setPosY)
+    Q_PROPERTY(qreal width READ width WRITE setWidth)
+    Q_PROPERTY(qreal height READ height WRITE setHeight)
+    Q_PROPERTY(QCursor cursor READ cursor WRITE setCursor)
     Q_PROPERTY(QRgb background READ background WRITE setBackground)
     Q_PROPERTY(QRgb foreground READ foreground WRITE setForeground)
     Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity)
@@ -36,13 +41,16 @@ public:
     virtual void render(RenderRecorder*, QRect);
     Q_INVOKABLE virtual void paintImpl(RenderRecorder*, QRect);
 
-    Q_INVOKABLE inline qreal x() const{return _geometry.x();}
-    Q_INVOKABLE inline qreal y() const{return _geometry.y();}
+    inline QCursor cursor() const{return _cursor;}
+    void setCursor(QCursor);
+
+    inline qreal x() const{return _geometry.x();}
+    inline qreal y() const{return _geometry.y();}
     Q_INVOKABLE inline QPointF pos() const{return _geometry.topLeft();}
 
     Q_INVOKABLE inline QSizeF size() const{return _geometry.size();}
-    Q_INVOKABLE inline qreal width() const{return _geometry.width();}
-    Q_INVOKABLE inline qreal height() const{return _geometry.height();}
+    inline qreal width() const{return _geometry.width();}
+    inline qreal height() const{return _geometry.height();}
 
     Q_INVOKABLE inline QRectF geomtry() const{return _geometry;}
     Q_INVOKABLE inline QRect realGeometry() const{return _realGeometry;}
@@ -102,8 +110,12 @@ public slots:
     inline void repaint(QRectF rec) {repaint(QRect((int)qFloor(rec.x()),(int)qFloor(rec.y()),(int)qCeil(rec.width()),(int)qCeil(rec.height())));}
     inline void setPos(QPointF p) {setGeometry(QRectF(p, size()));}
     inline void setPos(qreal x, qreal y) {setPos(QPointF(x, y));}
+    inline void setPosX(qreal x) {setGeometry(QRectF(QPointF(x,y()),size()));}
+    inline void setPosY(qreal y) {setGeometry(QRectF(QPointF(x(),y),size()));}
     inline void setSize(QSizeF s) {setGeometry(QRectF(pos(), s));}
     inline void setSize(qreal w, qreal h) {setSize(QSizeF(w, h));}
+    inline void setWidth(qreal w) {setGeometry(QRectF(pos(),QSizeF(w,height())));}
+    inline void setHeight(qreal h) {setGeometry(QRectF(pos(),QSizeF(width(),h)));}
     inline void setGeometry(qreal x, qreal y, qreal w, qreal h) {setGeometry(QRectF(x,y,w,h));}
     void setGeometry(QRectF);
 
@@ -169,7 +181,7 @@ protected:
         return _localGeometry;
     }
 
-    Qt::CursorShape _cursor;
+    QCursor _cursor;
     QRgb _background;
     QRgb _foreground;
     QRgb _border;

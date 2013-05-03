@@ -4,6 +4,7 @@
 #include "renderrecorder.h"
 #include "moegraphicscontainer.h"
 #include <QScriptEngine>
+#include <QCursor>
 #include <QRegExp>
 #include <QColor>
 #include <QDebug>
@@ -192,12 +193,64 @@ void qfontFromScriptValue(const QScriptValue &object, QFont &out)
     object.engine()->currentContext()->throwError(QString("Font types expect a valid css font string, or font object."));
 }
 
+QScriptValue qcursorToScriptValue(QScriptEngine *engine, QCursor const &in)
+{
+    switch(in.shape()) {
+    case Qt::BlankCursor:
+        return "none";
+
+    case Qt::ArrowCursor:
+        return "default";
+
+    case Qt::WaitCursor:
+        return "wait";
+
+    case Qt::BusyCursor:
+        return "progress";
+
+    case Qt::PointingHandCursor:
+        return "pointer";
+
+    default:
+        return engine->nullValue();
+    }
+}
+
+void qcursorFromScriptValue(const QScriptValue &object, QCursor &out)
+{
+    if(object.isString()) {
+        QString cur = object.toString();
+        if(cur == "none") {
+            out.setShape(Qt::BlankCursor);
+            return;
+        } else if(cur == "default") {
+            out.setShape(Qt::BlankCursor);
+            return;
+        } else if(cur == "wait") {
+            out.setShape(Qt::WaitCursor);
+            return;
+        } else if(cur == "progress") {
+            out.setShape(Qt::BusyCursor);
+            return;
+        } else if(cur == "pointer") {
+            out.setShape(Qt::PointingHandCursor);
+            return;
+        }
+    } else if(object.isNumber()) {
+        out.setShape(((Qt::CursorShape)object.toInt32()));
+        return;
+    }
+
+    object.engine()->currentContext()->throwError(QString("Cursor types expect a valid css string."));
+}
+
 void __moe_registerScriptConverters(QScriptEngine* eng) {
     qRegisterMetaType<QRgb>("QRgb");
 
     qScriptRegisterMetaType<RenderRecorder*>(eng, renderRecorderToScriptValue, renderRecorderFromScriptValue);
     qScriptRegisterMetaType<MoeGraphicsContainer*>(eng, graphicsContainerToScriptValue, graphicsContainerFromScriptValue);
 
+    qScriptRegisterMetaType<QCursor>(eng, qcursorToScriptValue, qcursorFromScriptValue);
     qScriptRegisterMetaType<QPointF>(eng, qpointfToScriptValue, qpointfFromScriptValue);
     qScriptRegisterMetaType<QSizeF>(eng, qsizefToScriptValue, qsizefFromScriptValue);
     qScriptRegisterMetaType<QRectF>(eng, qrectfToScriptValue, qrectfFromScriptValue);

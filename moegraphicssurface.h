@@ -41,6 +41,7 @@ public:
 
 signals:
     void renderReady(RenderInstructions, QRect, QSize);
+    void cursorChanged(QCursor);
     void titleChanged(QString);
 
 public slots:
@@ -102,8 +103,10 @@ protected slots:
             if(mouseHoverFocus.data() != oldHoverFocus) {
                 if(oldHoverFocus)
                     oldHoverFocus->mouseLeaveEvent();
-                if(!mouseHoverFocus.isNull())
+                if(!mouseHoverFocus.isNull()) {
                     mouseHoverFocus.data()->mouseEnterEvent();
+                    updateCursor(mouseHoverFocus.data()->cursor());
+                }
             }
         }
     }
@@ -144,6 +147,18 @@ protected:
         mouseHoverFocus = obj;
     }
 
+    inline bool isHoverTarget(MoeGraphicsObject* obj) {
+        return mouseHoverFocus.data() == obj;
+    }
+
+    inline void updateCursor(QCursor cur) {
+        if(activeCursor.shape() == cur.shape())
+            return;
+
+        emit cursorChanged(cur);
+        activeCursor = cur;
+    }
+
 private:
     inline void makeCurrent() {
         _currentSurface.setLocalData(MoeGraphicsSurfacePointer(this));
@@ -166,8 +181,9 @@ private:
     static QThreadStorage<MoeGraphicsSurfacePointer> _currentSurface;
     RepaintDebugMode repaintDebug;
     QList<QRect> repaintRegions;
-    QRect repaintRegion;
     RenderState renderState;
+    QCursor activeCursor;
+    QRect repaintRegion;
     QTimer renderTimer;
 };
 

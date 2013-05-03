@@ -6,6 +6,8 @@ if(!("surface" in this))
 surface.setTitle("Chan Browser");
 surface.background = Rgba(0,0,0,0);
 
+//engine.includeFile("");
+
 var blackBlock = new GraphicsObject();
 var boardEntryMap = {};
 var boardEntries = [];
@@ -14,6 +16,7 @@ function boardEntry(code, title, pages) {
     this.element.objectName = "Board /" + code + "/";
     this.element.background = "white";
     this.element.border = "black";
+    this.element.cursor = "pointer";
 
     var boardElement = this.element;
     var titleElement = new GraphicsText(title, Font("Arial", 11), this.element);
@@ -24,15 +27,15 @@ function boardEntry(code, title, pages) {
     engine.debug(titleElement.size());
     engine.debug(codeElement.size());
     this.element.resized.connect(function(size){
-        titleElement.setPos(size.width / 2 - titleElement.width()/2, 2);
-        codeElement.setPos(size.width / 2 - codeElement.width()/2, titleElement.height() -2);
+        titleElement.setPos(size.width / 2 - titleElement.width/2, 2);
+        codeElement.setPos(size.width / 2 - codeElement.width/2, titleElement.height -2);
     });
 
     this.element.setSize(150, 45);
     this.element.mousePressed.connect(function(){
     });
     this.element.mouseEntered.connect(function(){
-        boardElement.background = "gray10";
+        boardElement.background = "gray80";
     });
     this.element.mouseLeft.connect(function(){
         boardElement.background = "white";
@@ -40,8 +43,8 @@ function boardEntry(code, title, pages) {
 }
 
 function fixBoardLayout() {
-    var cols = Math.floor(surface.width() / 155);
-    var xStart = (surface.width() - (cols * 155))/2;
+    var cols = Math.floor(surface.width / 155);
+    var xStart = (surface.width - (cols * 155))/2;
     var colX = 0;
     var y = 5;
     boardEntries.forEach(function(board) {

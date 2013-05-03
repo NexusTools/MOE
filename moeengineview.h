@@ -29,6 +29,7 @@ public slots:
 protected slots:
     void renderInstructions(RenderInstructions, QRect, QSize);
     inline void repaintRect(){repaint(_repaintRect);}
+    void setCursor(QCursor);
 
 signals:
     void sizeChanged(QSize);

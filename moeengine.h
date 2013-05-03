@@ -46,6 +46,17 @@ public slots:
     void quit();
     void abort(QString reason);
 
+    inline int setTimeout(QScriptValue callback, int mdelay) {
+        int timerId = startTimer(mdelay);
+        _timers.insert(timerId, callback);
+        return timerId;
+    }
+
+    inline void clearTimeout(int handle) {
+        _timers.remove(handle);
+        killTimer(handle);
+    }
+
     inline qreal random() {return (qreal)qrand()/(qreal)INT_MAX;}
     QScriptValue eval(QString script);
 
@@ -62,6 +73,7 @@ signals:
     void stateChanged(MoeEngine::State state);
 
 protected:
+    void timerEvent(QTimerEvent *);
     void setState(State);
     void run();
 
@@ -73,6 +85,7 @@ private:
     QString _error;
     QEventLoop* _eventLoop;
     QScriptEngine* _scriptEngine;
+    QMap<int, QScriptValue> _timers;
     QMap<QString, QObject*> _environment;
     QMap<QString, QMetaObject*> _classes;
     static QThreadStorage<MoeEnginePointer> _engine;

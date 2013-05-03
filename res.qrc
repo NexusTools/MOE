@@ -3,5 +3,6 @@
         <file>data/content-select/init.js</file>
         <file>data/shared.js</file>
         <file>data/rgb.txt</file>
+        <file>data/prototype.js</file>
     </qresource>
 </RCC>

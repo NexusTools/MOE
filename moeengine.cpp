@@ -5,6 +5,7 @@
 #include "moegraphicscontainer.h"
 #include "moegraphicstext.h"
 
+#include <QTimerEvent>
 #include <QScriptEngine>
 #include <QElapsedTimer>
 #include <QEventLoop>
@@ -32,6 +33,15 @@ MoeEngine::~MoeEngine()
         qWarning() << "Destroying Engine while Running" << this;
         quit();
         wait();
+    }
+}
+
+void MoeEngine::timerEvent(QTimerEvent* ev) {
+    if(_scriptEngine) {
+        if(_timers.contains(ev->timerId())) {
+            _timers.take(ev->timerId()).call();
+            killTimer(ev->timerId());
+        }
     }
 }
 
@@ -69,7 +79,7 @@ void MoeEngine::debug(QVariant data)
 
 void MoeEngine::exceptionThrown(QScriptValue exception)
 {
-    abort(exception.toString());
+    abort(QString("%1:%2\n%3").arg(exception.property("fileName").toString()).arg(exception.property("lineNumber").toNumber()).arg(exception.toString()));
 }
 
 void MoeEngine::includeFile(QString filePath){
@@ -128,6 +138,12 @@ void MoeEngine::run()
     globalObject.setProperty("GraphicsText", scriptEngine.newQMetaObject(&MoeGraphicsText::staticMetaObject));
     globalObject.setProperty("RenderRecorder", scriptEngine.newQMetaObject((QMetaObject*)&RenderRecorder::staticMetaObject));
 
+    includeFile(":/data/prototype.js");
+    if(scriptEngine.hasUncaughtException()) {
+        exceptionThrown(scriptEngine.uncaughtException());
+        return;
+    }
+
     includeFile(":/data/shared.js");
     if(scriptEngine.hasUncaughtException()) {
         exceptionThrown(scriptEngine.uncaughtException());
@@ -163,6 +179,11 @@ void MoeEngine::run()
 
         nextWait += _tickWait - timer.restart();
     }
+
+    foreach(int timerId, _timers.keys())
+        killTimer(timerId);
+    _timers.clear();
+
     _eventLoop = 0;
     qDebug() << "Engine Exited Main Loop";
 
