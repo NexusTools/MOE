@@ -24,7 +24,13 @@ int main(int argc, char *argv[])
     MoeEngine* engine = new MoeEngine(parser.toMap());
     if(!isHeadless)
         CrashDialog::init(engine);
-    engine->startContent(QString(":/data/%1/").arg(parser.value("content", "content-select").toString()));
+
+    if(parser.contains("example"))
+        engine->startContent(QString(":/data/examples/%1/").arg(parser.value("example").toString()));
+    else if(parser.contains("content") || parser.hasDefaultValue())
+        engine->startContent(parser.value("content", parser.defaultValue()).toString());
+    else
+        engine->startContent(":/data/content-select/");
 
     return app->exec();
 }

@@ -169,9 +169,8 @@ protected:
     explicit inline MoeAbstractGraphicsSurface(AbstractSurfaceBackend* backend, MoeObject* par =0) : MoeGraphicsContainer(par) {
         _connected = false;
         renderState = NotReady;
-        _background = QColor(Qt::darkMagenta).rgba();
-        _foreground = qRgba(0, 0, 0, 0);
-        _border = qRgba(0, 0, 0, 0);
+        _background = Qt::darkMagenta;
+        _border = Qt::transparent;
         repaintDebug = RepaintDebugOff;
         qRegisterMetaType<RenderInstructions>("RenderInstructions");
 

@@ -19,14 +19,14 @@ public:
     Q_INVOKABLE void parse(QStringList args);
     Q_INVOKABLE inline QString lastError() const{return _error;}
 
-    Q_INVOKABLE inline QVariant defaultValue(QString def =QString()) const{return value("", def);}
-    Q_INVOKABLE inline QVariant value(QString key, QString def =QString()) const{return _args.value(key, def);}
+    Q_INVOKABLE inline bool hasDefaultValue() const{return contains("");}
+    Q_INVOKABLE inline QVariant defaultValue(QVariant def =QVariant()) const{return value("", def);}
+    Q_INVOKABLE inline QVariant value(QString key, QVariant def =QVariant()) const{return _args.value(key, def);}
     Q_INVOKABLE inline bool contains(QString key) const{return _args.contains(key);}
     Q_INVOKABLE inline void insert(QString key, QVariant val) {_args.insert(key, val);}
 
-    Q_INVOKABLE QStringList keys() const;
-
     inline QVariantMap toMap() const{return _args;}
+    Q_INVOKABLE QStringList keys() const;
 
 private:
     QVariantMap _args;

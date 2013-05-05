@@ -41,9 +41,10 @@ public:
     Q_INVOKABLE explicit inline MoeGraphicsObject(MoeObject* parent =0) : MoeObject(parent), _scale(1, 1) {
         if(container())
             setContainer(container());
-        _background = QColor(0, 0, 0, 0);
-        _foreground = QColor(0, 0, 0);
-        _border = QColor(0, 0, 0, 0);
+
+        _foreground = Qt::black;
+        _background = Qt::transparent;
+        _border = Qt::transparent;
         _borderRadius = 0;
         _opacity = 1;
     }

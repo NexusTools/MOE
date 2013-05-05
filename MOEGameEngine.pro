@@ -54,11 +54,12 @@ FORMS    += \
     crashdialog.ui
 
 OTHER_FILES += \
-	data/content-select/init.js \
     data/shared.js \
     data/rgb.txt \
     data/prototype.js \
-    data/examples/image-viewer/init.js
+    data/content-select/init.js \
+    data/examples/image-viewer/init.js \
+    data/examples/crash/init.js
 
 RESOURCES += \
 	res.qrc
