@@ -4,6 +4,7 @@
 #include <QMap>
 #include <QHash>
 #include <QObject>
+#include <QVariant>
 #include <QPointer>
 #include <QScriptable>
 #include <QScriptValue>
@@ -29,8 +30,8 @@ public:
     virtual MoeEngine* engine() const;
 
     inline MoeObjectPtr ptr() const{return (MoeObjectPtr)this;}
-    inline MoeObject* instanceForPtr(MoeObjectPtr) const{
-        return instances.localData().value(ptr()).data();
+    template<typename T> static inline T* instance(MoeObjectPtr ptr) {
+        return qobject_cast<T*>(instances.localData().value(ptr).data());
     }
     inline int countInstances() {
         return instances.localData().count();

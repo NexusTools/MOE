@@ -110,6 +110,20 @@ void qpointfFromScriptValue(const QScriptValue &object, QPointF &out)
     out.setY(object.property("y").toNumber());
 }
 
+QScriptValue qpointToScriptValue(QScriptEngine *engine, QPoint const &in)
+{
+    QScriptValue rect = engine->newObject();
+    rect.setProperty("x", in.x());
+    rect.setProperty("y", in.y());
+    return rect;
+}
+
+void qpointFromScriptValue(const QScriptValue &object, QPoint &out)
+{
+    out.setX(object.property("x").toInt32());
+    out.setY(object.property("y").toInt32());
+}
+
 QScriptValue qcolorToScriptValue(QScriptEngine *engine, QColor const &in)
 {
     QScriptValue rgb = engine->newObject();
@@ -263,7 +277,9 @@ void __moe_registerScriptConverters(QScriptEngine* eng) {
     qScriptRegisterMetaType<MoeGraphicsContainer*>(eng, graphicsContainerToScriptValue, graphicsContainerFromScriptValue);
 
     qScriptRegisterMetaType<QCursor>(eng, qcursorToScriptValue, qcursorFromScriptValue);
+
     qScriptRegisterMetaType<QPointF>(eng, qpointfToScriptValue, qpointfFromScriptValue);
+    qScriptRegisterMetaType<QPoint>(eng, qpointToScriptValue, qpointFromScriptValue);
 
     qScriptRegisterMetaType<QSizeF>(eng, qsizefToScriptValue, qsizefFromScriptValue);
     qScriptRegisterMetaType<QSize>(eng, qsizeToScriptValue, qsizeFromScriptValue);

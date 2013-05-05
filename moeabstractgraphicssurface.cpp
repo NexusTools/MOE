@@ -24,7 +24,6 @@ void MoeAbstractGraphicsSurface::render(RenderRecorder* p, QRect region)
         p = new RenderRecorder(repaintDebug == RepaintDebugFrame ? _localGeometry : region);
 
     MoeGraphicsContainer::render(p, repaintDebug == RepaintDebugFrame ? _localGeometry : region);
-
     if(!renderForParent) {
         if(repaintDebug) {
             foreach(QRect rect, repaintRegions)

@@ -3,6 +3,10 @@ function clearTimeout(handle) {engine.clearTimeout(handle);}
 
 function Noop(){}
 
+Math.clamp = function(min, val, max){
+    return Math.max(min, Math.min(max, val))
+}
+
 function Font(family, size) {
     return {"family": family, "size": size};
 }

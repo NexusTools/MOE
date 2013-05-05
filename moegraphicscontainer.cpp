@@ -81,7 +81,7 @@ void MoeGraphicsObject::setContainer(MoeGraphicsContainer *contain) {
 }
 
 void MoeGraphicsContainer::render(RenderRecorder * p, QRect region) {
-    p->setPen(_foreground);
+    p->setPen(_foreground, 1);
 
     paintImpl(p, region);
     emit paint(p);

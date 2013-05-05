@@ -36,35 +36,6 @@ public:
     Q_INVOKABLE virtual inline bool isRemote() const{return false;}
 
 public slots:
-    inline void repaint(QRect region =QRect()){
-        if(!_connected)
-            return;
-
-        if(region.isNull() || _background.alpha() < 255)
-            region = _localGeometry;
-        else
-            region &= _localGeometry;
-
-        //qDebug() << "Request to Repaint" << this << region;
-        if(region.isEmpty())
-            return;
-
-        if(repaintDebug)
-            repaintRegions.append(region);
-
-        if(repaintRegion.isEmpty())
-            repaintRegion = region;
-        else
-            repaintRegion |= region;
-
-        if(renderState.testFlag(ViewReady) && !renderState.testFlag(SurfaceDirty)){
-            //qDebug() << "Starting Repaint Timer";
-            renderTimer.start();
-        }
-
-         renderState |= SurfaceDirty;
-    }
-
     inline void enableRepaintDebug(bool fullFrame =true, QColor repaintColor =QColor(0, 250, 0, 60)) {
         repaintDebug = fullFrame ? RepaintDebugFrame : RepaintDebugArea;
         this->repaintColor = repaintColor;
@@ -191,6 +162,36 @@ protected:
         renderTimer.moveToThread(thread());
         connect(&renderTimer, SIGNAL(timeout()), this, SLOT(renderNow()));
         setGeometry(backend->geom());
+    }
+
+
+    inline void repaint(QRect region =QRect()){
+        if(!_connected)
+            return;
+
+        if(region.isNull() || _background.alpha() < 255)
+            region = _localGeometry;
+        else
+            region &= _localGeometry;
+
+        //qDebug() << "Request to Repaint" << this << region;
+        if(region.isEmpty())
+            return;
+
+        if(repaintDebug)
+            repaintRegions.append(region);
+
+        if(repaintRegion.isEmpty())
+            repaintRegion = region;
+        else
+            repaintRegion |= region;
+
+        if(renderState.testFlag(ViewReady) && !renderState.testFlag(SurfaceDirty)){
+            //qDebug() << "Starting Repaint Timer";
+            renderTimer.start();
+        }
+
+         renderState |= SurfaceDirty;
     }
 
     inline void updateCursor(QCursor cur) {

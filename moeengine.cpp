@@ -96,6 +96,12 @@ void MoeEngine::exceptionThrown(QScriptValue exception)
             message += "\n\nStack Trace\n--------------------------";
             foreach(QString stack, _scriptEngine->uncaughtExceptionBacktrace())
                 message += '\n' + stack;
+        } else if(exception.property("lineNumber").isNumber() &&
+                    exception.property("fileName").isString()) {
+            message += "\non ";
+            message += exception.property("fileName").toString();
+            message += ':';
+            message += QString("%1").arg(exception.property("lineNumber").toInt32());
         }
         abort(message);
     }

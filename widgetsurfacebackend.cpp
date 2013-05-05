@@ -42,6 +42,7 @@ bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
                         }
 
                         p.begin(&buffer);
+                        p.setRenderHint(QPainter::Antialiasing);
                         paint(p);
                         p.end();
                     }

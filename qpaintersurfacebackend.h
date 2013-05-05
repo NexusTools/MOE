@@ -48,7 +48,7 @@ public:
                     if(inst.arguments.isEmpty())
                         p.setPen(Qt::NoPen);
                     else
-                        p.setPen(QColor::fromRgba(inst.arguments.at(0).toUInt()));
+                        p.setPen(QPen(QColor::fromRgba(inst.arguments.at(0).toUInt()), inst.arguments.at(1).toInt()));
                     break;
 
                 case RenderInstruction::UpdateBrush:

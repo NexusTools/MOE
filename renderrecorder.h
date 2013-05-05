@@ -16,6 +16,8 @@ public:
     explicit inline RenderRecorder(QRect rect) {
         cbrush = QColor(Qt::darkMagenta);
         brush = cbrush;
+        cPenThick = 1;
+        penThick = cPenThick;
         cpen = QColor(0,0,0);
         pen = cpen;
         clipRect = rect;
@@ -130,8 +132,14 @@ public slots:
         _instructions.append(instruction);
     }
 
-    inline void setPen(QColor c){
+    inline void setPenThickness(int thick) {
+        penThick = thick;
+    }
+
+    inline void setPen(QColor c, int thickness =-1){
         pen = c;
+        if(thickness > 0)
+            penThick = thickness;
     }
 
     inline void setBrush(QColor c){
@@ -172,12 +180,15 @@ public:
 
 protected:
     inline void updatePen() {
-        if(cpen != pen) {
+        if(cpen != pen || penThick != cPenThick) {
             RenderInstruction instruction;
             instruction.type = RenderInstruction::UpdatePen;
-            if(pen.alpha() > 0)
+            if(pen.alpha() > 0) {
                 instruction.arguments.append((unsigned int)pen.rgba());
+                instruction.arguments.append(penThick);
+            }
             _instructions.append(instruction);
+            cPenThick = penThick;
             cpen = pen;
         }
     }
@@ -265,6 +276,7 @@ private:
     RenderInstructions _instructions;
     QTransform _transform;
 
+    int penThick, cPenThick;
     QFont font, cfont;
     QColor pen, brush;
     QColor cpen, cbrush;
