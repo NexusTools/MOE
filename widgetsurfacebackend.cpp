@@ -112,6 +112,7 @@ void WidgetSurfaceBackend::createWidget(QString title, QSize size, int type, QWi
             break;
     }
 
+    connect(this, SIGNAL(destroyed()), widget, SLOT(deleteLater()));
     widget->setParent(parent);
     widget->setWindowTitle(title);
     widget->resize(size);

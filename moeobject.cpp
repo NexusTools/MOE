@@ -5,9 +5,12 @@
 #include <QDebug>
 #include <QColor>
 
+QThreadStorage<MoeObjectPtrMap> MoeObject::instances;
+
 MoeObject::MoeObject(MoeObject* parent) : QObject(parent)
 {
     moveToThread(MoeEngine::threadEngine().data());
+    instances.localData().insert(ptr(), MoeObjectPointer(this));
     connect(engine(), SIGNAL(destroyed()), this, SLOT(deleteLater()));
 }
 

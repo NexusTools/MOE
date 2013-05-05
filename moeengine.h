@@ -54,7 +54,6 @@ public:
 
 public slots:
     void quit();
-    void abort(QString reason, bool crash =true);
 
     inline int setTimeout(QScriptValue callback, int mdelay) {
         int timerId = startTimer(mdelay);
@@ -84,6 +83,7 @@ signals:
     void stateChanged(MoeEngine::State state);
 
 protected:
+    void abort(QString reason, bool crash =true);
     void timerEvent(QTimerEvent *);
     void setState(State);
     void run();

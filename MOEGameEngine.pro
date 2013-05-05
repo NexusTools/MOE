@@ -26,7 +26,8 @@ SOURCES += main.cpp\
     moescriptregisters.cpp \
     moegraphicsimage.cpp \
     moeabstractgraphicssurface.cpp \
-    widgetsurfacebackend.cpp
+    widgetsurfacebackend.cpp \
+    crashdialog.cpp
 
 HEADERS  += \
 	qargumentparser.h \
@@ -46,9 +47,11 @@ HEADERS  += \
     renderinstruction.h \
     abstractsurfacebackend.h \
     qpaintersurfacebackend.h \
-    widgetsurfacebackend.h
+    widgetsurfacebackend.h \
+    crashdialog.h
 
-FORMS    +=
+FORMS    += \
+    crashdialog.ui
 
 OTHER_FILES += \
 	data/content-select/init.js \

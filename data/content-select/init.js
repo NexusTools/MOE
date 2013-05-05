@@ -1,5 +1,7 @@
 
 var surface = new GraphicsSurface("Select Content (MOE Game Engine v" + engine.version + ")", Size(800, 600));
+surface.background = "dark magenta";
+
 var title = new GraphicsText("Select Content", Font("Arial", 16), surface);
 title.foreground = "white";
 
@@ -9,4 +11,6 @@ surface.resized.connect(function(size){
 
 setTimeout(function(){
     surface.setSize(300, 300);
+    quit();
 }, 2000);
+

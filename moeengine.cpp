@@ -21,11 +21,11 @@ MoeEngine::MoeEngine(QVariantMap args) {
     makeCurrent();
     _arguments = args;
     _scriptEngine = 0;
+    _state = Stopped;
     _eventLoop = 0;
 
     moveToThread(this);
     setTicksPerSecond(24);
-    setState(Stopped);
 }
 
 MoeEngine::~MoeEngine()
@@ -44,12 +44,18 @@ void MoeEngine::timerEvent(QTimerEvent* ev) {
         if(_timers.contains(ev->timerId())) {
             _timers.take(ev->timerId()).call();
             killTimer(ev->timerId());
+
+            if(_scriptEngine->hasUncaughtException())
+                exceptionThrown(_scriptEngine->uncaughtException());
         }
     }
 }
 
 void MoeEngine::setState(State state)
 {
+    static QMetaEnum stateEnum = MoeEngine::staticMetaObject.enumerator(MoeEngine::staticMetaObject.indexOfEnumerator("State"));
+    qDebug() << "Engine State Changed" << stateEnum.key(state) << "from" << stateEnum.key(_state);
+
     if(_state == state)
         return;
 
@@ -73,7 +79,8 @@ QScriptValue MoeEngine::eval(QString script)
 
 void MoeEngine::quit()
 {
-    abort("Received Quit Signal");
+    if(_scriptEngine)
+        _scriptEngine->currentContext()->throwError("Engine Quit");
 }
 
 void MoeEngine::debug(QVariant data)
@@ -83,8 +90,16 @@ void MoeEngine::debug(QVariant data)
 
 void MoeEngine::exceptionThrown(QScriptValue exception)
 {
-    if(_state == Starting || _state == Running)
-        abort(QString("%1:%2\n%3").arg(exception.property("fileName").toString()).arg(exception.property("lineNumber").toNumber()).arg(exception.toString()));
+    if(_state == Starting || _state == Running) {
+        QString message("An unhandled exception occured.\n");
+        message += exception.toString();
+        if(!_scriptEngine->uncaughtExceptionBacktrace().isEmpty()) {
+            message += "\n\nStack Trace\n--------------------------";
+            foreach(QString stack, _scriptEngine->uncaughtExceptionBacktrace())
+                message += '\n' + stack;
+        }
+        abort(message);
+    }
 }
 
 void MoeEngine::includeFile(QString filePath){
@@ -131,7 +146,6 @@ void MoeEngine::run()
         globalObject.setProperty(key, _scriptEngine->newQMetaObject(metaObject));
     }
 
-
     QVariantMap environmentToLoad = _environment;
     QVariant engine;
     engine.setValue<QObject*>((QObject*)this);
@@ -157,6 +171,7 @@ void MoeEngine::run()
 
         _scriptEngine = 0;
         _eventLoop = 0;
+        exit(0);
         return;
     }
 
@@ -166,6 +181,7 @@ void MoeEngine::run()
 
         _scriptEngine = 0;
         _eventLoop = 0;
+        exit(0);
         return;
     }
 
@@ -175,6 +191,7 @@ void MoeEngine::run()
 
         _scriptEngine = 0;
         _eventLoop = 0;
+        exit(0);
         return;
     }
 
@@ -209,18 +226,20 @@ void MoeEngine::run()
     _eventLoop = 0;
     _scriptEngine = 0;
     setState(Stopped);
+    exit(0);
 }
 
 void MoeEngine::abort(QString reason, bool crash)
 {
-    qCritical() << "Execution Aborted" << reason;
     _error = reason;
+    setState(crash ? Crashed : Stopped);
+    qCritical() << "Execution Aborted" << reason;
+
     if(!_eventLoop)
         return;
 
     _scriptEngine->abortEvaluation();
     _eventLoop->exit(1);
-    setState(crash ? Crashed : Stopped);
 }
 
 void MoeEngine::registerClass(const QMetaObject* metaObject)

@@ -172,6 +172,7 @@ protected:
         _backend = backend;
         connect(backend, SIGNAL(mouseMove(QPoint)), this, SLOT(mouseMove(QPoint)), Qt::QueuedConnection);
 
+        connect(this, SIGNAL(destroyed()), backend, SLOT(deleteLater()), Qt::QueuedConnection);
         connect(this, SIGNAL(resized(QSizeF)), backend, SLOT(setSize(QSizeF)), Qt::QueuedConnection);
         connect(this, SIGNAL(moved(QPointF)), backend, SLOT(setPos(QPointF)), Qt::QueuedConnection);
 

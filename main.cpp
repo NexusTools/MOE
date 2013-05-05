@@ -1,4 +1,5 @@
 #include "qargumentparser.h"
+#include "crashdialog.h"
 #include "moeengine.h"
 
 #include <QApplication>
@@ -21,20 +22,8 @@ int main(int argc, char *argv[])
         app = new QApplication(argc, argv);
 
     MoeEngine* engine = new MoeEngine(parser.toMap());
-    if(isHeadless) {
-        QObject::connect(engine, &MoeEngine::crashed, [=] (QString error) {
-            QMessageBox* messageBox = new QMessageBox();
-            messageBox->setText(error);
-            messageBox->setWindowTitle("Engine Crashed");
-            messageBox->exec();
-            qApp->quit();
-        });
-    } else
-        QObject::connect(engine, &MoeEngine::crashed, [=] (QString error) {
-            qDebug() << error;
-            qApp->quit();
-        });
-    QObject::connect(engine, SIGNAL(crashed(QString)), qApp, SLOT(quit()), Qt::QueuedConnection);
+    if(!isHeadless)
+        CrashDialog::init(engine);
     engine->startContent(QString(":/data/%1/").arg(parser.value("content", "content-select").toString()));
 
     return app->exec();
