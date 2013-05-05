@@ -65,8 +65,9 @@ public slots:
          renderState |= SurfaceDirty;
     }
 
-    inline void enableRepaintDebug(bool fullFrame =true) {
+    inline void enableRepaintDebug(bool fullFrame =true, QColor repaintColor =QColor(0, 250, 0, 60)) {
         repaintDebug = fullFrame ? RepaintDebugFrame : RepaintDebugArea;
+        this->repaintColor = repaintColor;
     }
 
     inline void disableRepaintDebug() {
@@ -229,6 +230,7 @@ private:
     QList<QRect> repaintRegions;
     RenderState renderState;
     QCursor activeCursor;
+    QColor repaintColor;
     QRect repaintRegion;
     QTimer renderTimer;
     bool _connected;

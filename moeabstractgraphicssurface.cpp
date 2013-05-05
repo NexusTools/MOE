@@ -27,9 +27,9 @@ void MoeAbstractGraphicsSurface::render(RenderRecorder* p, QRect region)
 
     if(!renderForParent) {
         if(repaintDebug) {
-            foreach(QRect rect, repaintRegions) {
-                p->fillRect(rect, qRgba(0, 250, 0, 60));
-            }
+            foreach(QRect rect, repaintRegions)
+                p->fillRect(rect, repaintColor);
+
             repaintRegions.clear();
         }
 

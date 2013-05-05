@@ -1,7 +1,7 @@
 
 var surface = new GraphicsSurface("Image Viewer Example (MOE Game Engine v" + engine.version + ")", Size(800, 600));
 
-//surface.enableRepaintDebug(false);
+surface.enableRepaintDebug(false);
 //engine.setTicksPerSecond(60);
 
 var boardPage = new GraphicsContainer(surface);
