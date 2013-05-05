@@ -79,8 +79,7 @@ QScriptValue MoeEngine::eval(QString script)
 
 void MoeEngine::quit()
 {
-    if(_scriptEngine)
-        _scriptEngine->currentContext()->throwError("Engine Quit");
+    abort("Engine Quit", false);
 }
 
 void MoeEngine::debug(QVariant data)

@@ -3,8 +3,9 @@
 
 #include "renderinstruction.h"
 
-#include <QDebug>
 #include <QCursor>
+#include <QTimer>
+#include <QDebug>
 #include <QRect>
 
 class AbstractSurfaceBackend : public QObject {
@@ -21,7 +22,11 @@ public slots:
     virtual void setTitle(QString t) =0;
 
     inline void setGeometry(QRect geom) {
-        if(_geom == geom)
+        if(_geom == geom) {
+            _waitForGeomResize = false;
+            return;
+        }
+        if(_waitForGeomResize)
             return;
 
         _geom = geom;
@@ -41,8 +46,8 @@ protected slots:
             return;
 
         _geom = geom;
-        qDebug() << "Geometry Updated" << geom << _geom;
-        emit geometryChanged(geom);
+        _waitForGeomResize = true;
+        geometryUpdateTimer.start();
     }
     inline void updatePos(QPoint pos) {
         updateGeometry(QRect(pos, _geom.size()));
@@ -51,8 +56,17 @@ protected slots:
         updateGeometry(QRect(_geom.topLeft(), size));
     }
 
+private slots:
+    inline void updateGeometryNow() {
+        emit geometryChanged(_geom);
+    }
+
 protected:
-    explicit inline AbstractSurfaceBackend(QRect geom) {
+    explicit inline AbstractSurfaceBackend(QRect geom =QRect()) {
+        geometryUpdateTimer.setSingleShot(true);
+        geometryUpdateTimer.setInterval(0);
+        connect(&geometryUpdateTimer, SIGNAL(timeout()), this, SLOT(updateGeometryNow()));
+        _waitForGeomResize = true;
         _geom = geom;
     }
 
@@ -66,6 +80,8 @@ signals:
     void mouseRelease(QPoint,int);
 
 private:
+    QTimer geometryUpdateTimer;
+    bool _waitForGeomResize;
     QRect _geom;
 };
 

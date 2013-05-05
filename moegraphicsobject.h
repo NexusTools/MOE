@@ -238,8 +238,9 @@ private:
     inline void mouseReleasedEvent(QPoint p, int i) {
         emit mouseReleased(p, i);
     }
-    virtual inline void mouseMovedEvent(QPoint p) {
+    virtual inline MoeGraphicsObject* mouseMovedEvent(QPoint p) {
         emit mouseMoved(p);
+        return this;
     }
     inline void mouseDraggedEvent(QPoint p) {
         emit mouseDragged(p);

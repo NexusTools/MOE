@@ -35,7 +35,6 @@ public slots:
         }
 
         rect = transform.mapRect(rect);
-
         if(!clipRect.intersects(rect))
             return;
         rect &= clipRect;
@@ -56,7 +55,7 @@ public slots:
         if(!clipRect.intersects(targetRect))
             return;
 
-        if(transform.isScaling() || transform.isRotating()) {
+        if(transform.isScaling()) {
             requireTransform();
             targetRect = rect;
         } else {
@@ -235,7 +234,7 @@ protected:
     }
 
     inline void noTransform() {
-        if(transform.type()) {
+        if(cTransform.type()) {
             RenderInstruction instruction;
             instruction.type = RenderInstruction::UpdateTransform;
             _instructions.append(instruction);

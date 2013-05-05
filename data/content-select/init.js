@@ -11,6 +11,4 @@ surface.resized.connect(function(size){
 
 setTimeout(function(){
     surface.setSize(300, 300);
-    quit();
 }, 2000);
-

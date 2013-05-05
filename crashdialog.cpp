@@ -11,8 +11,6 @@ CrashDialog::CrashDialog(MoeEngine* engine, bool quitOnClose) :
 
     if(quitOnClose)
         connect(this, SIGNAL(rejected()), qApp, SLOT(quit()));
-    else
-        connect(this, SIGNAL(rejected()), engine, SLOT(deleteLater()), Qt::DirectConnection);
 
     connect(engine, SIGNAL(destroyed()), this, SLOT(deleteLater()), Qt::QueuedConnection);
     connect(engine, SIGNAL(crashed(QString)), this, SLOT(showError(QString)), Qt::QueuedConnection);

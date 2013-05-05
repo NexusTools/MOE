@@ -103,12 +103,12 @@ void MoeGraphicsContainer::renderChildren(RenderRecorder * p, QRect region){
     }
 }
 
-void MoeGraphicsContainer::mouseMovedEvent(QPoint p){
+MoeGraphicsObject *MoeGraphicsContainer::mouseMovedEvent(QPoint p){
     updateChildCache();
-    if(canUseMouseFocus())
-        MoeGraphicsObject::mouseMovedEvent(p);
+    MoeGraphicsObject::mouseMovedEvent(p);
 
-    qDebug() << mouseMovedWatchers;
+    MoeGraphicsObject* lastHover = _hoverFocus.data();
+    MoeGraphicsObject* newHover = 0;
     QListIterator<MoeGraphicsObject*> iterator(mouseMovedWatchers);
     iterator.toBack();
     while(iterator.hasPrevious()) {
@@ -116,9 +116,19 @@ void MoeGraphicsContainer::mouseMovedEvent(QPoint p){
         qDebug() << child << child->realGeometry() << p;
         if(child->realGeometry().contains(p)) {
             child->mouseMovedEvent(child->mapFromParent(p));
-            return;
+            newHover = child;
+            break;
         }
     }
+    if(newHover != lastHover) {
+        if(lastHover)
+            lastHover->mouseLeaveEvent();
+        _hoverFocus = newHover;
+        if(newHover)
+            newHover->mouseLeaveEvent();
+    }
+
+    return newHover ? newHover : this;
 }
 
 void MoeGraphicsContainer::markChildCacheDirty() {

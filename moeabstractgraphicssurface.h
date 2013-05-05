@@ -105,18 +105,8 @@ protected slots:
 
         if(!mouseDragFocus.isNull())
             mouseDragFocus.data()->mouseDraggedEvent(mouseDragFocus.data()->mapFromSurface(p));
-        else {
-            MoeGraphicsObject* oldHoverFocus = mouseHoverFocus.data();
-            MoeGraphicsContainer::mouseMovedEvent(p);
-            if(mouseHoverFocus.data() != oldHoverFocus) {
-                if(oldHoverFocus)
-                    oldHoverFocus->mouseLeaveEvent();
-                if(!mouseHoverFocus.isNull()) {
-                    mouseHoverFocus.data()->mouseEnterEvent();
-                    updateCursor(mouseHoverFocus.data()->cursor());
-                }
-            }
-        }
+        else
+            mouseHoverFocus = MoeGraphicsContainer::mouseMovedEvent(p);
     }
 
     inline void mousePress(QPoint p, int b){
@@ -188,14 +178,6 @@ protected:
         setGeometry(backend->geom());
     }
 
-    inline void updateHoverTarget(MoeGraphicsObject* obj){
-        mouseHoverFocus = obj;
-    }
-
-    inline bool isHoverTarget(MoeGraphicsObject* obj) {
-        return mouseHoverFocus.data() == obj;
-    }
-
     inline void updateCursor(QCursor cur) {
         if(activeCursor.shape() == cur.shape())
             return;
@@ -223,9 +205,9 @@ private:
         RepaintDebugFrame
     };
 
-    QPointer<MoeGraphicsObject> keyboardFocus;
-    QPointer<MoeGraphicsObject> mouseHoverFocus;
-    QPointer<MoeGraphicsObject> mouseDragFocus;
+    MoeGraphicsObjectPointer keyboardFocus;
+    MoeGraphicsObjectPointer mouseDragFocus;
+    MoeGraphicsObjectPointer mouseHoverFocus;
 
     static QThreadStorage<MoeAbstractGraphicsSurfacePointer> _currentSurface;
     AbstractSurfaceBackend* _backend;

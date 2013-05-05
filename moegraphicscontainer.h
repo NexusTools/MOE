@@ -66,12 +66,15 @@ protected:
 private:
     void updateChildCache();
     void markChildCacheDirty();
-    void mouseMovedEvent(QPoint p);
+    MoeGraphicsObject* mouseMovedEvent(QPoint p);
 
     bool childCacheDirty;
     QList<MoeGraphicsObject*> mouseMovedWatchers;
     QList<MoeGraphicsObject*> visibleChildren;
     QList<MoeGraphicsObject*> children;
+
+    MoeGraphicsObjectPointer _hoverFocus;
+
 };
 
 #endif // MOEGRAPHICSCONTAINER_H

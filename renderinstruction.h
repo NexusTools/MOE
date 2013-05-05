@@ -6,8 +6,6 @@
 
 struct RenderInstruction {
     enum Type {
-        Initialize,
-
         FillRect,
         FillPolygon,
 
