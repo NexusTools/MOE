@@ -52,11 +52,9 @@ bool MoeGraphicsObject::canUseMouseFocus(){
 
 void MoeGraphicsObject::render(RenderRecorder *p, QRect region)
 {
-    p->pushOpacity(_opacity);
     p->setPen(_foreground);
     paintImpl(p, region);
     emit paint(p);
-    p->popOpacity();
 }
 
 void MoeGraphicsObject::paintImpl(RenderRecorder* p, QRect)
@@ -73,7 +71,7 @@ void MoeGraphicsObject::setGeometry(QRectF geom){
     if(_geometry == geom)
         return;
 
-    QRectF old = _geometry;
+    QRectF old(_geometry);
     _geometry = geom;
     if(old.topLeft() != geom.topLeft() && container())
         repaint();
@@ -129,9 +127,10 @@ void MoeGraphicsObject::setOpacity(qreal opacity) {
     if(opacity == _opacity)
         return;
 
+    qreal oldOpacity = _opacity;
     _opacity = opacity;
-    if((_opacity == 0 && opacity < 0) ||
-            (opacity == 0 && _opacity < 0))
-        notifyParentOfUpdate();
+    if((oldOpacity == 0 && opacity > 0) ||
+            (opacity == 0 && oldOpacity > 0))
+        updateLayoutTransform();
     repaint();
 }

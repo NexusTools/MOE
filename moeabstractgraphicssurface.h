@@ -89,6 +89,7 @@ protected slots:
         //qDebug() << "Request to Prepare Next Frame" << this;
         if(!_connected) {
             _connected = true;
+            emit connected();
             repaint();
         }
 

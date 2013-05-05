@@ -78,8 +78,10 @@ void MoeObject::animate(QString key, QScriptValue to, QScriptValue callback, qre
         }
     }
 
-    state->callback = callback;
-    state->modifier = modifier;
+    if(callback.isFunction())
+        state->callback = callback;
+
+    state->modifier = callback.isNumber() ? callback.toNumber() : modifier;
     if(addToList) {
         if(animations.isEmpty())
             connect(engine(), SIGNAL(tick()), this, SLOT(animateTick()));
@@ -102,16 +104,20 @@ T target = state->target.value<T>();
 #define ANIMATE_PROPERTY_REAL(READ, WRITE) qreal READ = val.READ(); \
     result |= smoothReal(READ, target.READ(), state->modifier); \
     if(result.testFlag(ValueChanged)) \
-        val.WRITE(READ); \
+        val.WRITE(READ);
 
 #define ANIMATE_PROPERTY_INT(READ, WRITE) int READ = val.READ(); \
     result |= smoothInt(READ, target.READ(), state->modifier); \
     if(result.testFlag(ValueChanged)) \
-        val.WRITE(READ); \
+        val.WRITE(READ);
 
+#define ANIMATE_END(T) if(result.testFlag(ValueChanged)) { \
+    metaProp.write(this, val); \
+}
 
-#define ANIMATE_END_GROUP(T) if(result.testFlag(ValueChanged)) \
-    metaProp.write(this, val);
+#define ANIMATE_REAL() qreal val = state->metaProp.read(this).toReal(); \
+result = smoothReal(val, state->target.toReal(), state->modifier); \
+ANIMATE_END(qreal)
 
 inline SoothResultFlags smoothReal(qreal& value, qreal to, qreal modifier) {
     if(value < to) {
@@ -134,13 +140,13 @@ inline SoothResultFlags smoothReal(qreal& value, qreal to, qreal modifier) {
 
 inline SoothResultFlags smoothInt(int& value, int to, qreal modifier) {
     if(value < to) {
-        value += (int)qCeil((qreal)(to - value)/modifier);
+        value += qCeil((qreal)(to - value)/modifier);
         if(value >= to) {
             value = to;
             return ValueChanged;
         }
     } else if(value > to) {
-        value -= (int)qCeil((qreal)(value - to)/modifier);
+        value -= qCeil((qreal)(value - to)/modifier);
         if(value <= to) {
             value = to;
             return ValueChanged;
@@ -166,18 +172,14 @@ void MoeObject::animateTick() {
                 ANIMATE_PROPERTY_INT(green, setGreen)
                 ANIMATE_PROPERTY_INT(blue, setBlue)
                 ANIMATE_PROPERTY_INT(alpha, setAlpha)
-                ANIMATE_END_GROUP(QColor)
+                ANIMATE_END(QColor)
 
                 break;
             }
 
             case QVariant::Double:
             {
-                qreal val = state->metaProp.read(this).toReal();
-                qreal target = state->target.toReal();
-                result = smoothReal(val, target, state->modifier);
-                if(result.testFlag(ValueChanged))
-                    metaProp.write(this, val);
+                ANIMATE_REAL()
                 break;
             }
 
