@@ -4,5 +4,6 @@
         <file>data/shared.js</file>
         <file>data/rgb.txt</file>
         <file>data/prototype.js</file>
+        <file>data/examples/image-viewer/init.js</file>
     </qresource>
 </RCC>

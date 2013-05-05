@@ -32,7 +32,6 @@ public:
     Q_INVOKABLE inline bool isVisibleToSurface() {return _connected;}
     Q_INVOKABLE inline bool isSurface() const{return true;}
     Q_INVOKABLE inline MoeAbstractGraphicsSurface* surface() {return this;}
-    Q_INVOKABLE inline void setTitle(QString title) {backend()->setTitle(title);}
 
     Q_INVOKABLE virtual inline bool isRemote() const{return false;}
 
@@ -105,8 +104,19 @@ protected slots:
 
         if(!mouseDragFocus.isNull())
             mouseDragFocus.data()->mouseDraggedEvent(mouseDragFocus.data()->mapFromSurface(p));
-        else
-            mouseHoverFocus = MoeGraphicsContainer::mouseMovedEvent(p);
+        else {
+            MoeGraphicsObjectPointer newHoverFocus = _localGeometry.contains(p) ? MoeGraphicsContainer::mouseMovedEvent(p) : 0;
+
+            if(mouseHoverFocus != newHoverFocus) {
+                if(!mouseHoverFocus.isNull())
+                    disconnect(mouseHoverFocus.data(), SIGNAL(cursorChanged(QCursor)), backend(), SLOT(setCursor(QCursor)));
+                mouseHoverFocus = newHoverFocus;
+                if(!mouseHoverFocus.isNull()) {
+                    connect(mouseHoverFocus.data(), SIGNAL(cursorChanged(QCursor)), backend(), SLOT(setCursor(QCursor)), Qt::DirectConnection);
+                    backend()->setCursor(mouseHoverFocus.data()->cursor());
+                }
+            }
+        }
     }
 
     inline void mousePress(QPoint p, int b){
@@ -153,7 +163,7 @@ protected:
     explicit inline MoeAbstractGraphicsSurface(AbstractSurfaceBackend* backend, MoeObject* par =0) : MoeGraphicsContainer(par) {
         _connected = false;
         renderState = NotReady;
-        _background = qRgb(0, 0, 0);
+        _background = QColor(Qt::darkMagenta).rgba();
         _foreground = qRgba(0, 0, 0, 0);
         _border = qRgba(0, 0, 0, 0);
         repaintDebug = RepaintDebugOff;

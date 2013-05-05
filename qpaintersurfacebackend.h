@@ -23,7 +23,7 @@ public:
         qDebug() << "Painting" << pendingInstructions.size() << "Instructions" << pendingPaintRect << pendingBufferSize;
 
         p.setPen(Qt::black);
-        p.setBrush(Qt::NoBrush);
+        p.setBrush(Qt::darkMagenta);
         p.setClipRect(pendingPaintRect);
 
         foreach(RenderInstruction inst, pendingInstructions) {

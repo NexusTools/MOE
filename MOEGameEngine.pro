@@ -57,7 +57,8 @@ OTHER_FILES += \
 	data/content-select/init.js \
     data/shared.js \
     data/rgb.txt \
-    data/prototype.js
+    data/prototype.js \
+    data/examples/image-viewer/init.js
 
 RESOURCES += \
 	res.qrc

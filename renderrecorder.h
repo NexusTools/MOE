@@ -14,8 +14,8 @@ class RenderRecorder : public MoeObject
     Q_OBJECT
 public:
     explicit inline RenderRecorder(QRect rect) {
-        cbrush = qRgba(0,0,0,0);
-        brush = qRgba(0,0,0,0);
+        cbrush = QColor(Qt::darkMagenta).rgba();
+        brush = cbrush;
         cpen = qRgb(0,0,0);
         pen = qRgb(0,0,0);
         clipRect = rect;

@@ -222,13 +222,9 @@ protected:
 
 private:
     inline void mouseEnterEvent(){
-        if(container())
-            ((MoeGraphicsObject*)container())->mouseEnterEvent();
         emit mouseEntered();
     }
-    inline void mouseLeaveEvent(){
-        if(container())
-            ((MoeGraphicsObject*)container())->mouseLeaveEvent();
+    inline virtual void mouseLeaveEvent(){
         emit mouseLeft();
     }
 
@@ -238,9 +234,9 @@ private:
     inline void mouseReleasedEvent(QPoint p, int i) {
         emit mouseReleased(p, i);
     }
-    virtual inline MoeGraphicsObject* mouseMovedEvent(QPoint p) {
+    virtual inline MoeGraphicsObjectPointer mouseMovedEvent(QPoint p) {
         emit mouseMoved(p);
-        return this;
+        return MoeGraphicsObjectPointer(this);
     }
     inline void mouseDraggedEvent(QPoint p) {
         emit mouseDragged(p);

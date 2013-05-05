@@ -4,6 +4,7 @@
 #include <QSharedPointer>
 #include <QNetworkReply>
 #include <QMutexLocker>
+#include <QDebug>
 #include <QTimer>
 
 class TransferDelegate;
@@ -35,7 +36,7 @@ public:
 protected slots:
     inline void emitState(){
         if(_progress == 1)
-            emit complete(currentData());
+            emit receivedData(currentData());
         else if(_progress >= 0)
             emit progress(currentProgress());
         else
@@ -44,7 +45,7 @@ protected slots:
 
 signals:
     void progress(float);
-    void complete(QByteArray);
+    void receivedData(QByteArray);
     void error(QString);
 
 protected slots:
@@ -65,7 +66,7 @@ protected slots:
             emit error(reply->errorString());
         } else {
             _data = reply->readAll();
-            emit complete(_data);
+            emit receivedData(_data);
          }
     }
 

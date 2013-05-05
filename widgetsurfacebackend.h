@@ -12,17 +12,17 @@ public:
     explicit WidgetSurfaceBackend(QString title, QSize size, int type, QWidget* parent);
     explicit WidgetSurfaceBackend(QWidget*);
 
-    inline void setTitle(QString t) {
-        _widget->setWindowTitle(t);
-    }
-
-    inline void setCursor(QCursor c) {
-        _widget->setCursor(c);
-    }
-
     inline void setGeometryImpl(QRect g) {
         if(_widget->geometry() != g)
             _widget->setGeometry(g);
+    }
+
+    inline void setCursorImpl(QCursor c) {
+        _widget->setCursor(c);
+    }
+
+    inline void setTitleImpl(QString s) {
+        _widget->setWindowTitle(s);
     }
 
     inline void repaint(QRect rect) {

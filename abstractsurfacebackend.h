@@ -11,15 +11,15 @@
 class AbstractSurfaceBackend : public QObject {
     Q_OBJECT
 public:
+    virtual void renderInstructions(RenderInstructions instructions, QRect, QSize) =0;
     inline QRect geom() const{return _geom;}
     inline QPoint pos() const{return _geom.topLeft();}
     inline QSize size() const{return _geom.size();}
 
-public slots:
-    virtual void renderInstructions(RenderInstructions instructions, QRect, QSize) =0;
-    virtual void setCursor(QCursor c) =0;
+protected slots:
+    virtual void setCursorImpl(QCursor g) =0;
     virtual void setGeometryImpl(QRect g) =0;
-    virtual void setTitle(QString t) =0;
+    virtual void setTitleImpl(QString g) =0;
 
     inline void setGeometry(QRect geom) {
         if(_geom == geom) {
@@ -40,7 +40,15 @@ public slots:
         setGeometry(QRect(p.toPoint(), _geom.size()));
     }
 
-protected slots:
+public slots:
+    inline void setCursor(QCursor c) {
+        emit updateCursor(c);
+    }
+
+    inline void setTitle(QString t) {
+        emit updateTitle(t);
+    }
+
     inline void updateGeometry(QRect geom) {
         if(_geom == geom)
             return;
@@ -65,12 +73,16 @@ protected:
     explicit inline AbstractSurfaceBackend(QRect geom =QRect()) {
         geometryUpdateTimer.setSingleShot(true);
         geometryUpdateTimer.setInterval(0);
-        connect(&geometryUpdateTimer, SIGNAL(timeout()), this, SLOT(updateGeometryNow()));
+        connect(&geometryUpdateTimer, SIGNAL(timeout()), this, SLOT(updateGeometryNow()), Qt::QueuedConnection);
+        connect(this, SIGNAL(updateCursor(QCursor)), this, SLOT(setCursorImpl(QCursor)), Qt::QueuedConnection);
+        connect(this, SIGNAL(updateTitle(QString)), this, SLOT(setTitleImpl(QString)), Qt::QueuedConnection);
         _waitForGeomResize = true;
         _geom = geom;
     }
 
 signals:
+    void updateTitle(QString);
+    void updateCursor(QCursor);
     void geometryChanged(QRect);
     void readyForFrame();
     void disconnected();

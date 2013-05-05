@@ -66,7 +66,8 @@ protected:
 private:
     void updateChildCache();
     void markChildCacheDirty();
-    MoeGraphicsObject* mouseMovedEvent(QPoint p);
+    MoeGraphicsObjectPointer mouseMovedEvent(QPoint p);
+    void mouseLeaveEvent();
 
     bool childCacheDirty;
     QList<MoeGraphicsObject*> mouseMovedWatchers;

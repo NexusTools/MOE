@@ -103,32 +103,34 @@ void MoeGraphicsContainer::renderChildren(RenderRecorder * p, QRect region){
     }
 }
 
-MoeGraphicsObject *MoeGraphicsContainer::mouseMovedEvent(QPoint p){
-    updateChildCache();
-    MoeGraphicsObject::mouseMovedEvent(p);
+void MoeGraphicsContainer::mouseLeaveEvent() {
+    MoeGraphicsObject::mouseLeaveEvent();
+    foreach(MoeGraphicsObject* obj, children)
+        obj->mouseLeaveEvent();
+}
 
-    MoeGraphicsObject* lastHover = _hoverFocus.data();
-    MoeGraphicsObject* newHover = 0;
+MoeGraphicsObjectPointer MoeGraphicsContainer::mouseMovedEvent(QPoint p){
+    updateChildCache();
+
+    MoeGraphicsObjectPointer newHover = MoeGraphicsObject::mouseMovedEvent(p);
     QListIterator<MoeGraphicsObject*> iterator(mouseMovedWatchers);
     iterator.toBack();
     while(iterator.hasPrevious()) {
         MoeGraphicsObject* child = iterator.previous();
-        qDebug() << child << child->realGeometry() << p;
         if(child->realGeometry().contains(p)) {
-            child->mouseMovedEvent(child->mapFromParent(p));
-            newHover = child;
+            newHover = child->mouseMovedEvent(child->mapFromParent(p));
             break;
         }
     }
-    if(newHover != lastHover) {
-        if(lastHover)
-            lastHover->mouseLeaveEvent();
+    if(newHover != _hoverFocus) {
+        if(!_hoverFocus.isNull())
+            _hoverFocus.data()->mouseLeaveEvent();
         _hoverFocus = newHover;
-        if(newHover)
-            newHover->mouseLeaveEvent();
+        if(!_hoverFocus.isNull())
+            _hoverFocus.data()->mouseEnterEvent();
     }
 
-    return newHover ? newHover : this;
+    return _hoverFocus;
 }
 
 void MoeGraphicsContainer::markChildCacheDirty() {
@@ -154,7 +156,6 @@ void MoeGraphicsContainer::updateChildCache(){
         }
     }
     childCacheDirty = false;
-    qDebug() << "Updated Child Layout" << this << visibleChildren << mouseMovedWatchers;
 }
 
 void MoeGraphicsContainer::updateLayoutTransform(){
