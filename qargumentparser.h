@@ -1,7 +1,7 @@
 #ifndef QARGUMENTPARSER_H
 #define QARGUMENTPARSER_H
 
-#include <QVariant>
+#include <QVariantMap>
 #include <QStringList>
 
 class QArgumentParser : public QObject
@@ -11,7 +11,7 @@ public:
     inline QArgumentParser() {}
     QArgumentParser(int argc, char *argv[]);
     QArgumentParser(char *args[]);
-    QArgumentParser(QHash<QString, QVariant> args);
+    QArgumentParser(QVariantMap args);
     QArgumentParser(QList<QVariant> args);
     QArgumentParser(QList<QByteArray> args);
     inline QArgumentParser(QStringList args) {parse(args);}
@@ -19,16 +19,17 @@ public:
     Q_INVOKABLE void parse(QStringList args);
     Q_INVOKABLE inline QString lastError() const{return _error;}
 
-    Q_INVOKABLE inline QVariant defaultValue() const{return value("");}
-    Q_INVOKABLE inline QHash<QString, QVariant> getArguments() const{return _args;}
-    Q_INVOKABLE inline QVariant value(QString key) const{return _args.value(key);}
+    Q_INVOKABLE inline QVariant defaultValue(QString def =QString()) const{return value("", def);}
+    Q_INVOKABLE inline QVariant value(QString key, QString def =QString()) const{return _args.value(key, def);}
     Q_INVOKABLE inline bool contains(QString key) const{return _args.contains(key);}
     Q_INVOKABLE inline void insert(QString key, QVariant val) {_args.insert(key, val);}
 
     Q_INVOKABLE QStringList keys() const;
 
+    inline QVariantMap toMap() const{return _args;}
+
 private:
-    QHash<QString, QVariant> _args;
+    QVariantMap _args;
     QString _error;
 };
 

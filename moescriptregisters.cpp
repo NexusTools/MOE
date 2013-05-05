@@ -82,6 +82,20 @@ void qsizefFromScriptValue(const QScriptValue &object, QSizeF &out)
     out.setHeight(object.property("height").toNumber());
 }
 
+QScriptValue qsizeToScriptValue(QScriptEngine *engine, QSize const &in)
+{
+    QScriptValue rect = engine->newObject();
+    rect.setProperty("width", in.width());
+    rect.setProperty("height", in.height());
+    return rect;
+}
+
+void qsizeFromScriptValue(const QScriptValue &object, QSize &out)
+{
+    out.setWidth(object.property("width").toInt32());
+    out.setHeight(object.property("height").toInt32());
+}
+
 QScriptValue qpointfToScriptValue(QScriptEngine *engine, QPointF const &in)
 {
     QScriptValue rect = engine->newObject();
@@ -252,9 +266,13 @@ void __moe_registerScriptConverters(QScriptEngine* eng) {
 
     qScriptRegisterMetaType<QCursor>(eng, qcursorToScriptValue, qcursorFromScriptValue);
     qScriptRegisterMetaType<QPointF>(eng, qpointfToScriptValue, qpointfFromScriptValue);
+
     qScriptRegisterMetaType<QSizeF>(eng, qsizefToScriptValue, qsizefFromScriptValue);
+    qScriptRegisterMetaType<QSize>(eng, qsizeToScriptValue, qsizeFromScriptValue);
+
     qScriptRegisterMetaType<QRectF>(eng, qrectfToScriptValue, qrectfFromScriptValue);
-    qScriptRegisterMetaType<QFont>(eng, qfontToScriptValue, qfontFromScriptValue);
     qScriptRegisterMetaType<QRect>(eng, qrectToScriptValue, qrectFromScriptValue);
+
+    qScriptRegisterMetaType<QFont>(eng, qfontToScriptValue, qfontFromScriptValue);
     qScriptRegisterMetaType<QRgb>(eng, qrgbToScriptValue, qrgbFromScriptValue);
 }

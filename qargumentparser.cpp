@@ -32,9 +32,9 @@ QArgumentParser::QArgumentParser(int argc, char *argv[])
     parse(_args);
 }
 
-QArgumentParser::QArgumentParser(QHash<QString, QVariant> args)
+QArgumentParser::QArgumentParser(QVariantMap args)
 {
-    QHashIterator<QString, QVariant> iterator(args);
+    QMapIterator<QString, QVariant> iterator(args);
     while(iterator.hasNext())
     {
         iterator.next();

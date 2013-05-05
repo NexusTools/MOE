@@ -1,4 +1,3 @@
-
 function setTimeout(callback, delay) {return engine.setTimeout(callback, delay);}
 function clearTimeout(handle) {engine.clearTimeout(handle);}
 
@@ -32,30 +31,40 @@ function Signal() {
     thisObject = this;
     this.connections = [];
     this.emit = function() {
-
+        var args = arguments;
+        thisObject.connections.forEach(function(handler){
+            handler(args);
+        });
     }
     this.connect = function(handler) {
-        thisObject.connections.push(handler);
+        if(!thisObject.connections.contains(handler))
+            thisObject.connections.push(handler);
     }
 }
 
-function ResourceGroupLoader(resources) {
+function GroupResourceRequest(resources) {
     var thisObject = this;
     this.resourceList = resources;
     this.resourceData = {};
+    var totalDownloads = 0;
 
     this.resourceList.forEach(function(res){
         thisObject.resourceData[res] = "";
-        var download = null;
+        var download = new ResourceRequest(res);
+        download.completed = function(data) {
+            thisObject.oneCompleted.emit();
+            thisObject.resourceData[res] = data;
+            totalDownloads--;
+            if(totalDownloads <= 0)
+                thisObject.completed.emit(thisObject.resourceData);
+        }
+        totalDownloads++;
     });
 
-    this.completed = {
-    };
+    this.complete = new Signal();
+    this.progress = new Signal();
+    this.oneCompleted = new Signal();
 }
-
-setTimeout(function tunaFish(){
-    engine.debug("Test");
-});
 
 //Dummy Console
 var Console = {

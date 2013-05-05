@@ -44,7 +44,8 @@ var Class = (function() {
     if (parent) {
       subclass.prototype = parent.prototype;
       klass.prototype = new subclass;
-      parent.subclasses.push(klass);
+      if("subclasses" in parent)
+        parent.subclasses.push(klass);
     }
 
     for (var i = 0, length = properties.length; i < length; i++)
@@ -108,6 +109,7 @@ var Class = (function() {
       NUMBER_TYPE = 'Number',
       STRING_TYPE = 'String',
       OBJECT_TYPE = 'Object',
+      NATIVE_CLASS = 'function',
       FUNCTION_CLASS = '[object Function]',
       BOOLEAN_CLASS = '[object Boolean]',
       NUMBER_CLASS = '[object Number]',
@@ -265,10 +267,6 @@ var Class = (function() {
     return extend({ }, object);
   }
 
-  function isGraphicsObject(object) {
-    return object instanceof MoeGraphicsObject;
-  }
-
   function isArray(object) {
     return _toString.call(object) === ARRAY_CLASS;
   }
@@ -285,7 +283,7 @@ var Class = (function() {
   }
 
   function isFunction(object) {
-    return _toString.call(object) === FUNCTION_CLASS;
+    return typeof object == "function" || _toString.call(object) === FUNCTION_CLASS;
   }
 
   function isString(object) {
@@ -313,7 +311,6 @@ var Class = (function() {
     keys:          Object.keys || keys,
     values:        values,
     clone:         clone,
-    isGraphicsObject:     isGraphicsObject,
     isArray:       isArray,
     isHash:        isHash,
     isFunction:    isFunction,
@@ -349,7 +346,7 @@ Object.extend(Function.prototype, (function() {
     if (arguments.length < 2 && Object.isUndefined(arguments[0]))
       return this;
 
-    if (!Object.isFunction(this))
+    if (!Object.isFunction(this) && !Object.isNative(this))
       throw new TypeError("The object is not callable.");
 
     var nop = function() {};

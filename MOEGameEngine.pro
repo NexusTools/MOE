@@ -4,12 +4,15 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network script
+QT       += core gui network script opengl
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = MOEGameEngine
 TEMPLATE = app
+
+
+QMAKE_CXXFLAGS+="-std=c++0x"
 
 SOURCES += main.cpp\
 	qargumentparser.cpp \
@@ -17,11 +20,13 @@ SOURCES += main.cpp\
 	moegraphicsobject.cpp \
 	moegraphicscontainer.cpp \
 	moeengine.cpp \
-	moeengineview.cpp \
 	moegraphicssurface.cpp \
     transferdelegate.cpp \
     moegraphicstext.cpp \
-    moescriptregisters.cpp
+    moescriptregisters.cpp \
+    moegraphicsimage.cpp \
+    moeabstractgraphicssurface.cpp \
+    widgetsurfacebackend.cpp
 
 HEADERS  += \
 	qargumentparser.h \
@@ -29,13 +34,19 @@ HEADERS  += \
 	moegraphicsobject.h \
 	moegraphicscontainer.h \
 	moeengine.h \
-	moeengineview.h \
 	moegraphicssurface.h \
     renderrecorder.h \
     moeresourcerequest.h \
     transferdelegate.h \
     moescriptregisters.h \
-    moegraphicstext.h
+    moegraphicstext.h \
+    moegraphicsimage.h \
+    renderbuffer.h \
+    moeabstractgraphicssurface.h \
+    renderinstruction.h \
+    abstractsurfacebackend.h \
+    qpaintersurfacebackend.h \
+    widgetsurfacebackend.h
 
 FORMS    +=
 

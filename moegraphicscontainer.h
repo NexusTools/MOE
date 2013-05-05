@@ -3,41 +3,42 @@
 
 #include "moegraphicsobject.h"
 
+
+typedef QPointer<MoeGraphicsContainer> MoeGraphicsContainerPointer;
+
 class MoeGraphicsContainer : public MoeGraphicsObject
 {
     Q_OBJECT
 
     friend class MoeGraphicsObject;
 public:
-    Q_INVOKABLE MoeGraphicsContainer(MoeGraphicsContainer* parent =0) {
-        setContainer(parent);
-    }
+    Q_INVOKABLE MoeGraphicsContainer(MoeObject* parent =0) : MoeGraphicsObject(parent) {}
 
     virtual void render(RenderRecorder*, QRect);
     Q_INVOKABLE void renderChildren(RenderRecorder*, QRect);
 
     Q_INVOKABLE inline void add(MoeGraphicsObject* obj) {
-        if(obj->parent() != this) {
+        if(obj->parent() != this)
             obj->setParent(this);
-            if(!children.contains(obj)) {
-                children.append(obj);
-                obj->updateLayoutTransform();
-                obj->repaint();
-            }
+
+        if(!children.contains(obj)) {
+            children.append(obj);
+            obj->updateLayoutTransform();
+            obj->repaint();
         }
     }
 
     Q_INVOKABLE inline void remove(MoeGraphicsObject* obj) {
-        if(obj->parent() == this) {
+        if(obj->parent() == this)
             obj->setParent(NULL);
-            if(children.contains(obj)) {
-                children.removeOne(obj);
 
-                if(visibleChildren.contains(obj)) {
-                    mouseMovedWatchers.removeOne(obj);
-                    visibleChildren.removeOne(obj);
-                    repaint(obj->realGeometry());
-                }
+        if(children.contains(obj)) {
+            children.removeOne(obj);
+
+            if(visibleChildren.contains(obj)) {
+                mouseMovedWatchers.removeOne(obj);
+                visibleChildren.removeOne(obj);
+                repaint(obj->realGeometry());
             }
         }
     }
@@ -50,7 +51,7 @@ protected slots:
     virtual void updateLayoutTransform();
 
 protected:
-    friend class MoeGraphicsSurface;
+    friend class MoeAbstractGraphicsSurface;
 
     virtual inline bool isHookRequired(EventHook event) {
         switch(event) {

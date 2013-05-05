@@ -4,10 +4,12 @@
 #include "moescriptregisters.h"
 #include "moegraphicscontainer.h"
 #include "moegraphicstext.h"
+#include "moegraphicssurface.h"
 
-#include <QTimerEvent>
 #include <QScriptEngine>
 #include <QElapsedTimer>
+#include <QMetaMethod>
+#include <QTimerEvent>
 #include <QEventLoop>
 #include <QPointF>
 #include <QDebug>
@@ -15,8 +17,9 @@
 
 QThreadStorage<MoeEnginePointer> MoeEngine::_engine;
 
-MoeEngine::MoeEngine() {
+MoeEngine::MoeEngine(QVariantMap args) {
     makeCurrent();
+    _arguments = args;
     _scriptEngine = 0;
     _eventLoop = 0;
 
@@ -50,12 +53,14 @@ void MoeEngine::setState(State state)
     if(_state == state)
         return;
 
+    emit stateChanged(state);
     if(state == Running)
         emit started();
     if(state == Stopped)
         emit stopped();
+    if(state == Crashed)
+        emit crashed(_error);
     _state = state;
-    emit stateChanged(_state);
 }
 
 QScriptValue MoeEngine::eval(QString script)
@@ -68,8 +73,7 @@ QScriptValue MoeEngine::eval(QString script)
 
 void MoeEngine::quit()
 {
-    _state = Stopped;
-    QThread::quit();
+    abort("Received Quit Signal");
 }
 
 void MoeEngine::debug(QVariant data)
@@ -79,7 +83,8 @@ void MoeEngine::debug(QVariant data)
 
 void MoeEngine::exceptionThrown(QScriptValue exception)
 {
-    abort(QString("%1:%2\n%3").arg(exception.property("fileName").toString()).arg(exception.property("lineNumber").toNumber()).arg(exception.toString()));
+    if(_state == Starting || _state == Running)
+        abort(QString("%1:%2\n%3").arg(exception.property("fileName").toString()).arg(exception.property("lineNumber").toNumber()).arg(exception.toString()));
 }
 
 void MoeEngine::includeFile(QString filePath){
@@ -112,47 +117,64 @@ void MoeEngine::run()
     __moe_registerScriptConverters(_scriptEngine);
     QScriptValue globalObject = scriptEngine.globalObject();
 
-    QMapIterator<QString, QMetaObject*> classIterator(_classes);
-    while(classIterator.hasNext())
-    {
-        classIterator.next();
+    QList<const QMetaObject*> classesToLoad = _classes;
+    classesToLoad.append(&MoeResourceRequest::staticMetaObject);
+    classesToLoad.append(&MoeGraphicsSurface::staticMetaObject);
+    classesToLoad.append(&MoeGraphicsObject::staticMetaObject);
+    classesToLoad.append(&MoeGraphicsContainer::staticMetaObject);
+    classesToLoad.append(&MoeGraphicsText::staticMetaObject);
 
-        qDebug() << "Injecting" << classIterator.key();
-        globalObject.setProperty(classIterator.value()->className(),
-                                 scriptEngine.newQMetaObject(classIterator.value()));
+    foreach(const QMetaObject* metaObject, classesToLoad)  {
+        QString key(metaObject->className());
+        if(key.startsWith("Moe"))
+            key = key.mid(3);
+        globalObject.setProperty(key, _scriptEngine->newQMetaObject(metaObject));
     }
 
-    QMapIterator<QString, QObject*> iterator(_environment);
+
+    QVariantMap environmentToLoad = _environment;
+    QVariant engine;
+    engine.setValue<QObject*>((QObject*)this);
+    environmentToLoad.insert("engine", engine);
+    QMapIterator<QString, QVariant> iterator(environmentToLoad);
     while(iterator.hasNext())
     {
         iterator.next();
 
-        qDebug() << "Injecting" << iterator.key();
-        globalObject.setProperty(iterator.key(), scriptEngine.newQObject(iterator.value()));
-    }
+        qDebug() << "Injecting" << iterator.key() << iterator.value();
+        QObject* obj = iterator.value().value<QObject*>();
+        if(obj) {
+            globalObject.setProperty(iterator.key(), scriptEngine.newQObject(obj));
+            continue;
+        }
 
-    globalObject.setProperty("engine", scriptEngine.newQObject(this));
-    globalObject.setProperty("ResourceRequest", scriptEngine.newQMetaObject(&MoeResourceRequest::staticMetaObject));
-    globalObject.setProperty("GraphicsObject", scriptEngine.newQMetaObject(&MoeGraphicsObject::staticMetaObject));
-    globalObject.setProperty("GraphicsContainer", scriptEngine.newQMetaObject(&MoeGraphicsContainer::staticMetaObject));
-    globalObject.setProperty("GraphicsText", scriptEngine.newQMetaObject(&MoeGraphicsText::staticMetaObject));
-    globalObject.setProperty("RenderRecorder", scriptEngine.newQMetaObject((QMetaObject*)&RenderRecorder::staticMetaObject));
+        globalObject.setProperty(iterator.key(), scriptEngine.newVariant(iterator.value()));
+    }
 
     includeFile(":/data/prototype.js");
     if(scriptEngine.hasUncaughtException()) {
         exceptionThrown(scriptEngine.uncaughtException());
+
+        _scriptEngine = 0;
+        _eventLoop = 0;
         return;
     }
 
     includeFile(":/data/shared.js");
     if(scriptEngine.hasUncaughtException()) {
         exceptionThrown(scriptEngine.uncaughtException());
+
+        _scriptEngine = 0;
+        _eventLoop = 0;
         return;
     }
 
-    includeFile(":/data/content-select/init.js");
+    includeFile(_fileContext + "init.js");
     if(scriptEngine.hasUncaughtException()) {
         exceptionThrown(scriptEngine.uncaughtException());
+
+        _scriptEngine = 0;
+        _eventLoop = 0;
         return;
     }
 
@@ -185,35 +207,35 @@ void MoeEngine::run()
     _timers.clear();
 
     _eventLoop = 0;
-    qDebug() << "Engine Exited Main Loop";
-
     _scriptEngine = 0;
-
-    qDebug() << "Engine Thread Exited";
-
     setState(Stopped);
 }
 
-void MoeEngine::abort(QString reason)
+void MoeEngine::abort(QString reason, bool crash)
 {
     qCritical() << "Execution Aborted" << reason;
-    _error = QString("Uncaught Exception:\n%1").arg(reason);
+    _error = reason;
     if(!_eventLoop)
         return;
 
     _scriptEngine->abortEvaluation();
     _eventLoop->exit(1);
-    setState(Crashed);
+    setState(crash ? Crashed : Stopped);
 }
 
-void MoeEngine::registerClass(QMetaObject* metaObject)
+void MoeEngine::registerClass(const QMetaObject* metaObject)
 {
-    _classes.insert(metaObject->className(), metaObject);
+    if(!_classes.contains(metaObject))
+        _classes.append(metaObject);
 }
 
-void MoeEngine::inject(QString key, QObject* val)
+void MoeEngine::inject(QString key, QVariant val)
 {
-    val->moveToThread(this);
+    if(val.canConvert(QMetaType::QObjectStar)) {
+        QObject *obj = ((QObject*)val.value<QObject*>());
+        registerClass(obj->metaObject());
+        obj->moveToThread(this);
+    }
+
     _environment.insert(key, val);
-    registerClass((QMetaObject*)val->metaObject());
 }

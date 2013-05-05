@@ -1,9 +1,8 @@
-#include "moegraphicssurface.h"
-#include "moeengine.h"
+#include "moegraphicsobject.h"
+#include "renderrecorder.h"
 
 #include <QScriptEngine>
 #include <QMetaMethod>
-#include <QMetaEnum>
 #include <qmath.h>
 #include <QEvent>
 
@@ -15,6 +14,9 @@ bool MoeGraphicsObject::canUseKeyFocus(){
      static QMetaMethod mouseMovedSignal = metaObject()->method(metaObject()->indexOfSignal("mouseMoved(QPoint)"));
      static QMetaMethod mousePressedSignal = metaObject()->method(metaObject()->indexOfSignal("mousePressed(QPoint,int)"));
      static QMetaMethod mouseReleasedSignal = metaObject()->method(metaObject()->indexOfSignal("mouseReleased(QPoint,int)"));
+     static QMetaMethod mouseScrolledSignal = metaObject()->method(metaObject()->indexOfSignal("mouseScrolled(QPoint)"));
+     static QMetaMethod mouseEnteredSignal = metaObject()->method(metaObject()->indexOfSignal("mouseEntered()"));
+     static QMetaMethod mouseLeftSignal = metaObject()->method(metaObject()->indexOfSignal("mouseLeft()"));
 
      switch(hook) {
      case mouseMovedHook:
@@ -26,6 +28,15 @@ bool MoeGraphicsObject::canUseKeyFocus(){
      case mouseReleasedHook:
          return isHookRequired(mouseReleasedHook) || isSignalConnected(mouseReleasedSignal);
 
+     case mouseScrolledHook:
+         return isHookRequired(mouseScrolledHook) || isSignalConnected(mouseScrolledSignal);
+
+     case mouseEnteredHook:
+         return isHookRequired(mouseEnteredHook) || isSignalConnected(mouseEnteredSignal);
+
+     case mouseLeftHook:
+         return isHookRequired(mouseLeftHook) || isSignalConnected(mouseLeftSignal);
+
      default:
          return false;
      }
@@ -33,43 +44,10 @@ bool MoeGraphicsObject::canUseKeyFocus(){
 
 bool MoeGraphicsObject::canUseMouseFocus(){
 
-    return  isHookConnected(mouseMovedHook) || isHookConnected(mousePressedHook) ||
-            isHookConnected(mouseReleasedHook);
-}
-
-void MoeGraphicsObject::updateHoverFocus(){
-    MoeGraphicsSurface::current()->updateHoverTarget(this);
-}
-
-void MoeGraphicsObject::notifyParentOfUpdate()
-{
-    if(container())
-        container()->markChildCacheDirty();
-}
-
-bool MoeGraphicsObject::event(QEvent * ev)
-{
-    switch(ev->type()) {
-    case QEvent::Destroy:
-    case QEvent::ParentAboutToChange:
-        if(container())
-            container()->remove(this);
-        break;
-
-    case QEvent::ParentChange:
-    {
-        MoeGraphicsContainer* contain = qobject_cast<MoeGraphicsContainer*>(parent());
-        qDebug() << "Parent Changed" << contain;
-        if(contain)
-            contain->add(this);
-    }
-        break;
-
-    default:
-        break;
-    }
-
-    return QObject::event(ev);
+    return  canUseKeyFocus() ||
+            isHookConnected(mouseMovedHook) || isHookConnected(mousePressedHook) ||
+            isHookConnected(mouseReleasedHook) || isHookConnected(mouseEnteredHook) ||
+            isHookConnected(mouseLeftHook) || isHookConnected(mouseScrolledHook);
 }
 
 void MoeGraphicsObject::render(RenderRecorder *p, QRect region)
@@ -83,86 +61,36 @@ void MoeGraphicsObject::render(RenderRecorder *p, QRect region)
 
 void MoeGraphicsObject::paintImpl(RenderRecorder* p, QRect)
 {
-    if(qAlpha(_border) > 0) {
+    if(qAlpha(_border) > 0 || _borderRadius > 0) {
         p->setPen(_border);
         p->setBrush(_background);
-        p->drawRect(_localGeometry);
+        p->drawRect(_localGeometry, _borderRadius);
     } else if(qAlpha(_background) > 0)
         p->fillRect(_localGeometry, _background);
-}
-
-void MoeGraphicsObject::repaint(QRect region)
-{
-    if(!isVisibleToSurface())
-        return;
-
-    if(region.isNull()) {
-        container()->repaint(_realGeometry);
-
-    } else
-        region &= _localGeometry;
-
-    region = localTransform.mapRect(region);
-
-    if(region.isEmpty())
-        return;
-
-    container()->repaint(QRect(region.topLeft()-QPoint(1,1),region.size()+QSize(2,2)));
 }
 
 void MoeGraphicsObject::setGeometry(QRectF geom){
     if(_geometry == geom)
         return;
 
-    repaint();
     QRectF old = _geometry;
     _geometry = geom;
-    if(old.size() != geom.size())
-        emit resized(geom.size());
-    if(old.topLeft() != geom.topLeft())
-        emit moved(geom.topLeft());
+    if(old.topLeft() != geom.topLeft() && container())
+        repaint();
     updateLayoutTransform();
-    repaint();
-}
-
-QPoint MoeGraphicsObject::mapFromSurface(QPoint p){
-    MoeGraphicsContainer* contain = container();
-    while(contain) {
-        p = contain->mapFromParent(p);
-        contain = contain->container();
+    if(old.size() != geom.size()) {
+        emit resized(geom.size());
+        repaint();
     }
-    return p;
-}
-
-QRect MoeGraphicsObject::mapFromSurface(QRect rect){
-    MoeGraphicsContainer* contain = container();
-    while(contain) {
-        rect = contain->mapFromParent(rect);
-        contain = contain->container();
+    if(old.topLeft() != geom.topLeft()) {
+        emit moved(geom.topLeft());
+        if(container())
+            repaint();
     }
-    return rect;
 }
 
 bool MoeGraphicsObject::isVisible() {
     return !_localGeometry.isEmpty() && _opacity > 0;
-}
-
-bool MoeGraphicsObject::isVisibleToSurface()
-{
-    return container() && isVisible() && container()->childVisible(this) && container()->isVisibleToSurface();
-}
-
-MoeGraphicsSurface* MoeGraphicsObject::surface() {
-    MoeGraphicsObject* par = container();
-    MoeGraphicsSurface* surface;
-    while(par) {
-        surface = qobject_cast<MoeGraphicsSurface*>(par);
-        if(surface)
-            return surface;
-        else
-            par = par->container();
-    }
-    return NULL;
 }
 
 void MoeGraphicsObject::updateLayoutTransform() {
@@ -172,16 +100,15 @@ void MoeGraphicsObject::updateLayoutTransform() {
         localTransform.reset();
         localTransform.translate(_geometry.x(), _geometry.y());
 
-        /*if(_scale != QPointF(1, 1) || _rotate != QPointF(0, 0)) {
+        if(_scale != QPointF(1, 1) || _rotate != QPointF(0, 0)) {
             QPointF halfSize(width()/2, height()/2);
             localTransform.translate(halfSize.x(), halfSize.y());
             localTransform.scale(_scale.x(), _scale.y());
             localTransform.rotate(_rotate.x(), Qt::XAxis);
             localTransform.rotate(_rotate.y(), Qt::YAxis);
-            parentTransform = localTransform.inverted();
-            halfSize = parentTransform.map(-halfSize);
-            localTransform.translate(halfSize.x(), halfSize.y());
-        }*/
+
+            localTransform.translate(-halfSize.x(), -halfSize.y());
+        }
 
         parentTransform = localTransform.inverted();
         _realGeometry = localTransform.mapRect(_localGeometry);
@@ -191,28 +118,10 @@ void MoeGraphicsObject::updateLayoutTransform() {
 }
 
 void MoeGraphicsObject::setCursor(QCursor cursor){
-    MoeGraphicsSurface* s;
-    if((s = surface()) && s->isHoverTarget(this))
-        s->updateCursor(cursor);
-    _cursor = cursor;
-}
-
-void MoeGraphicsObject::setContainer(MoeGraphicsContainer* contain)
-{
-    if(container() == contain)
+    if(_cursor.shape() == cursor.shape())
         return;
-
-    if(container())
-        container()->remove(this);
-    if(contain)
-        contain->add(this);
-    else
-        setParent(NULL);
-}
-
-MoeGraphicsContainer* MoeGraphicsObject::container() const
-{
-    return qobject_cast<MoeGraphicsContainer*>(parent());
+    _cursor = cursor;
+    emit cursorChanged(cursor);
 }
 
 void MoeGraphicsObject::setOpacity(qreal opacity) {

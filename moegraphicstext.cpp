@@ -4,7 +4,7 @@
 
 void MoeGraphicsText::sizeToText() {
     QFontMetrics fontMetrics(_font);
-    setSize(fontMetrics.size(0, _text) + QSize(_margin*2, _margin*2));
+    setSize(fontMetrics.size(0, _text) + QSize(2, 2) + QSize(_margin*2, _margin*2));
 }
 
 void MoeGraphicsText::paintImpl(RenderRecorder* p, QRect) {

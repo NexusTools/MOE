@@ -18,6 +18,8 @@ class QEventLoop;
 class MoeEngine : public QThread
 {
     Q_OBJECT
+    Q_PROPERTY(QString version READ version)
+    Q_PROPERTY(QVariantMap arguments READ arguments)
     Q_ENUMS(State)
 public:
     enum State
@@ -29,7 +31,7 @@ public:
         Running
     };
 
-    MoeEngine();
+    MoeEngine(QVariantMap args =QVariantMap());
     virtual ~MoeEngine();
 
     static inline MoeEnginePointer threadEngine() {return _engine.localData();}
@@ -37,14 +39,22 @@ public:
     inline MoeEnginePointer engine() const{return MoeEnginePointer((MoeEngine*)this);}
     inline void makeCurrent() const{_engine.setLocalData(MoeEnginePointer(engine()));}
 
-    inline QString error() const{return _error;}
+    inline void setFileContext(QString context) {_fileContext=context;}
+    inline void startContent(QString content) {
+        setFileContext(content);
+        start();
+    }
 
-    void registerClass(QMetaObject* metaObject);
-    void inject(QString key, QObject* obj);
+    inline QString error() const{return _error;}
+    inline QString version() const{return "0.1 dev";}
+    inline QVariantMap arguments() const{return _arguments;}
+
+    void registerClass(const QMetaObject *metaObject);
+    void inject(QString key, QVariant obj);
 
 public slots:
     void quit();
-    void abort(QString reason);
+    void abort(QString reason, bool crash =true);
 
     inline int setTimeout(QScriptValue callback, int mdelay) {
         int timerId = startTimer(mdelay);
@@ -70,6 +80,7 @@ signals:
     void tick();
     void stopped();
     void started();
+    void crashed(QString reason);
     void stateChanged(MoeEngine::State state);
 
 protected:
@@ -83,11 +94,13 @@ private:
     State _state;
     int _tickWait;
     QString _error;
+    QString _fileContext;
     QEventLoop* _eventLoop;
+    QVariantMap _arguments;
+    QVariantMap _environment;
     QScriptEngine* _scriptEngine;
+    QList<const QMetaObject*> _classes;
     QMap<int, QScriptValue> _timers;
-    QMap<QString, QObject*> _environment;
-    QMap<QString, QMetaObject*> _classes;
     static QThreadStorage<MoeEnginePointer> _engine;
 };
 

@@ -14,7 +14,7 @@ public:
     Q_INVOKABLE MoeGraphicsText(QString text =QString(), QFont fon =QFont("Arial", 12), MoeGraphicsContainer* parent =0) {
         _foreground = qRgb(0, 0, 0);
         setContainer(parent);
-        _margin = 0;
+        _margin = 2;
         _text = text;
         _font = fon;
         sizeToText();

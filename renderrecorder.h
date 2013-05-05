@@ -2,38 +2,12 @@
 #define RENDERRECORDER_H
 
 #include "moeobject.h"
+#include "renderbuffer.h"
+#include "renderinstruction.h"
 
 #include <QVariantList>
 #include <QTransform>
 #include <QPainter>
-#include <QDebug>
-
-struct RenderInstruction {
-    enum Type {
-        Initialize,
-
-        FillRect,
-        FillPolygon,
-
-        DrawRect,
-        DrawLine,
-        DrawPolygon,
-        DrawText,
-
-        UpdatePen,
-        UpdateBrush,
-        UpdateOpacity,
-        UpdateClipRect,
-        UpdateTransform,
-        UpdateFont,
-
-        RenderImage
-    } type;
-
-    QVariantList arguments;
-};
-
-typedef QVector<RenderInstruction> RenderInstructions;
 
 class RenderRecorder : public MoeObject
 {
@@ -49,74 +23,24 @@ public:
         opacity = 1;
     }
 
-    inline static void paint(RenderInstructions instructions, QPainter& p, QRect clipRect) {
-        p.setPen(Qt::black);
-        p.setBrush(Qt::NoBrush);
-
-        foreach(RenderInstruction inst, instructions) {
-            switch(inst.type){
-            case RenderInstruction::FillRect:
-                p.fillRect(inst.arguments.at(0).toRect(), QColor::fromRgba(inst.arguments.at(1).toUInt()));
-                break;
-
-            case RenderInstruction::DrawLine:
-                p.drawLine(inst.arguments.at(0).toPoint(),
-                           inst.arguments.at(1).toPoint());
-                break;
-
-            case RenderInstruction::DrawRect:
-                p.drawRect(inst.arguments.at(0).toRect());
-                break;
-
-            case RenderInstruction::DrawText:
-                p.drawText(inst.arguments.at(0).toRect(), inst.arguments.at(1).toString());
-                break;
-
-            case RenderInstruction::UpdatePen:
-                if(inst.arguments.isEmpty())
-                    p.setPen(Qt::NoPen);
-                else
-                    p.setPen(QColor::fromRgba(inst.arguments.at(0).toUInt()));
-                break;
-
-            case RenderInstruction::UpdateBrush:
-                if(inst.arguments.isEmpty())
-                    p.setBrush(Qt::NoBrush);
-                else
-                    p.setBrush(QColor::fromRgba(inst.arguments.at(0).toUInt()));
-                break;
-
-            case RenderInstruction::UpdateClipRect:
-                if(inst.arguments.isEmpty())
-                    p.setClipRect(clipRect, Qt::ReplaceClip);
-                else
-                    p.setClipRect(inst.arguments.first().toRect(), Qt::ReplaceClip);
-                break;
-
-            case RenderInstruction::UpdateOpacity:
-                p.setOpacity(inst.arguments.first().toFloat());
-                break;
-
-            case RenderInstruction::UpdateFont:
-                p.setFont(QFont(inst.arguments.at(0).toString(), inst.arguments.at(1).toInt()));
-                break;
-
-            default:
-                qWarning() << "Unhandled Recorder Instruction" << inst.type;
-            }
-        }
-    }
-
     inline RenderInstructions instructions() const{return _instructions;}
 
 public slots:
-    inline void fillRect(QRect rect, QRgb color){
+    inline void fillRect(QRect rect, QRgb color, qreal borderRadius = 0){
+        if(borderRadius > 0) {
+            setPen(qRgba(0,0,0,0));
+            setBrush(color);
+            drawRect(rect, borderRadius);
+            return;
+        }
+
         rect = transform.mapRect(rect);
 
         if(!clipRect.intersects(rect))
             return;
         rect &= clipRect;
 
+        noTransform();
         noClipRect();
         updateOpacity();
         RenderInstruction instruction;
@@ -127,33 +51,42 @@ public slots:
     }
 
     inline void drawText(QRect rect, QString text) {
-        rect = transform.mapRect(rect);
+        QRect targetRect = transform.mapRect(rect);
 
-        if(!clipRect.intersects(rect))
+        if(!clipRect.intersects(targetRect))
             return;
 
-        updatePen();
-        updateFont();
-        updateOpacity();
-        if(clipRect.contains(rect))
-            noClipRect();
-        else
-            requireClipRect();
+        if(transform.isScaling() || transform.isRotating()) {
+            requireTransform();
+            targetRect = rect;
+        } else {
+            noTransform();
+
+            updatePen();
+            updateFont();
+            updateOpacity();
+            if(clipRect.contains(targetRect))
+                noClipRect();
+            else
+                requireClipRect();
+        }
 
         RenderInstruction instruction;
         instruction.type = RenderInstruction::DrawText;
-        instruction.arguments.append(rect);
+        instruction.arguments.append(targetRect);
         instruction.arguments.append(text);
         _instructions.append(instruction);
+
     }
 
-    inline void drawRect(QRect rect){
+    inline void drawRect(QRect rect, qreal radius = 0){
         rect = transform.mapRect(rect);
         bool hasBorder = qAlpha(pen) > 0;
 
         if(!clipRect.intersects(rect))
             return;
 
+        noTransform();
         updatePen();
         updateBrush();
         updateOpacity();
@@ -170,6 +103,8 @@ public slots:
         if(hasBorder)
             rect = QRect(rect.topLeft(), rect.size() - QSize(1, 1));
         instruction.arguments.append(rect);
+        if(radius > 0)
+            instruction.arguments.append(radius);
         _instructions.append(instruction);
     }
 
@@ -181,6 +116,7 @@ public slots:
         if(!clipRect.intersects(rect))
             return;
 
+        noTransform();
         updatePen();
         updateOpacity();
         if(clipRect.contains(rect))
@@ -288,6 +224,25 @@ protected:
         }
     }
 
+    inline void requireTransform() {
+        if(cTransform != transform) {
+            RenderInstruction instruction;
+            instruction.type = RenderInstruction::UpdateTransform;
+            instruction.arguments.append(transform);
+            _instructions.append(instruction);
+            cTransform = transform;
+        }
+    }
+
+    inline void noTransform() {
+        if(transform.type()) {
+            RenderInstruction instruction;
+            instruction.type = RenderInstruction::UpdateTransform;
+            _instructions.append(instruction);
+            cTransform.reset();
+        }
+    }
+
     inline void updateOpacity() {
         if(copacity != opacity) {
             RenderInstruction instruction;
@@ -315,6 +270,7 @@ private:
     QRgb pen, brush;
     QRgb cpen, cbrush;
     QRect cClipRect;
+    QTransform cTransform;
 };
 
 #endif // RENDERRECORDER_H

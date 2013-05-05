@@ -3,15 +3,20 @@
 
 #include "moeobject.h"
 
+#include <QMetaMethod>
 #include <QTransform>
 #include <QCursor>
 #include <qmath.h>
+#include <QDebug>
 #include <QRectF>
 #include <QRgb>
 
 class RenderRecorder;
+class MoeGraphicsObject;
 class MoeGraphicsContainer;
-class MoeGraphicsSurface;
+class MoeAbstractGraphicsSurface;
+
+typedef QPointer<MoeGraphicsObject> MoeGraphicsObjectPointer;
 
 class MoeGraphicsObject : public MoeObject
 {
@@ -20,29 +25,48 @@ class MoeGraphicsObject : public MoeObject
     Q_PROPERTY(qreal y READ y WRITE setPosY)
     Q_PROPERTY(qreal width READ width WRITE setWidth)
     Q_PROPERTY(qreal height READ height WRITE setHeight)
+    Q_PROPERTY(qreal borderRadius READ borderRadius WRITE setBorderRadius)
     Q_PROPERTY(QCursor cursor READ cursor WRITE setCursor)
     Q_PROPERTY(QRgb background READ background WRITE setBackground)
     Q_PROPERTY(QRgb foreground READ foreground WRITE setForeground)
     Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity)
     Q_PROPERTY(QRgb border READ border WRITE setBorder)
+    Q_PROPERTY(qreal scale READ scale WRITE setScale)
 
     friend class MoeGraphicsContainer;
-    friend class MoeGraphicsSurface;
+    friend class MoeAbstractGraphicsSurface;
 public:
-    Q_INVOKABLE MoeGraphicsObject(MoeGraphicsContainer* parent =0) : _scale(1, 1) {
+    Q_INVOKABLE explicit inline MoeGraphicsObject(MoeObject* parent =0) : MoeObject(parent), _scale(1, 1) {
+        if(container())
+            setContainer(container());
         _background = qRgba(0, 0, 0, 0);
         _foreground = qRgb(0, 0, 0);
         _border = qRgba(0, 0, 0, 0);
+        _borderRadius = 0;
         _opacity = 1;
-        setContainer(parent);
     }
 
-    bool event(QEvent *);
+    virtual bool event(QEvent *);
     virtual void render(RenderRecorder*, QRect);
     Q_INVOKABLE virtual void paintImpl(RenderRecorder*, QRect);
 
     inline QCursor cursor() const{return _cursor;}
     void setCursor(QCursor);
+
+    inline qreal scale() const{
+        return _scale.x() > _scale.y() ? _scale.y() + (_scale.x() - _scale.y())/2
+                                       : _scale.x() + (_scale.y() - _scale.x())/2;
+    }
+
+    Q_INVOKABLE void setScale(qreal s) {
+        repaint();
+        _scale = QPointF(s, s);
+        updateLayoutTransform();
+        repaint();
+    }
+
+    inline qreal borderRadius() const{return _borderRadius;}
+    Q_INVOKABLE void setBorderRadius(qreal borderRadius) {_borderRadius = borderRadius;repaint();}
 
     inline qreal x() const{return _geometry.x();}
     inline qreal y() const{return _geometry.y();}
@@ -65,7 +89,7 @@ public:
     Q_INVOKABLE inline bool contains(QPointF p) const{return _geometry.contains(p);}
     Q_INVOKABLE inline bool contains(QRectF r) const{return _geometry.contains(r);}
 
-    Q_INVOKABLE void setContainer(MoeGraphicsContainer*);
+    Q_INVOKABLE void setContainer(MoeGraphicsContainer* contain);
     Q_INVOKABLE MoeGraphicsContainer* container() const;
     Q_INVOKABLE void setOpacity(qreal opacity);
 
@@ -103,7 +127,7 @@ public:
     Q_INVOKABLE virtual bool isVisible();
     Q_INVOKABLE virtual bool isVisibleToSurface();
     Q_INVOKABLE inline virtual bool isSurface() const{return false;}
-    Q_INVOKABLE virtual MoeGraphicsSurface* surface();
+    Q_INVOKABLE virtual MoeAbstractGraphicsSurface* surface();
 
 public slots:
     virtual void repaint(QRect =QRect());
@@ -123,6 +147,7 @@ protected slots:
     virtual void updateLayoutTransform();
 
 signals:
+    void cursorChanged(QCursor);
     void paint(RenderRecorder*);
     void resized(QSizeF);
     void moved(QPointF);
@@ -149,6 +174,8 @@ protected:
         mousePressedHook,
         mouseReleasedHook,
         mouseScrolledHook,
+        mouseEnteredHook,
+        mouseLeftHook,
 
         keyTypedHook,
         keyPressedHook,
@@ -157,7 +184,6 @@ protected:
 
     bool canUseKeyFocus();
     bool canUseMouseFocus();
-    void updateHoverFocus();
     void notifyParentOfUpdate();
     bool isHookConnected(EventHook);
 
@@ -165,12 +191,16 @@ protected:
         return false;
     }
 
-    void connectNotify(const QMetaMethod &) {
-        notifyParentOfUpdate();
+    void connectNotify(const QMetaMethod& meta) {
+        if(meta.methodSignature().startsWith("mouse") ||
+                meta.methodSignature().startsWith("key"))
+            notifyParentOfUpdate();
     }
 
-    void disconnectNotify(const QMetaMethod &) {
-        notifyParentOfUpdate();
+    void disconnectNotify(const QMetaMethod& meta) {
+        if(meta.methodSignature().startsWith("mouse") ||
+                meta.methodSignature().startsWith("key"))
+            notifyParentOfUpdate();
     }
 
     inline QSize localSize() const{
@@ -187,13 +217,18 @@ protected:
     QRgb _border;
     QPointF _scale;
     QPointF _rotate;
+    qreal _borderRadius;
     qreal _opacity;
 
 private:
     inline void mouseEnterEvent(){
+        if(container())
+            ((MoeGraphicsObject*)container())->mouseEnterEvent();
         emit mouseEntered();
     }
     inline void mouseLeaveEvent(){
+        if(container())
+            ((MoeGraphicsObject*)container())->mouseLeaveEvent();
         emit mouseLeft();
     }
 
@@ -204,7 +239,6 @@ private:
         emit mouseReleased(p, i);
     }
     virtual inline void mouseMovedEvent(QPoint p) {
-        updateHoverFocus();
         emit mouseMoved(p);
     }
     inline void mouseDraggedEvent(QPoint p) {

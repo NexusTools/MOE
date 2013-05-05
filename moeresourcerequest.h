@@ -2,6 +2,7 @@
 #define MOERESOURCEREQUEST_H
 
 #include "transferdelegate.h"
+#include <QThreadStorage>
 
 #include "moeobject.h"
 
@@ -9,7 +10,7 @@ class MoeResourceRequest : public MoeObject
 {
     Q_OBJECT
 public:
-    Q_INVOKABLE explicit MoeResourceRequest(QString resource){
+    Q_INVOKABLE inline explicit MoeResourceRequest(QString resource){
         transferDelegate = TransferDelegate::getInstance(resource);
         connect(transferDelegate.data(), SIGNAL(progress(float)), this, SLOT(progressCallback(float)), Qt::QueuedConnection);
         connect(transferDelegate.data(), SIGNAL(complete(QByteArray)), this, SLOT(completeCallback(QByteArray)), Qt::QueuedConnection);
@@ -43,6 +44,7 @@ private:
         disconnect(transferDelegate.data(), SIGNAL(error(QString)), this, SLOT(errorCallback(QString)));
     }
 
+    static QThreadStorage<QString> context;
     TransferDelegateReference transferDelegate;
 };
 
