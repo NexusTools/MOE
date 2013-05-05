@@ -1,7 +1,7 @@
 #include "qargumentparser.h"
 
 #include <QRegExp>
-#include <QDebug>
+
 
 QArgumentParser::QArgumentParser(char *args[])
 {

@@ -1,14 +1,19 @@
 #ifndef MOEOBJECT_H
 #define MOEOBJECT_H
 
-#include <QDebug>
+#include <QMap>
+#include <QHash>
 #include <QObject>
 #include <QPointer>
 #include <QScriptable>
+#include <QScriptValue>
 #include <QThreadStorage>
 
 class MoeEngine;
 class MoeObject;
+
+struct AnimationState;
+typedef QSharedPointer<AnimationState> AnimationStatePointer;
 
 typedef quintptr MoeObjectPtr;
 typedef QPointer<MoeObject> MoeObjectPointer;
@@ -33,12 +38,16 @@ public:
 
     Q_INVOKABLE QString toString() const;
 
+public slots:
+    void animate(QString key, QScriptValue to, QScriptValue callback = QScriptValue(), qreal modifier=4);
+    void killAnimation(QString key);
+
+protected slots:
+    void animateTick();
+
 private:
     static QThreadStorage<MoeObjectPtrMap> instances;
+    QHash<QString, AnimationStatePointer> animations;
 };
-
-inline QDebug operator <<(QDebug debug, const MoeObject & moe) {
-    return (debug << moe.toString().toLocal8Bit().data());
-}
 
 #endif // MOEOBJECT_H

@@ -1,7 +1,7 @@
 #include "crashdialog.h"
 #include "ui_crashdialog.h"
 
-#include <QDebug>
+
 
 CrashDialog::CrashDialog(MoeEngine* engine, bool quitOnClose) :
     ui(new Ui::CrashDialog)

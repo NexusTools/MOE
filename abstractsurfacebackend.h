@@ -5,7 +5,7 @@
 
 #include <QCursor>
 #include <QTimer>
-#include <QDebug>
+
 #include <QRect>
 
 class AbstractSurfaceBackend : public QObject {
@@ -30,7 +30,7 @@ protected slots:
             return;
 
         _geom = geom;
-        qDebug() << "Set Geometry" << geom << _geom;
+        //qDebug() << "Set Geometry" << geom << _geom;
         setGeometryImpl(geom);
     }
     inline void setSize(QSizeF s) {

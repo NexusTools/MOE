@@ -104,9 +104,12 @@ void MoeGraphicsContainer::renderChildren(RenderRecorder * p, QRect region){
 }
 
 void MoeGraphicsContainer::mouseLeaveEvent() {
+    if(!_hoverFocus.isNull()) {
+        if(_hoverFocus.data() != this)
+            _hoverFocus.data()->mouseLeaveEvent();
+        _hoverFocus = 0;
+    }
     MoeGraphicsObject::mouseLeaveEvent();
-    foreach(MoeGraphicsObject* obj, children)
-        obj->mouseLeaveEvent();
 }
 
 MoeGraphicsObjectPointer MoeGraphicsContainer::mouseMovedEvent(QPoint p){

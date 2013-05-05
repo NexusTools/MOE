@@ -14,10 +14,10 @@ class RenderRecorder : public MoeObject
     Q_OBJECT
 public:
     explicit inline RenderRecorder(QRect rect) {
-        cbrush = QColor(Qt::darkMagenta).rgba();
+        cbrush = QColor(Qt::darkMagenta);
         brush = cbrush;
-        cpen = qRgb(0,0,0);
-        pen = qRgb(0,0,0);
+        cpen = QColor(0,0,0);
+        pen = cpen;
         clipRect = rect;
         copacity = 1;
         opacity = 1;
@@ -26,7 +26,7 @@ public:
     inline RenderInstructions instructions() const{return _instructions;}
 
 public slots:
-    inline void fillRect(QRect rect, QRgb color, qreal borderRadius = 0){
+    inline void fillRect(QRect rect, QColor color, qreal borderRadius = 0){
         if(borderRadius > 0) {
             setPen(qRgba(0,0,0,0));
             setBrush(color);
@@ -45,7 +45,7 @@ public slots:
         RenderInstruction instruction;
         instruction.type = RenderInstruction::FillRect;
         instruction.arguments.append(rect);
-        instruction.arguments.append((unsigned int)color);
+        instruction.arguments.append((unsigned int)color.rgba());
         _instructions.append(instruction);
     }
 
@@ -80,7 +80,7 @@ public slots:
 
     inline void drawRect(QRect rect, qreal radius = 0){
         rect = transform.mapRect(rect);
-        bool hasBorder = qAlpha(pen) > 0;
+        bool hasBorder = pen.alpha() > 0;
 
         if(!clipRect.intersects(rect))
             return;
@@ -130,11 +130,11 @@ public slots:
         _instructions.append(instruction);
     }
 
-    inline void setPen(QRgb c){
+    inline void setPen(QColor c){
         pen = c;
     }
 
-    inline void setBrush(QRgb c){
+    inline void setBrush(QColor c){
         brush = c;
     }
 
@@ -175,8 +175,8 @@ protected:
         if(cpen != pen) {
             RenderInstruction instruction;
             instruction.type = RenderInstruction::UpdatePen;
-            if(qAlpha(pen) > 0)
-                instruction.arguments.append((unsigned int)pen);
+            if(pen.alpha() > 0)
+                instruction.arguments.append((unsigned int)pen.rgba());
             _instructions.append(instruction);
             cpen = pen;
         }
@@ -186,8 +186,8 @@ protected:
         if(cbrush != brush) {
             RenderInstruction instruction;
             instruction.type = RenderInstruction::UpdateBrush;
-            if(qAlpha(brush) > 0)
-                instruction.arguments.append((unsigned int)brush);
+            if(brush.alpha() > 0)
+                instruction.arguments.append((unsigned int)brush.rgba());
             _instructions.append(instruction);
             cbrush = brush;
         }
@@ -266,8 +266,8 @@ private:
     QTransform _transform;
 
     QFont font, cfont;
-    QRgb pen, brush;
-    QRgb cpen, cbrush;
+    QColor pen, brush;
+    QColor cpen, cbrush;
     QRect cClipRect;
     QTransform cTransform;
 };

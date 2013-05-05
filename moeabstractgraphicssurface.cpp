@@ -17,7 +17,7 @@ MoeAbstractGraphicsSurface* MoeGraphicsObject::surface() {
 
 void MoeAbstractGraphicsSurface::render(RenderRecorder* p, QRect region)
 {
-    qDebug() << "Rendering" << this;
+    //qDebug() << "Rendering" << this;
 
     bool renderForParent = p != 0;
     if(!renderForParent)

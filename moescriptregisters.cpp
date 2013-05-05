@@ -110,20 +110,18 @@ void qpointfFromScriptValue(const QScriptValue &object, QPointF &out)
     out.setY(object.property("y").toNumber());
 }
 
-QScriptValue qrgbToScriptValue(QScriptEngine *engine, QRgb const &in)
+QScriptValue qcolorToScriptValue(QScriptEngine *engine, QColor const &in)
 {
     QScriptValue rgb = engine->newObject();
-    rgb.setProperty("red", qRed(in));
-    rgb.setProperty("green", qGreen(in));
-    rgb.setProperty("blue", qBlue(in));
-    if(qAlpha(in) < 255)
-        rgb.setProperty("alpha", qAlpha(in));
+    rgb.setProperty("red", in.red());
+    rgb.setProperty("green", in.green());
+    rgb.setProperty("blue", in.blue());
+    rgb.setProperty("alpha", in.alpha());
     return rgb;
 }
 
-void qrgbFromScriptValue(const QScriptValue &object, QRgb &out)
+void qcolorFromScriptValue(const QScriptValue &object, QColor &out)
 {
-    out = Qt::black;
     if(object.isString()) {
         QString string = object.toString();
 
@@ -132,21 +130,21 @@ void qrgbFromScriptValue(const QScriptValue &object, QRgb &out)
             string = hex.cap(1);
             if(string.length() < 6)
                 string = QString("%1%1%2%2%3%3").arg(string[0]).arg(string[1]).arg(string[2]);
-            out = (QRgb)string.toInt(0, 16);
+            out = QColor::fromRgb((QRgb)string.toInt(0, 16));
             return;
         }
 
         static QRegExp cssRgb("rgba?\\(\\s*(\\d)+\\s*,\\s*(\\d)+\\s*,\\s*(\\d+)\\s*(,\\s*(\\d+(\\.\\d+)?))?\\)", Qt::CaseInsensitive, QRegExp::RegExp2);
         if(cssRgb.exactMatch(string)) {
             bool alphaOkay;
-            out = qRgba(cssRgb.cap(1).toInt(), cssRgb.cap(2).toInt(), cssRgb.cap(3).toInt(), (int)(cssRgb.cap(5).toFloat(&alphaOkay) * 255));
+            out = QColor(cssRgb.cap(1).toInt(), cssRgb.cap(2).toInt(), cssRgb.cap(3).toInt(), (int)(cssRgb.cap(5).toFloat(&alphaOkay) * 255));
             if(!alphaOkay)
-                out = qRgb(cssRgb.cap(1).toInt(), cssRgb.cap(2).toInt(), cssRgb.cap(3).toInt());
+                out = QColor(cssRgb.cap(1).toInt(), cssRgb.cap(2).toInt(), cssRgb.cap(3).toInt());
 
             return;
         }
 
-        static QHash<QString, QRgb> namedColors;
+        static QHash<QString, QColor> namedColors;
         if(namedColors.isEmpty()) {
             qDebug() << "Loading Name List...";
             QFile reader(":/data/rgb.txt");
@@ -155,7 +153,7 @@ void qrgbFromScriptValue(const QScriptValue &object, QRgb &out)
                 while(!reader.atEnd()) {
                     QString line = reader.readLine().trimmed();
                     if(colorLine.exactMatch(line))
-                        namedColors.insert(colorLine.cap(4).toLower(), qRgb(colorLine.cap(1).toInt(), colorLine.cap(2).toInt(), colorLine.cap(3).toInt()));
+                        namedColors.insert(colorLine.cap(4).toLower(), QColor(colorLine.cap(1).toInt(), colorLine.cap(2).toInt(), colorLine.cap(3).toInt()));
                 }
             } else
                 qWarning() << "Failed to open rgb.txt";
@@ -168,19 +166,19 @@ void qrgbFromScriptValue(const QScriptValue &object, QRgb &out)
         }
     } else if(object.isObject()) {
         if(object.property("alpha").isValid())
-            out = qRgba(object.property("red").toInt32(), object.property("green").toInt32(), object.property("blue").toInt32(), object.property("alpha").toInt32());
+            out = QColor(object.property("red").toInt32(), object.property("green").toInt32(), object.property("blue").toInt32(), object.property("alpha").toInt32());
         else
-            out = qRgb(object.property("red").toInt32(), object.property("green").toInt32(), object.property("blue").toInt32());
+            out = QColor(object.property("red").toInt32(), object.property("green").toInt32(), object.property("blue").toInt32());
         return;
     } else if(object.isArray()) {
         int len = object.property("length").toInt32();
         if(len == 4)
-            out = qRgba(object.property(0).toInt32(), object.property(1).toInt32(), object.property(2).toInt32(), object.property(3).toInt32());
+            out = QColor(object.property(0).toInt32(), object.property(1).toInt32(), object.property(2).toInt32(), object.property(3).toInt32());
         else if(len == 3)
-            out = qRgba(object.property(0).toInt32(), object.property(1).toInt32(), object.property(2).toInt32(), 255);
+            out = QColor(object.property(0).toInt32(), object.property(1).toInt32(), object.property(2).toInt32(), 255);
         return;
     } else if(object.isNumber() || object.isNumber()) {
-        out = (QRgb)object.toInt32();
+        out = QColor::fromRgb((QRgb)object.toInt32());
         return;
     }
 
@@ -274,5 +272,5 @@ void __moe_registerScriptConverters(QScriptEngine* eng) {
     qScriptRegisterMetaType<QRect>(eng, qrectToScriptValue, qrectFromScriptValue);
 
     qScriptRegisterMetaType<QFont>(eng, qfontToScriptValue, qfontFromScriptValue);
-    qScriptRegisterMetaType<QRgb>(eng, qrgbToScriptValue, qrgbFromScriptValue);
+    qScriptRegisterMetaType<QColor>(eng, qcolorToScriptValue, qcolorFromScriptValue);
 }

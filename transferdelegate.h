@@ -4,7 +4,7 @@
 #include <QSharedPointer>
 #include <QNetworkReply>
 #include <QMutexLocker>
-#include <QDebug>
+
 #include <QTimer>
 
 class TransferDelegate;

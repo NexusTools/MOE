@@ -7,9 +7,9 @@
 #include <QTransform>
 #include <QCursor>
 #include <qmath.h>
-#include <QDebug>
+
 #include <QRectF>
-#include <QRgb>
+#include <QColor>
 
 class RenderRecorder;
 class MoeGraphicsObject;
@@ -21,16 +21,18 @@ typedef QPointer<MoeGraphicsObject> MoeGraphicsObjectPointer;
 class MoeGraphicsObject : public MoeObject
 {
     Q_OBJECT
-    Q_PROPERTY(qreal x READ x WRITE setPosX)
-    Q_PROPERTY(qreal y READ y WRITE setPosY)
+    Q_PROPERTY(qreal x READ posX WRITE setPosX)
+    Q_PROPERTY(qreal y READ posY WRITE setPosY)
+    Q_PROPERTY(qreal posX READ posX WRITE setPosX)
+    Q_PROPERTY(qreal posY READ posY WRITE setPosY)
     Q_PROPERTY(qreal width READ width WRITE setWidth)
     Q_PROPERTY(qreal height READ height WRITE setHeight)
     Q_PROPERTY(qreal borderRadius READ borderRadius WRITE setBorderRadius)
     Q_PROPERTY(QCursor cursor READ cursor WRITE setCursor)
-    Q_PROPERTY(QRgb background READ background WRITE setBackground)
-    Q_PROPERTY(QRgb foreground READ foreground WRITE setForeground)
+    Q_PROPERTY(QColor background READ background WRITE setBackground)
+    Q_PROPERTY(QColor foreground READ foreground WRITE setForeground)
     Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity)
-    Q_PROPERTY(QRgb border READ border WRITE setBorder)
+    Q_PROPERTY(QColor border READ border WRITE setBorder)
     Q_PROPERTY(qreal scale READ scale WRITE setScale)
 
     friend class MoeGraphicsContainer;
@@ -39,9 +41,9 @@ public:
     Q_INVOKABLE explicit inline MoeGraphicsObject(MoeObject* parent =0) : MoeObject(parent), _scale(1, 1) {
         if(container())
             setContainer(container());
-        _background = qRgba(0, 0, 0, 0);
-        _foreground = qRgb(0, 0, 0);
-        _border = qRgba(0, 0, 0, 0);
+        _background = QColor(0, 0, 0, 0);
+        _foreground = QColor(0, 0, 0);
+        _border = QColor(0, 0, 0, 0);
         _borderRadius = 0;
         _opacity = 1;
     }
@@ -66,10 +68,12 @@ public:
     }
 
     inline qreal borderRadius() const{return _borderRadius;}
-    Q_INVOKABLE void setBorderRadius(qreal borderRadius) {_borderRadius = borderRadius;repaint();}
+    Q_INVOKABLE void setBorderRadius(qreal borderRadius) {
+        if(_borderRadius==borderRadius)return;
+        _borderRadius = borderRadius;repaint();}
 
-    inline qreal x() const{return _geometry.x();}
-    inline qreal y() const{return _geometry.y();}
+    inline qreal posX() const{return _geometry.x();}
+    inline qreal posY() const{return _geometry.y();}
     Q_INVOKABLE inline QPointF pos() const{return _geometry.topLeft();}
 
     Q_INVOKABLE inline QSizeF size() const{return _geometry.size();}
@@ -79,12 +83,12 @@ public:
     Q_INVOKABLE inline QRectF geomtry() const{return _geometry;}
     Q_INVOKABLE inline QRect realGeometry() const{return _realGeometry;}
 
-    inline QRgb background() const{return _background;}
-    inline QRgb foreground() const{return _foreground;}
-    inline QRgb border() const{return _border;}
-    Q_INVOKABLE inline void setBackground(QRgb c) {_background=c;repaint();}
-    Q_INVOKABLE inline void setForeground(QRgb c) {_foreground=c;repaint();}
-    Q_INVOKABLE inline void setBorder(QRgb c) {_border=c;repaint();}
+    inline QColor background() const{return _background;}
+    inline QColor foreground() const{return _foreground;}
+    inline QColor border() const{return _border;}
+    Q_INVOKABLE inline void setBackground(QColor c) {if(c==_background)return;_background=c;repaint();}
+    Q_INVOKABLE inline void setForeground(QColor c) {if(c==_foreground)return;_foreground=c;repaint();}
+    Q_INVOKABLE inline void setBorder(QColor c) {if(c==_border)return;_border=c;repaint();}
 
     Q_INVOKABLE inline bool contains(QPointF p) const{return _geometry.contains(p);}
     Q_INVOKABLE inline bool contains(QRectF r) const{return _geometry.contains(r);}
@@ -134,8 +138,8 @@ public slots:
     inline void repaint(QRectF rec) {repaint(QRect((int)qFloor(rec.x()),(int)qFloor(rec.y()),(int)qCeil(rec.width()),(int)qCeil(rec.height())));}
     inline void setPos(QPointF p) {setGeometry(QRectF(p, size()));}
     inline void setPos(qreal x, qreal y) {setPos(QPointF(x, y));}
-    inline void setPosX(qreal x) {setGeometry(QRectF(QPointF(x,y()),size()));}
-    inline void setPosY(qreal y) {setGeometry(QRectF(QPointF(x(),y),size()));}
+    inline void setPosX(qreal x) {setGeometry(QRectF(QPointF(x,posY()),size()));}
+    inline void setPosY(qreal y) {setGeometry(QRectF(QPointF(posX(),y),size()));}
     inline void setSize(QSizeF s) {setGeometry(QRectF(pos(), s));}
     inline void setSize(qreal w, qreal h) {setSize(QSizeF(w, h));}
     inline void setWidth(qreal w) {setGeometry(QRectF(pos(),QSizeF(w,height())));}
@@ -212,9 +216,9 @@ protected:
     }
 
     QCursor _cursor;
-    QRgb _background;
-    QRgb _foreground;
-    QRgb _border;
+    QColor _background;
+    QColor _foreground;
+    QColor _border;
     QPointF _scale;
     QPointF _rotate;
     qreal _borderRadius;

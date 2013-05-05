@@ -1,6 +1,5 @@
 
 var surface = new GraphicsSurface("Image Viewer Example (MOE Game Engine v" + engine.version + ")", Size(800, 600));
-surface.background = "dark magenta";
 
 //surface.enableRepaintDebug(false);
 //engine.setTicksPerSecond(60);
@@ -13,7 +12,7 @@ function boardEntry(code, title, pages) {
     this.element = new GraphicsContainer(boardPage);
     this.element.objectName = "Board /" + code + "/";
     this.element.background = "white";
-    this.element.border = "black";
+    this.element.border = "gray70";
     this.element.cursor = "pointer";
 
     var boardElement = this.element;
@@ -34,10 +33,10 @@ function boardEntry(code, title, pages) {
         engine.debug("Entering /" + code + "/");
     });
     this.element.mouseEntered.connect(function(){
-        boardElement.background = "gray80";
+        boardElement.animate("background", "gray90", 2);
     });
     this.element.mouseLeft.connect(function(){
-        boardElement.background = "white";
+        boardElement.animate("background", "white", 2);
     });
 }
 
@@ -59,6 +58,7 @@ function fixBoardLayout() {
 function updateBoardList() {
     var download = new ResourceRequest("https://api.4chan.org/boards.json");
     download.receivedJSON.connect(function(boardData){
+        surface.animate("background", "royal blue");
         engine.debug("Got Board List");
         engine.debug(boardData);
         boardData.boards.forEach(function(board){
@@ -79,12 +79,12 @@ control.background = Rgba(0,0,0,160);
 control.opacity = 0.1;
 
 control.mouseEntered.connect(function(){
-    control.opacity = 1;
-    control.y = 0;
+    control.animate("opacity", 1);
+    control.animate("y", 0);
 });
 control.mouseLeft.connect(function(){
-    control.opacity = 0.1;
-    control.y = -190;
+    control.animate("opacity", 0.1);
+    control.animate("y", -190);
 });
 
 surface.resized.connect(function(size) {

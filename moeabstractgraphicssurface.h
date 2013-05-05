@@ -10,7 +10,7 @@
 #include <QWeakPointer>
 #include <QScriptValue>
 #include <QPointer>
-#include <QDebug>
+
 #include <QTimer>
 
 typedef QPointer<MoeAbstractGraphicsSurface> MoeAbstractGraphicsSurfacePointer;
@@ -40,12 +40,12 @@ public slots:
         if(!_connected)
             return;
 
-        if(region.isNull() || qAlpha(_background) < 255)
+        if(region.isNull() || _background.alpha() < 255)
             region = _localGeometry;
         else
             region &= _localGeometry;
 
-        qDebug() << "Request to Repaint" << this << region;
+        //qDebug() << "Request to Repaint" << this << region;
         if(region.isEmpty())
             return;
 
@@ -58,7 +58,7 @@ public slots:
             repaintRegion |= region;
 
         if(renderState.testFlag(ViewReady) && !renderState.testFlag(SurfaceDirty)){
-            qDebug() << "Starting Repaint Timer";
+            //qDebug() << "Starting Repaint Timer";
             renderTimer.start();
         }
 
@@ -85,14 +85,14 @@ protected slots:
     }
 
     inline void prepareNextFrame(){
-        qDebug() << "Request to Prepare Next Frame" << this;
+        //qDebug() << "Request to Prepare Next Frame" << this;
         if(!_connected) {
             _connected = true;
             repaint();
         }
 
         if(renderState.testFlag(SurfaceDirty) && !renderState.testFlag(ViewReady)) {
-            qDebug() << "Starting Repaint Timer";
+            //qDebug() << "Starting Repaint Timer";
             renderTimer.start();
         }
 
@@ -108,8 +108,12 @@ protected slots:
             MoeGraphicsObjectPointer newHoverFocus = _localGeometry.contains(p) ? MoeGraphicsContainer::mouseMovedEvent(p) : 0;
 
             if(mouseHoverFocus != newHoverFocus) {
-                if(!mouseHoverFocus.isNull())
+                if(!mouseHoverFocus.isNull()) {
+                    if(newHoverFocus.isNull())
+                        mouseLeaveEvent();
                     disconnect(mouseHoverFocus.data(), SIGNAL(cursorChanged(QCursor)), backend(), SLOT(setCursor(QCursor)));
+                } else if(!newHoverFocus.isNull())
+                    mouseEnterEvent();
                 mouseHoverFocus = newHoverFocus;
                 if(!mouseHoverFocus.isNull()) {
                     connect(mouseHoverFocus.data(), SIGNAL(cursorChanged(QCursor)), backend(), SLOT(setCursor(QCursor)), Qt::DirectConnection);
@@ -127,7 +131,7 @@ protected slots:
         else {
             MoeGraphicsContainer::mousePressedEvent(p, b);
             if(mouseHoverFocus.data() != mouseDragFocus.data()) {
-                qDebug() << "Started dragging" << mouseHoverFocus.data();
+                //qDebug() << "Started dragging" << mouseHoverFocus.data();
                 mouseDragFocus = mouseHoverFocus;
             }
         }
@@ -146,14 +150,14 @@ protected slots:
         if(!_connected)
             return;
 
-        qDebug() << "Surface Backend Disconnected" << this;
+        //qDebug() << "Surface Backend Disconnected" << this;
         _connected = false;
         emit disconnected();
     }
 
 private slots:
     inline void renderNow(){
-        qDebug() << "Rendering Surface" << repaintRegion << this;
+        //qDebug() << "Rendering Surface" << repaintRegion << this;
         render(0, repaintRegion);
         repaintRegion = QRect();
         renderState = NotReady;

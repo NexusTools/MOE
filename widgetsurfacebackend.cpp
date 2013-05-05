@@ -8,7 +8,7 @@
 #include <QGLWidget>
 #include <QDialog>
 #include <QWidget>
-#include <QDebug>
+
 
 WidgetSurfaceBackend::WidgetSurfaceBackend(QString title, QSize size, int type, QWidget* parent) : QPainterSurfaceBackend(QRect())
 {
@@ -29,7 +29,7 @@ WidgetSurfaceBackend::WidgetSurfaceBackend(QWidget* widget) : QPainterSurfaceBac
 bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
     if(obj == _widget) {
         //static QMetaEnum typeEnum = QEvent::staticMetaObject.enumerator(QEvent::staticMetaObject.indexOfEnumerator("Type"));
-        //qDebug() << "Unhandled Event" << event->type() << typeEnum.key(event->type());
+        ////qDebug() << "Unhandled Event" << event->type() << typeEnum.key(event->type());
 
         switch(event->type()) {
             case QEvent::Paint:
@@ -37,7 +37,7 @@ bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
                     QPainter p;
                     if(hasPendingInstructions()) {
                         if(buffer.size() != bufferSize()) {
-                            qDebug() << "Resized Buffer" << bufferSize();
+                            //qDebug() << "Resized Buffer" << bufferSize();
                             buffer = QPixmap(bufferSize());
                         }
 
@@ -93,7 +93,7 @@ bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
 
 void WidgetSurfaceBackend::createWidget(QString title, QSize size, int type, QWidget *parent) {
     QWidget* widget;
-    qDebug() << "Creating" << type << "Widget";
+    //qDebug() << "Creating" << type << "Widget";
     switch((MoeGraphicsSurface::BackendWidgetType)type) {
         case MoeGraphicsSurface::MainWindow:
             widget = new QMainWindow();
@@ -122,7 +122,7 @@ void WidgetSurfaceBackend::createWidget(QString title, QSize size, int type, QWi
 }
 
 void WidgetSurfaceBackend::initWidget(QWidget* widget) {
-    qDebug() << "Initializing Widget for Surface" << widget;
+    //qDebug() << "Initializing Widget for Surface" << widget;
 
     _widget = widget;
     repaintTimer.setInterval(0);

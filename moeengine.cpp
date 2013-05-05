@@ -30,7 +30,7 @@ MoeEngine::MoeEngine(QVariantMap args) {
 
 MoeEngine::~MoeEngine()
 {
-    qDebug() << "Destroying MoeEngine";
+    //qDebug() << "Destroying MoeEngine";
     if(isRunning())
     {
         qWarning() << "Destroying Engine while Running" << this;
@@ -53,8 +53,8 @@ void MoeEngine::timerEvent(QTimerEvent* ev) {
 
 void MoeEngine::setState(State state)
 {
-    static QMetaEnum stateEnum = MoeEngine::staticMetaObject.enumerator(MoeEngine::staticMetaObject.indexOfEnumerator("State"));
-    qDebug() << "Engine State Changed" << stateEnum.key(state) << "from" << stateEnum.key(_state);
+    //static QMetaEnum stateEnum = MoeEngine::staticMetaObject.enumerator(MoeEngine::staticMetaObject.indexOfEnumerator("State"));
+    //qDebug() << "Engine State Changed" << stateEnum.key(state) << "from" << stateEnum.key(_state);
 
     if(_state == state)
         return;
@@ -102,7 +102,7 @@ void MoeEngine::exceptionThrown(QScriptValue exception)
 }
 
 void MoeEngine::includeFile(QString filePath){
-    qDebug() << "Reading File" << filePath;
+    //qDebug() << "Reading File" << filePath;
 
     QFile file(filePath);
     if(file.open(QFile::ReadOnly)) {
@@ -112,7 +112,7 @@ void MoeEngine::includeFile(QString filePath){
         _scriptEngine->evaluate(QString(file.readAll()), filePath);
         _scriptEngine->currentContext()->popScope();
         _scriptEngine->popContext();
-        qDebug() << filePath;
+        //qDebug() << filePath;
     } else
         _scriptEngine->currentContext()->throwError(QScriptContext::UnknownError, QString("File Not Found: %1").arg(filePath));
 }
@@ -123,7 +123,7 @@ void MoeEngine::run()
     makeCurrent();
     _error = QString();
 
-    qDebug() << "Creating script engine";
+    //qDebug() << "Creating script engine";
 
     QScriptEngine scriptEngine;
     _scriptEngine = &scriptEngine;
@@ -154,7 +154,7 @@ void MoeEngine::run()
     {
         iterator.next();
 
-        qDebug() << "Injecting" << iterator.key() << iterator.value();
+        //qDebug() << "Injecting" << iterator.key() << iterator.value();
         QObject* obj = iterator.value().value<QObject*>();
         if(obj) {
             globalObject.setProperty(iterator.key(), scriptEngine.newQObject(obj));
@@ -195,7 +195,7 @@ void MoeEngine::run()
     }
 
     connect(&scriptEngine, SIGNAL(signalHandlerException(QScriptValue)), this, SLOT(exceptionThrown(QScriptValue)));
-    qDebug() << "Entering Main Loop";
+    //qDebug() << "Entering Main Loop";
     QElapsedTimer timer;
 
     QEventLoop eventLoop;

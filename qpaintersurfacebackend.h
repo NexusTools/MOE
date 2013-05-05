@@ -7,11 +7,10 @@
 #include <QPainter>
 #include <QDebug>
 
+
 class QPainterSurfaceBackend : public AbstractSurfaceBackend {
 public:
     inline void renderInstructions(RenderInstructions instructions, QRect paintRect, QSize bufferSize) {
-        qDebug() << "Received" << instructions.size() << "Instructions";
-
         pendingInstructions = instructions;
         pendingBufferSize = bufferSize;
         pendingPaintRect = paintRect;

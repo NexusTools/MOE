@@ -61,11 +61,11 @@ void MoeGraphicsObject::render(RenderRecorder *p, QRect region)
 
 void MoeGraphicsObject::paintImpl(RenderRecorder* p, QRect)
 {
-    if(qAlpha(_border) > 0 || _borderRadius > 0) {
+    if(_border.alpha() > 0 || _borderRadius > 0) {
         p->setPen(_border);
         p->setBrush(_background);
         p->drawRect(_localGeometry, _borderRadius);
-    } else if(qAlpha(_background) > 0)
+    } else if(_background.alpha() > 0)
         p->fillRect(_localGeometry, _background);
 }
 

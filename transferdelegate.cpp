@@ -4,7 +4,7 @@
 #include <QNetworkRequest>
 #include <QMetaMethod>
 #include <QThread>
-#include <QDebug>
+
 
 TransferDelegateReference TransferDelegate::getInstance(QString res) {
     static QHash<QString, WeakTransferDelegate> activeDelegates;
@@ -25,7 +25,7 @@ TransferDelegateReference TransferDelegate::getInstance(QString res) {
 
 TransferDelegate::TransferDelegate(QString url) : _url(url)
 {
-    qDebug() << "Created new TransferDelegate for" << url;
+    //qDebug() << "Created new TransferDelegate for" << url;
 
     static QMetaMethod startMethod = metaObject()->method(metaObject()->indexOfMethod("startRequest()"));
     static QThread* requestThread = 0;
@@ -34,12 +34,12 @@ TransferDelegate::TransferDelegate(QString url) : _url(url)
         requestThread->start();
     }
     moveToThread(requestThread);
-    qDebug() << startMethod.isValid() << startMethod.name();
+    //qDebug() << startMethod.isValid() << startMethod.name();
     startMethod.invoke(this, Qt::QueuedConnection);
 }
 
 void TransferDelegate::startRequest(){
-    qDebug() << "Starting to Download" << _url;
+    //qDebug() << "Starting to Download" << _url;
     static QNetworkAccessManager* netMan = 0;
     if(!netMan) {
         netMan = new QNetworkAccessManager();
