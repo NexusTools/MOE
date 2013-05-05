@@ -1,0 +1,30 @@
+# Qt Build Files
+*.pro.user
+Makefile
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+
+# Project Binary
+MOEGameEngine
+
+# Editor Backups
+*~
+
+# Object Files
+*.o
+
+# Libraries
+*.lib
+*.a
+
+# Shared Objects
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app

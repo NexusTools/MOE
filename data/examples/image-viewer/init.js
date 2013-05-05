@@ -103,5 +103,6 @@ boardPage.resized.connect(function(size){
 boardPage.setSize(surface.size());
 surface.connected.connect(function() {
     surface.animate("background", "royal blue", 30);
+    updateBoardList();
 });
 
