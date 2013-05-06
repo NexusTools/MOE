@@ -35,17 +35,31 @@ function GradientStop(stop, color) {
     return [stop, color];
 }
 
-function Gradient() {
-    var gradient;
-    for(var i=0; i<arguments.length; i++) {
-        if(i == 0) {
-            gradient = arguments[1];
-            gradient['stops'] = [arguments[0]];
-        } else
-            gradient['stops'].push(arguments[i]);
-    }
+function Gradient(type, stops) {
+    return {"type": type, "stops": stops};
+}
 
+function RadialGradient() {
+    return Gradient("radial", $A(arguments));
+}
+
+function LinearGradient(stops, stopPos, startPos) {
+    if(startPos == undefined)
+        startPos = Point(0, 0);
+    if(stopPos == undefined)
+        stopPos = Point(0, 1);
+    var gradient = Gradient("linear", stops);
+    gradient.start = startPos;
+    gradient.stop = stopPos;
     return gradient;
+}
+
+function VLinearGradient() {
+    return LinearGradient($A(arguments));
+}
+
+function HLinearGradient() {
+    return LinearGradient($A(arguments), Point(1, 0));
 }
 
 function Signal() {

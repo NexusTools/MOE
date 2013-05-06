@@ -171,9 +171,9 @@ void MoeEngine::run()
     }
 
     includeFile(":/data/prototype.js");
-    if(scriptEngine.hasUncaughtException()) {
+    if(scriptEngine.hasUncaughtException())
         exceptionThrown(scriptEngine.uncaughtException());
-
+    if(_state != Starting) {
         _scriptEngine = 0;
         _eventLoop = 0;
         exit(0);
@@ -181,9 +181,9 @@ void MoeEngine::run()
     }
 
     includeFile(":/data/shared.js");
-    if(scriptEngine.hasUncaughtException()) {
+    if(scriptEngine.hasUncaughtException())
         exceptionThrown(scriptEngine.uncaughtException());
-
+    if(_state != Starting) {
         _scriptEngine = 0;
         _eventLoop = 0;
         exit(0);
@@ -191,9 +191,9 @@ void MoeEngine::run()
     }
 
     includeFile(_fileContext + "init.js");
-    if(scriptEngine.hasUncaughtException()) {
+    if(scriptEngine.hasUncaughtException())
         exceptionThrown(scriptEngine.uncaughtException());
-
+    if(_state != Starting) {
         _scriptEngine = 0;
         _eventLoop = 0;
         exit(0);

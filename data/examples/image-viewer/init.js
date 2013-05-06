@@ -1,8 +1,4 @@
 var surface = new GraphicsSurface("Image Viewer Example (MOE Game Engine v" + engine.version + ")", Size(800, 600));
-
-//surface.enableRepaintDebug(false);
-//engine.setTicksPerSecond(60);
-
 var boardPage = new GraphicsContainer(surface);
 var boardEntryMap = {};
 var boardEntries = [];
@@ -10,7 +6,7 @@ var boardEntries = [];
 function boardEntry(code, title, pages, sleepFade) {
     this.element = new GraphicsContainer(boardPage);
     this.element.objectName = "Board /" + code + "/";
-    this.element.background = "white";
+    this.element.background = VLinearGradient(GradientStop(0, "white"), GradientStop(1, "gray80"));
     this.element.cursor = "pointer";
     this.element.border = "gray70";
     this.element.opacity = 0;
@@ -37,7 +33,7 @@ function boardEntry(code, title, pages, sleepFade) {
         boardElement.animate("background", "gray90", 2);
     });
     this.element.mouseLeft.connect(function(){
-        boardElement.animate("background", "white", 2);
+        boardElement.animate("background", VLinearGradient(GradientStop(0, "white"), GradientStop(1, "gray80")), 2);
     });
 }
 
@@ -79,7 +75,7 @@ function updateBoardList() {
 var control = new GraphicsContainer(surface);
 control.objectName = "ControlPanel";
 control.setGeometry(Rect(0,-194,surface.width,200));
-control.background = Rgba(0,0,0,160);
+control.background = VLinearGradient(GradientStop(0, Rgba(0, 0, 0, 160)), GradientStop(1, Rgba(0, 0, 0, 120)));
 control.opacity = 0.6;
 
 control.mouseEntered.connect(function(){

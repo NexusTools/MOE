@@ -53,6 +53,10 @@ public:
     void inject(QString key, QVariant obj);
 
 public slots:
+    inline bool isNative(QScriptValue val) {
+        return val.isQObject() || val.isQMetaObject();
+    }
+
     void quit();
 
     inline int setTimeout(QScriptValue callback, int mdelay) {

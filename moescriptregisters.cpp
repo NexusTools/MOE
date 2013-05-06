@@ -1,8 +1,10 @@
 #include "moescriptregisters.h"
-
-
 #include "renderrecorder.h"
 #include "moegraphicscontainer.h"
+
+#include <QScriptValueIterator>
+#include <QRadialGradient>
+#include <QLinearGradient>
 #include <QScriptEngine>
 #include <QCursor>
 #include <QRegExp>
@@ -207,8 +209,57 @@ QScriptValue qbrushToScriptValue(QScriptEngine *engine, QBrush const &in)
     return rect;
 }
 
+inline void __initGradientBrush__(QGradient* gradient, QGradientStops& stops) {
+    gradient->setStops(stops);
+    gradient->setSpread(QGradient::PadSpread);
+    gradient->setCoordinateMode(QGradient::ObjectBoundingMode);
+}
+
 void qbrushFromScriptValue(const QScriptValue &object, QBrush &out)
 {
+    if(object.isObject()) {
+        qDebug() << object.toVariant();
+
+        QScriptValue type = object.property("type");
+        QScriptValue stops = object.property("stops");
+        if(stops.isArray() && type.isString()) {
+            QGradientStops qstops;
+            QScriptValueIterator stop(stops);
+            while(stop.hasNext()) {
+                stop.next();
+                if(stop.flags().testFlag(QScriptValue::SkipInEnumeration))
+                    continue;
+                if(stop.value().isArray()) {
+                    qreal pos = stop.value().property(0).toNumber();
+                    QColor col = object.engine()->fromScriptValue<QColor>(stop.value().property(1));
+                    qstops << QGradientStop(pos, col);
+                } else if(stop.value().isObject()) {
+                    qreal pos = stop.value().property("pos").toNumber();
+                    QColor col = object.engine()->fromScriptValue<QColor>(stop.value().property("color"));
+                    qstops << QGradientStop(pos, col);
+                }
+            }
+
+            QString typeString = type.toString();
+            if(typeString == "linear") {
+                QLinearGradient gradient(object.engine()->fromScriptValue<QPoint>(object.property("start")),
+                                object.engine()->fromScriptValue<QPoint>(object.property("stop")));
+                __initGradientBrush__(&gradient, qstops);
+                out = QBrush(gradient);
+                qDebug() << out;
+            } else if(typeString == "radial") {
+                QRadialGradient gradient;
+                __initGradientBrush__(&gradient, qstops);
+                out = QBrush(gradient);
+                qDebug() << out;
+            } else {
+                object.engine()->currentContext()->throwError(QString("%1 is not a valid radial type.").arg(typeString));
+                return;
+            }
+            return;
+        }
+    }
+
     QColor color;
     qcolorFromScriptValue(object, color);
     out = QBrush(color);

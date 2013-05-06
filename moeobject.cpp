@@ -13,7 +13,7 @@
 struct AnimationState {
     QMetaProperty metaProp;
     QScriptValue callback;
-    QVariant target;
+    QVariant target, last;
     qreal modifier;
 };
 
@@ -55,7 +55,7 @@ void MoeObject::animate(QString key, QScriptValue to, QScriptValue callback, qre
     if(!state.data()) {
         int propIndex = metaObject()->indexOfProperty(key.toLocal8Bit().data());
         if(!propIndex) {
-            engine()->scriptEngine()->currentContext()->throwError("Unknown Property");
+            engine()->scriptEngine()->currentContext()->throwError(QString("Native property '%1' does not exist in '%2' or any of its parents.").arg(key).arg(metaObject()->className()));
             return;
         }
 
@@ -79,7 +79,7 @@ void MoeObject::animate(QString key, QScriptValue to, QScriptValue callback, qre
 
         default:
         {
-            engine()->scriptEngine()->currentContext()->throwError("Unknown Type, Cannot Animate");
+            engine()->scriptEngine()->currentContext()->throwError(QString("Type '%1' cannot be animated. Cannot animate property '%2'.").arg(state->metaProp.typeName()).arg(key));
             animations.remove(key);
             return;
         }
@@ -88,6 +88,7 @@ void MoeObject::animate(QString key, QScriptValue to, QScriptValue callback, qre
     if(callback.isFunction())
         state->callback = callback;
 
+    state->last = state->metaProp.read(this);
     state->modifier = callback.isNumber() ? callback.toNumber() : modifier;
     if(addToList) {
         if(animations.isEmpty())
@@ -106,6 +107,8 @@ enum SmoothResultFlag {
 Q_DECLARE_FLAGS(SoothResultFlags, SmoothResultFlag)
 
 #define ANIMATE_START_GROUP(T) T val = metaProp.read(this).value<T>(); \
+if(val != state->last.value<T>()) \
+    break; \
 T target = state->target.value<T>();
 
 #define ANIMATE_PROPERTY_REAL(READ, WRITE) qreal READ = val.READ(); \
@@ -118,10 +121,14 @@ T target = state->target.value<T>();
     if(result.testFlag(ValueChanged)) \
         val.WRITE(READ);
 
-#define ANIMATE_END(T) if(result.testFlag(ValueChanged)) \
-    metaProp.write(this, val);
+#define ANIMATE_END(T) if(result.testFlag(ValueChanged)) { \
+    metaProp.write(this, val); \
+    state->last = val; \
+}
 
 #define ANIMATE_REAL() qreal val = state->metaProp.read(this).toReal(); \
+if(val != state->last.toReal()) \
+    break; \
 result = smoothReal(val, state->target.toReal(), state->modifier); \
 ANIMATE_END(qreal)
 
@@ -174,11 +181,17 @@ void MoeObject::animateTick() {
             case QVariant::Brush:
             {
                 QBrush bval = state->metaProp.read(this).value<QBrush>();
+                QBrush last = state->last.value<QBrush>();
                 QBrush btarget = state->target.value<QBrush>();
 
-                if(!bval.gradient() && !btarget.gradient()) { //TODO: Implement Gradient Handling
-                    QColor target = btarget.color();
+                if(!last.gradient() && !btarget.gradient()) { //TODO: Implement Gradient Handling
+                    if(bval.gradient()) // Value changed to gradient
+                        break;
+
                     QColor val = bval.color();
+                    if(val != last.color())
+                        break;
+                    QColor target = btarget.color();
 
                     ANIMATE_PROPERTY_INT(red, setRed)
                     ANIMATE_PROPERTY_INT(green, setGreen)
@@ -186,13 +199,16 @@ void MoeObject::animateTick() {
                     ANIMATE_PROPERTY_INT(alpha, setAlpha)
 
                     bval = QBrush(val);
-                } else if(bval != btarget) {
+                } else {
+                    qWarning() << "Animating Gradients not yet Implemented.";
                     result |= ValueChanged;
                     bval = btarget;
                 }
 
-                if(result.testFlag(ValueChanged))
+                if(result.testFlag(ValueChanged)) {
                     metaProp.write(this, bval);
+                    state->last = bval;
+                }
 
                 break;
             }
