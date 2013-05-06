@@ -19,8 +19,6 @@ public:
     }
 
     void paint(QPainter& p) {
-        qDebug() << "Painting" << pendingInstructions.size() << "Instructions" << pendingPaintRect << pendingBufferSize;
-
         p.setPen(Qt::black);
         p.setBrush(Qt::darkMagenta);
         p.setClipRect(pendingPaintRect);
@@ -55,7 +53,7 @@ public:
                     if(inst.arguments.isEmpty())
                         p.setBrush(Qt::NoBrush);
                     else
-                        p.setBrush(QColor::fromRgba(inst.arguments.at(0).toUInt()));
+                        p.setBrush(inst.arguments.at(0).value<QBrush>());
                     break;
 
                 case RenderInstruction::UpdateClipRect:

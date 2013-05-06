@@ -142,7 +142,7 @@ public slots:
             penThick = thickness;
     }
 
-    inline void setBrush(QColor c){
+    inline void setBrush(QBrush c){
         brush = c;
     }
 
@@ -197,8 +197,8 @@ protected:
         if(cbrush != brush) {
             RenderInstruction instruction;
             instruction.type = RenderInstruction::UpdateBrush;
-            if(brush.alpha() > 0)
-                instruction.arguments.append((unsigned int)brush.rgba());
+            if(brush.color().alpha() > 0 || brush.gradient())
+                instruction.arguments.append(brush);
             _instructions.append(instruction);
             cbrush = brush;
         }
@@ -276,12 +276,12 @@ private:
     RenderInstructions _instructions;
     QTransform _transform;
 
-    int penThick, cPenThick;
-    QFont font, cfont;
-    QColor pen, brush;
-    QColor cpen, cbrush;
     QRect cClipRect;
+    QColor pen, cpen;
+    QFont font, cfont;
+    QBrush brush, cbrush;
     QTransform cTransform;
+    int penThick, cPenThick;
 };
 
 #endif // RENDERRECORDER_H

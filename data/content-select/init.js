@@ -1,6 +1,5 @@
 
 var surface = new GraphicsSurface("Select Content (MOE Game Engine v" + engine.version + ")", Size(800, 600));
-surface.background = "dark magenta";
 
 var title = new GraphicsText("Select Content", Font("Arial", 16), surface);
 title.foreground = "white";
@@ -30,8 +29,8 @@ engine.tick.connect(function(){
         }
         surface.repaint(Rect(snakes[i].trail[t].x-5,snakes[i].trail[t].y-5,11,11));
 
-        var cPos = snakes[i].trail[t];
         var cSpeed = snakes[i].speed;
+        var cPos = snakes[i].trail[t];
         cSpeed.x += (center.x - cPos.x) / 14;
         cSpeed.y += (center.y - cPos.y) / 14;
         cSpeed.x += -2 + Math.random() * 4;
@@ -51,7 +50,6 @@ var snakePenColor = surface.foreground;
 snakePenColor.alpha = 60;
 surface.foreground = snakePenColor;
 surface.paint.connect(function(p) {
-    engine.debug("Drawing " + snakes.length + " snakes");
     for(var h=1; h<6; h+=2){
         p.setPenThickness(h);
         for(var i=0; i<snakes.length; i++) {
@@ -78,3 +76,5 @@ function start(size) {
 }
 
 surface.resized.connect(start);
+
+engine.debug(surface.background);

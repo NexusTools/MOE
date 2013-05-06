@@ -10,6 +10,7 @@
 
 #include <QRectF>
 #include <QColor>
+#include <QBrush>
 
 class RenderRecorder;
 class MoeGraphicsObject;
@@ -29,7 +30,7 @@ class MoeGraphicsObject : public MoeObject
     Q_PROPERTY(qreal height READ height WRITE setHeight)
     Q_PROPERTY(qreal borderRadius READ borderRadius WRITE setBorderRadius)
     Q_PROPERTY(QCursor cursor READ cursor WRITE setCursor)
-    Q_PROPERTY(QColor background READ background WRITE setBackground)
+    Q_PROPERTY(QBrush background READ background WRITE setBackground)
     Q_PROPERTY(QColor foreground READ foreground WRITE setForeground)
     Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity)
     Q_PROPERTY(QColor border READ border WRITE setBorder)
@@ -43,7 +44,7 @@ public:
             setContainer(container());
 
         _foreground = Qt::black;
-        _background = Qt::transparent;
+        _background = Qt::NoBrush;
         _border = Qt::transparent;
         _borderRadius = 0;
         _opacity = 1;
@@ -84,10 +85,10 @@ public:
     Q_INVOKABLE inline QRectF geomtry() const{return _geometry;}
     Q_INVOKABLE inline QRect realGeometry() const{return _realGeometry;}
 
-    inline QColor background() const{return _background;}
+    inline QBrush background() const{return _background;}
     inline QColor foreground() const{return _foreground;}
     inline QColor border() const{return _border;}
-    Q_INVOKABLE inline void setBackground(QColor c) {if(c==_background)return;_background=c;repaint();}
+    Q_INVOKABLE inline void setBackground(QBrush c) {if(c==_background)return;_background=c;repaint();}
     Q_INVOKABLE inline void setForeground(QColor c) {if(c==_foreground)return;_foreground=c;repaint();}
     Q_INVOKABLE inline void setBorder(QColor c) {if(c==_border)return;_border=c;repaint();}
 
@@ -218,7 +219,7 @@ protected:
     }
 
     QCursor _cursor;
-    QColor _background;
+    QBrush _background;
     QColor _foreground;
     QColor _border;
     QPointF _scale;

@@ -31,6 +31,23 @@ function Rgba(r, g, b, a) {
     return {"red": r, "green": g, "blue": b, "alpha": a};
 }
 
+function GradientStop(stop, color) {
+    return [stop, color];
+}
+
+function Gradient() {
+    var gradient;
+    for(var i=0; i<arguments.length; i++) {
+        if(i == 0) {
+            gradient = arguments[1];
+            gradient['stops'] = [arguments[0]];
+        } else
+            gradient['stops'].push(arguments[i]);
+    }
+
+    return gradient;
+}
+
 function Signal() {
     thisObject = this;
     this.connections = [];

@@ -11,8 +11,8 @@ function boardEntry(code, title, pages, sleepFade) {
     this.element = new GraphicsContainer(boardPage);
     this.element.objectName = "Board /" + code + "/";
     this.element.background = "white";
-    this.element.border = "gray70";
     this.element.cursor = "pointer";
+    this.element.border = "gray70";
     this.element.opacity = 0;
     var boardElement = this.element;
     setTimeout(function() {
@@ -24,8 +24,6 @@ function boardEntry(code, title, pages, sleepFade) {
     var codeElement = new GraphicsText("/" + code + "/", {"family": "Arial", "size": 8}, this.element);
     codeElement.objectName = "Board /" + code + "/ Code";
 
-    engine.debug(titleElement.size());
-    engine.debug(codeElement.size());
     this.element.resized.connect(function(size){
         titleElement.setPos(size.width / 2 - titleElement.width/2, 2);
         codeElement.setPos(size.width / 2 - codeElement.width/2, titleElement.height + 2);
@@ -73,6 +71,8 @@ function updateBoardList() {
             }
         });
         fixBoardLayout(boardPage.size());
+        surface.animate("background", "royal blue", 30);
+        engine.debug(surface.background);
     });
 }
 
@@ -101,8 +101,5 @@ boardPage.resized.connect(function(size){
     fixBoardLayout(size);
 });
 boardPage.setSize(surface.size());
-surface.connected.connect(function() {
-    surface.animate("background", "royal blue", 30);
-    updateBoardList();
-});
+surface.connected.connect(updateBoardList);
 

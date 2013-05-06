@@ -160,7 +160,6 @@ void qcolorFromScriptValue(const QScriptValue &object, QColor &out)
 
         static QHash<QString, QColor> namedColors;
         if(namedColors.isEmpty()) {
-            qDebug() << "Loading Name List...";
             QFile reader(":/data/rgb.txt");
             if(reader.open(QFile::ReadOnly)) {
                 QRegExp colorLine("(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\w.+\\w)", Qt::CaseInsensitive, QRegExp::RegExp2);
@@ -171,7 +170,6 @@ void qcolorFromScriptValue(const QScriptValue &object, QColor &out)
                 }
             } else
                 qWarning() << "Failed to open rgb.txt";
-            qDebug() << namedColors.size() << "Named Colors Loaded";
         }
         string = string.toLower().trimmed();
         if(namedColors.contains(string)) {
@@ -197,6 +195,23 @@ void qcolorFromScriptValue(const QScriptValue &object, QColor &out)
     }
 
     object.engine()->currentContext()->throwError(QString("RGB types expect a valid css color, or numeric color code."));
+}
+
+QScriptValue qbrushToScriptValue(QScriptEngine *engine, QBrush const &in)
+{
+    QScriptValue rect = engine->newObject();
+    rect.setProperty("red", in.color().red());
+    rect.setProperty("green", in.color().green());
+    rect.setProperty("blue", in.color().blue());
+    rect.setProperty("alpha", in.color().alpha());
+    return rect;
+}
+
+void qbrushFromScriptValue(const QScriptValue &object, QBrush &out)
+{
+    QColor color;
+    qcolorFromScriptValue(object, color);
+    out = QBrush(color);
 }
 
 QScriptValue qfontToScriptValue(QScriptEngine *engine, QFont const &in)
@@ -287,6 +302,7 @@ void __moe_registerScriptConverters(QScriptEngine* eng) {
     qScriptRegisterMetaType<QRectF>(eng, qrectfToScriptValue, qrectfFromScriptValue);
     qScriptRegisterMetaType<QRect>(eng, qrectToScriptValue, qrectFromScriptValue);
 
-    qScriptRegisterMetaType<QFont>(eng, qfontToScriptValue, qfontFromScriptValue);
+    qScriptRegisterMetaType<QBrush>(eng, qbrushToScriptValue, qbrushFromScriptValue);
     qScriptRegisterMetaType<QColor>(eng, qcolorToScriptValue, qcolorFromScriptValue);
+    qScriptRegisterMetaType<QFont>(eng, qfontToScriptValue, qfontFromScriptValue);
 }

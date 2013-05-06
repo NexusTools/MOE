@@ -140,7 +140,7 @@ protected:
     explicit inline MoeAbstractGraphicsSurface(AbstractSurfaceBackend* backend, MoeObject* par =0) : MoeGraphicsContainer(par) {
         _connected = false;
         renderState = NotReady;
-        _background = Qt::darkMagenta;
+        _background = QBrush(Qt::darkMagenta);
         _border = Qt::transparent;
         repaintDebug = RepaintDebugOff;
         qRegisterMetaType<RenderInstructions>("RenderInstructions");
@@ -169,7 +169,7 @@ protected:
         if(!_connected)
             return;
 
-        if(region.isNull() || _background.alpha() < 255)
+        if(region.isNull() || !_background.isOpaque())
             region = _localGeometry;
         else
             region &= _localGeometry;
@@ -186,10 +186,8 @@ protected:
         else
             repaintRegion |= region;
 
-        if(renderState.testFlag(ViewReady) && !renderState.testFlag(SurfaceDirty)){
-            //qDebug() << "Starting Repaint Timer";
+        if(renderState.testFlag(ViewReady) && !renderState.testFlag(SurfaceDirty))
             renderTimer.start();
-        }
 
          renderState |= SurfaceDirty;
     }

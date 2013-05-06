@@ -1,10 +1,13 @@
 #include "moeengine.h"
 #include "moeobject.h"
+
 #include <QMetaProperty>
 #include <QScriptEngine>
 #include <QStringList>
 #include <QDebug>
 #include <QColor>
+#include <QBrush>
+
 #include <qmath.h>
 
 struct AnimationState {
@@ -70,6 +73,10 @@ void MoeObject::animate(QString key, QScriptValue to, QScriptValue callback, qre
             state->target = QVariant::fromValue<QColor>(engine()->scriptEngine()->fromScriptValue<QColor>(to));
             break;
 
+        case QVariant::Brush:
+            state->target = QVariant::fromValue<QBrush>(engine()->scriptEngine()->fromScriptValue<QBrush>(to));
+            break;
+
         default:
         {
             engine()->scriptEngine()->currentContext()->throwError("Unknown Type, Cannot Animate");
@@ -111,9 +118,8 @@ T target = state->target.value<T>();
     if(result.testFlag(ValueChanged)) \
         val.WRITE(READ);
 
-#define ANIMATE_END(T) if(result.testFlag(ValueChanged)) { \
-    metaProp.write(this, val); \
-}
+#define ANIMATE_END(T) if(result.testFlag(ValueChanged)) \
+    metaProp.write(this, val);
 
 #define ANIMATE_REAL() qreal val = state->metaProp.read(this).toReal(); \
 result = smoothReal(val, state->target.toReal(), state->modifier); \
@@ -165,6 +171,32 @@ void MoeObject::animateTick() {
         QMetaProperty metaProp = state->metaProp;
         SoothResultFlags result = NoChange;
         switch(metaProp.type()) {
+            case QVariant::Brush:
+            {
+                QBrush bval = state->metaProp.read(this).value<QBrush>();
+                QBrush btarget = state->target.value<QBrush>();
+
+                if(!bval.gradient() && !btarget.gradient()) { //TODO: Implement Gradient Handling
+                    QColor target = btarget.color();
+                    QColor val = bval.color();
+
+                    ANIMATE_PROPERTY_INT(red, setRed)
+                    ANIMATE_PROPERTY_INT(green, setGreen)
+                    ANIMATE_PROPERTY_INT(blue, setBlue)
+                    ANIMATE_PROPERTY_INT(alpha, setAlpha)
+
+                    bval = QBrush(val);
+                } else if(bval != btarget) {
+                    result |= ValueChanged;
+                    bval = btarget;
+                }
+
+                if(result.testFlag(ValueChanged))
+                    metaProp.write(this, bval);
+
+                break;
+            }
+
             case QVariant::Color:
             {
                 ANIMATE_START_GROUP(QColor)
