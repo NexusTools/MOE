@@ -99,14 +99,9 @@ protected slots:
     inline void mousePress(QPoint p, int b){
         if(!mouseDragFocus.isNull())
             mouseDragFocus.data()->mousePressedEvent(mouseDragFocus.data()->mapFromSurface(p), b);
-        else if(!mouseHoverFocus.isNull())
+        else if(!mouseHoverFocus.isNull()) {
             mouseHoverFocus.data()->mousePressedEvent(mouseHoverFocus.data()->mapFromSurface(p), b);
-        else {
-            MoeGraphicsContainer::mousePressedEvent(p, b);
-            if(mouseHoverFocus.data() != mouseDragFocus.data()) {
-                //qDebug() << "Started dragging" << mouseHoverFocus.data();
-                mouseDragFocus = mouseHoverFocus;
-            }
+            mouseDragFocus = mouseHoverFocus;
         }
     }
 
@@ -115,8 +110,7 @@ protected slots:
             mouseDragFocus.data()->mouseReleasedEvent(mouseDragFocus.data()->mapFromSurface(p), b);
             if(!b) // All buttons released
                 mouseDragFocus = 0;
-        } else
-            MoeGraphicsContainer::mouseReleasedEvent(p, b);
+        }
     }
 
     inline void notifyDisconnected() {
@@ -147,6 +141,8 @@ protected:
 
         _backend = backend;
         connect(backend, SIGNAL(mouseMove(QPoint)), this, SLOT(mouseMove(QPoint)), Qt::QueuedConnection);
+        connect(backend, SIGNAL(mousePress(QPoint,int)), this, SLOT(mousePress(QPoint,int)), Qt::QueuedConnection);
+        connect(backend, SIGNAL(mouseRelease(QPoint,int)), this, SLOT(mouseRelease(QPoint,int)), Qt::QueuedConnection);
 
         connect(this, SIGNAL(destroyed()), backend, SLOT(deleteLater()), Qt::QueuedConnection);
         connect(this, SIGNAL(resized(QSizeF)), backend, SLOT(setSize(QSizeF)), Qt::QueuedConnection);

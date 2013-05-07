@@ -218,8 +218,6 @@ inline void __initGradientBrush__(QGradient* gradient, QGradientStops& stops) {
 void qbrushFromScriptValue(const QScriptValue &object, QBrush &out)
 {
     if(object.isObject()) {
-        qDebug() << object.toVariant();
-
         QScriptValue type = object.property("type");
         QScriptValue stops = object.property("stops");
         if(stops.isArray() && type.isString()) {
@@ -246,12 +244,10 @@ void qbrushFromScriptValue(const QScriptValue &object, QBrush &out)
                                 object.engine()->fromScriptValue<QPoint>(object.property("stop")));
                 __initGradientBrush__(&gradient, qstops);
                 out = QBrush(gradient);
-                qDebug() << out;
             } else if(typeString == "radial") {
                 QRadialGradient gradient;
                 __initGradientBrush__(&gradient, qstops);
                 out = QBrush(gradient);
-                qDebug() << out;
             } else {
                 object.engine()->currentContext()->throwError(QString("%1 is not a valid radial type.").arg(typeString));
                 return;

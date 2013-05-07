@@ -9,11 +9,10 @@
 #include <QMap>
 
 class MoeEngine;
+class QEventLoop;
+class QScriptEngine;
 
 typedef QPointer<MoeEngine> MoeEnginePointer;
-
-class QScriptEngine;
-class QEventLoop;
 
 class MoeEngine : public QThread
 {
@@ -57,6 +56,9 @@ public slots:
         return val.isQObject() || val.isQMetaObject();
     }
 
+    void play();
+    void pause();
+
     void quit();
 
     inline int setTimeout(QScriptValue callback, int mdelay) {
@@ -77,22 +79,23 @@ public slots:
     inline void setTicksPerSecond(uchar ticks) {_tickWait=1000/ticks;}
 
 protected slots:
-    void exceptionThrown(QScriptValue exception);
+    void exceptionThrown(QScriptValue);
 
 signals:
     void tick();
     void stopped();
     void started();
+    void preciseTick(qreal);
     void crashed(QString reason);
     void stateChanged(MoeEngine::State state);
 
 protected:
-    void abort(QString reason, bool crash =true);
+    void abort(QString reason, bool crashed =true);
+    void includeFile(QString filePath);
     void timerEvent(QTimerEvent *);
     void setState(State);
     void run();
 
-    Q_INVOKABLE void includeFile(QString filePath);
 
 private:
     State _state;

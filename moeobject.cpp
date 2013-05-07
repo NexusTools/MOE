@@ -200,7 +200,6 @@ void MoeObject::animateTick() {
 
                     bval = QBrush(val);
                 } else {
-                    qWarning() << "Animating Gradients not yet Implemented.";
                     result |= ValueChanged;
                     bval = btarget;
                 }

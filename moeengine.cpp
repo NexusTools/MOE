@@ -1,5 +1,5 @@
+#include "moeurl.h"
 #include "moeengine.h"
-#include "renderrecorder.h"
 #include "moeresourcerequest.h"
 #include "moescriptregisters.h"
 #include "moegraphicscontainer.h"
@@ -77,6 +77,20 @@ QScriptValue MoeEngine::eval(QString script)
     return val;
 }
 
+void MoeEngine::play() {
+    if(_state == Paused) {
+        qDebug() << "Unpausing Engine";
+        setState(Running);
+    }
+}
+
+void MoeEngine::pause() {
+    if(_state == Running) {
+        qDebug() << "Pausing Engine";
+        setState(Paused);
+    }
+}
+
 void MoeEngine::quit()
 {
     abort("Engine Quit", false);
@@ -138,10 +152,11 @@ void MoeEngine::run()
     QScriptValue globalObject = scriptEngine.globalObject();
 
     QList<const QMetaObject*> classesToLoad = _classes;
-    classesToLoad.append(&MoeResourceRequest::staticMetaObject);
-    classesToLoad.append(&MoeGraphicsSurface::staticMetaObject);
+    classesToLoad.append(&MoeUrl::staticMetaObject);
     classesToLoad.append(&MoeGraphicsObject::staticMetaObject);
+    classesToLoad.append(&MoeResourceRequest::staticMetaObject);
     classesToLoad.append(&MoeGraphicsContainer::staticMetaObject);
+    classesToLoad.append(&MoeGraphicsSurface::staticMetaObject);
     classesToLoad.append(&MoeGraphicsText::staticMetaObject);
 
     foreach(const QMetaObject* metaObject, classesToLoad)  {
@@ -190,6 +205,7 @@ void MoeEngine::run()
         return;
     }
 
+    MoeUrl::setDefaultContext(_fileContext);
     includeFile(_fileContext + "init.js");
     if(scriptEngine.hasUncaughtException())
         exceptionThrown(scriptEngine.uncaughtException());
@@ -263,3 +279,21 @@ void MoeEngine::inject(QString key, QVariant val)
 
     _environment.insert(key, val);
 }
+
+QUrl MoeUrl::locate(QString path, QUrl context) {
+    QUrl url(path);
+    if(url.isRelative()) {
+        if(context.isEmpty() || context.isRelative())
+            context = defaultContext();
+
+        QString apath = context.toString() + '/' + path;
+        if(apath.startsWith(":/"))
+            apath = "qrc" + path;
+        url = QUrl(apath);
+    }
+
+    qDebug() << path << context << url;
+    return url;
+}
+
+QThreadStorage<QUrl> MoeUrl::context;

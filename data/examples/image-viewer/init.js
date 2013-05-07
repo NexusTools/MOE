@@ -27,7 +27,7 @@ function boardEntry(code, title, pages, sleepFade) {
 
     this.element.setSize(150, 45);
     this.element.mousePressed.connect(function(){
-        engine.debug("Entering /" + code + "/");
+        engine.debug("Opening Board " + code);
     });
     this.element.mouseLeft.connect(function(){
         boardElement.animate("background", VLinearGradient(GradientStop(0, "gray88"), GradientStop(1, "white")), 2);
@@ -54,8 +54,6 @@ function fixBoardLayout(size) {
 
 function updateBoardList() {
     requestJSON("https://api.4chan.org/boards.json", function(boardData){
-        engine.debug("Got Board List");
-        engine.debug(boardData);
         var sleepFadeIn = 0;
         boardData.boards.forEach(function(board){
             if(!boardEntryMap[board.board]) {
@@ -67,7 +65,6 @@ function updateBoardList() {
         });
         fixBoardLayout(boardPage.size());
         surface.animate("background", "royal blue", 30);
-        engine.debug(surface.background);
     });
 }
 
@@ -92,9 +89,12 @@ surface.resized.connect(function(size) {
     activePage.setSize(size);
 });
 boardPage.resized.connect(function(size){
-    engine.debug(size);
     fixBoardLayout(size);
 });
 boardPage.setSize(surface.size());
 surface.connected.connect(updateBoardList);
 
+engine.pause();
+
+var initUrl = Url("init.js");
+engine.debug(initUrl.toString());

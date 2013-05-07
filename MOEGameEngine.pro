@@ -48,7 +48,8 @@ HEADERS  += \
     abstractsurfacebackend.h \
     qpaintersurfacebackend.h \
     widgetsurfacebackend.h \
-    crashdialog.h
+    crashdialog.h \
+    moeurl.h
 
 FORMS    += \
     crashdialog.ui
