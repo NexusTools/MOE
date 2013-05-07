@@ -29,10 +29,10 @@ function boardEntry(code, title, pages, sleepFade) {
     this.element.mousePressed.connect(function(){
         engine.debug("Entering /" + code + "/");
     });
-    this.element.mouseEntered.connect(function(){
+    this.element.mouseLeft.connect(function(){
         boardElement.animate("background", VLinearGradient(GradientStop(0, "gray88"), GradientStop(1, "white")), 2);
     });
-    this.element.mouseLeft.connect(function(){
+    this.element.mouseEntered.connect(function(){
         boardElement.animate("background", VLinearGradient(GradientStop(0, "gray95"), GradientStop(1, "white")), 2);
     });
 }
@@ -53,8 +53,7 @@ function fixBoardLayout(size) {
 }
 
 function updateBoardList() {
-    var download = new ResourceRequest("https://api.4chan.org/boards.json");
-    download.receivedJSON.connect(function(boardData){
+    requestJSON("https://api.4chan.org/boards.json", function(boardData){
         engine.debug("Got Board List");
         engine.debug(boardData);
         var sleepFadeIn = 0;

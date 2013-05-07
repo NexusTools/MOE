@@ -77,6 +77,11 @@ function Signal() {
     }
 }
 
+function requestJSON(url, callback) {
+    var download = new ResourceRequest(url);
+    download.receivedJSON.connect(callback);
+}
+
 function GroupResourceRequest(resources) {
     var thisObject = this;
     this.resourceList = resources;
