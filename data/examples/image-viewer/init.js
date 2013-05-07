@@ -6,9 +6,9 @@ var boardEntries = [];
 function boardEntry(code, title, pages, sleepFade) {
     this.element = new GraphicsContainer(boardPage);
     this.element.objectName = "Board /" + code + "/";
-    this.element.background = VLinearGradient(GradientStop(0, "white"), GradientStop(1, "gray80"));
+    this.element.background = VLinearGradient(GradientStop(0, "gray88"), GradientStop(1, "white"));
     this.element.cursor = "pointer";
-    this.element.border = "gray70";
+    this.element.border = "gray95";
     this.element.opacity = 0;
     var boardElement = this.element;
     setTimeout(function() {
@@ -30,10 +30,10 @@ function boardEntry(code, title, pages, sleepFade) {
         engine.debug("Entering /" + code + "/");
     });
     this.element.mouseEntered.connect(function(){
-        boardElement.animate("background", "gray90", 2);
+        boardElement.animate("background", VLinearGradient(GradientStop(0, "gray88"), GradientStop(1, "white")), 2);
     });
     this.element.mouseLeft.connect(function(){
-        boardElement.animate("background", VLinearGradient(GradientStop(0, "white"), GradientStop(1, "gray80")), 2);
+        boardElement.animate("background", VLinearGradient(GradientStop(0, "gray95"), GradientStop(1, "white")), 2);
     });
 }
 

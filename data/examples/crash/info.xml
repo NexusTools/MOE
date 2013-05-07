@@ -1,0 +1,7 @@
+<MoeContent>
+	<ContentInfo>
+		<Name>Crash Test</Name>
+		<ShortDescription>Crashes itself.</ShortDescription>
+		<LongDescription>Crashes itself, useful for testing error handlers.</LongDescription>
+	</ContentInfo>
+</MoeContent>
