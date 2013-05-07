@@ -10,7 +10,7 @@ surface.background = Rgb(50, 0, 0);
 
 var curScreen = null;
 
-function ready() {
+function titleMenuReady() {
     this.playGameButton = new GraphicsText("Play!", titleMenuFont, titleContainer);
     playGameButton.foreground = titleMenuButtonForgroundColor;
     playGameButton.mouseEntered.connect(function() {
@@ -24,7 +24,6 @@ function ready() {
     playGameButton.mousePressed.connect(function(/*point, buttonType*/) {
         playGameButton.killAnimation("foreground");
         playGameButton.foreground = titleMenuButtonForgroundColorActive;
-        engine.debug("TBD: Init and swap to a playContainer");
     });
 
 
@@ -38,6 +37,11 @@ function ready() {
         levelEditorButton.animate("foreground", titleMenuButtonForgroundColor);
     });
 
+    levelEditorButton.mousePressed.connect(function(/*point, buttonType*/) {
+        levelEditorButton.killAnimation("foreground");
+        levelEditorButton.foreground = titleMenuButtonForgroundColorActive;
+    });
+
 
     this.exitGameButton = new GraphicsText("Exit", titleMenuFont, titleContainer);
     exitGameButton.foreground = titleMenuButtonForgroundColor;
@@ -49,6 +53,11 @@ function ready() {
         exitGameButton.animate("foreground", titleMenuButtonForgroundColor);
     });
 
+    exitGameButton.mousePressed.connect(function(/*point, buttonType*/) {
+        exitGameButton.killAnimation("foreground");
+        exitGameButton.foreground = titleMenuButtonForgroundColorActive;
+    });
+
 
     this.resizeTitleScreen = function(size) {
         playGameButton.setPos(size.width / 2 - playGameButton.width / 2, (size.height / 2 - playGameButton.height / 2) - 64);
@@ -58,7 +67,7 @@ function ready() {
     curScreen = titleContainer;
 }
 
-surface.connected.connect(ready);
+surface.connected.connect(titleMenuReady);
 surface.resized.connect(function(size){
     engine.debug(size);
     titleContainer.setSize(surface.size());
@@ -68,4 +77,3 @@ surface.resized.connect(function(size){
 });
 titleContainer.setSize(surface.size());
 //engine.tick.connect(func);
-
