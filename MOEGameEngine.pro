@@ -61,7 +61,9 @@ OTHER_FILES += \
     data/examples/image-viewer/init.js \
     data/examples/crash/init.js \
     data/examples/blockcity/info.xml \
-    data/examples/blockcity/init.js
+    data/examples/blockcity/init.js \
+    data/examples/crash/info.xml \
+    data/examples/image-viewer/info.xml
 
 RESOURCES += \
 	res.qrc

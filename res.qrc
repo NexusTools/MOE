@@ -8,5 +8,7 @@
         <file>data/examples/crash/init.js</file>
         <file>data/examples/blockcity/init.js</file>
         <file>data/examples/blockcity/info.xml</file>
+        <file>data/examples/crash/info.xml</file>
+        <file>data/examples/image-viewer/info.xml</file>
     </qresource>
 </RCC>

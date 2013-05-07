@@ -1,0 +1,7 @@
+<MoeContent>
+	<ContentInfo>
+		<Name>Image Viewer</Name>
+		<ShortDescription>An example of a image viewer.</ShortDescription>
+		<LongDescription>An example of a image viewer using ResourceRequest objects. Uses 4chan's API.</LongDescription>
+	</ContentInfo>
+</MoeContent>
