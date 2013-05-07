@@ -59,7 +59,9 @@ OTHER_FILES += \
     data/prototype.js \
     data/content-select/init.js \
     data/examples/image-viewer/init.js \
-    data/examples/crash/init.js
+    data/examples/crash/init.js \
+    data/examples/blockcity/info.xml \
+    data/examples/blockcity/init.js
 
 RESOURCES += \
 	res.qrc

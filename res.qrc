@@ -6,5 +6,7 @@
         <file>data/prototype.js</file>
         <file>data/examples/image-viewer/init.js</file>
         <file>data/examples/crash/init.js</file>
+        <file>data/examples/blockcity/init.js</file>
+        <file>data/examples/blockcity/info.xml</file>
     </qresource>
 </RCC>
