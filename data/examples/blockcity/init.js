@@ -1,3 +1,5 @@
+var PLAYER = 0, WALL = 1, EASY_ENEMY = 2;
+
 var titleMenuButtonForgroundColor = Rgba(255, 255, 255, 200);
 var titleMenuButtonForgroundColorHovered = Rgba(255, 255, 255, 255);
 var titleMenuButtonForgroundColorActive = Rgba(80, 0, 0, 255);
@@ -9,6 +11,16 @@ surface.background = Rgb(50, 0, 0);
 
 var curScreen = null;
 var curLevel = null;
+
+var player = null;
+
+function tick() {
+    if(curLevel == null)
+        return;
+    for(var i = 0; i < curLevel.tickable.length; i++) {
+        curLevel.tickable[i].process();
+    }
+}
 
 function TitleMenu() {
     this.gC = new GraphicsContainer(surface);
@@ -77,7 +89,7 @@ function InGameMenu() {
 
     gOC.mouseMoved.connect(function(point) {
         { //Stub block for if the space bar is down.
-            curLevel.enemy[curLevel.enemy.length] = new Entity(point.x, point.y, 50, 75, "white");
+            curLevel.tickable[curLevel.tickable.length] = new Entity(point.x, point.y, 50, 75, "white", EASY_ENEMY);
         }
     });
 
@@ -87,17 +99,32 @@ function InGameMenu() {
 }
 
 function Level() {
-    this.enemy = [];
-    this.block = [];
-    this.block[0] = new Entity(0, 0, 25, 800, "grey");
+    this.tickable = [];
+    this.dummy = [];
+    this.dummy[0] = new Entity(0, 0, 25, surface.height, "grey", WALL);
+    this.dummy[1] = new Entity(surface.width - 25, 0, 25, surface.height, "grey", WALL);
+    this.dummy[2] = new Entity(0, surface.height - 25, surface.width, 25, "grey", WALL);
+    player = new Entity(0, 0, 50, 75, PLAYER);
 }
 
-function Entity(x, y, width, height, col) {
-    engine.debug("x: " + x + ", y: " + y + ", w: " + width + ", h: " + height + ", col: " + col);
+function Entity(x, y, width, height, col, type) {
+    //engine.debug("Entity: " + x: " + x + ", y: " + y + ", w: " + width + ", h: " + height + ", col: " + col);
     this.gO = new GraphicsObject(curScreen.gC);
     this.gO.background = col;
     this.gO.setPos(x, y);
     this.gO.setSize(width, height);
+    this.onGround = false;
+    this.harmful = false;
+    this.xVel = 0;
+    this.yVel = 0;
+    switch(type) {
+    case EASY_ENEMY:
+        this.process = function() {
+            processPhysics(this, true, true, true);
+            this.harmful = true;
+        }
+        break;
+    }
 }
 
 function switchSurfaceContents(int) {
@@ -128,22 +155,24 @@ function switchSurfaceContents(int) {
 switchSurfaceContents(0);
 //surface.connected.connect(switchSurfaceContents);
 
-//engine.tick.connect(func);
+engine.tick.connect(tick);
 
-function processPhysics(ent, doBlocks, doEn, doPly) {
+function processPhysics(ent, doUntickable, doTickable, doPly) { //Currently broken, has to be logic'd
         var rtn;
         var collideable2 = [];
-        collideable2 = collideable2.concat((doBlocks ? curLevel.block : []), (doEn ? curLevel.enemy : []), (doPly ? player : []));
+        collideable2 = collideable2.concat((doUntickable ? curLevel.dummy : []), (doTickable ? curLevel.tickable : []), (doPly ? player : []));
+
+        /* Compiles a list of actual valid entities within the area of the entity that's being processed expanded by a radius of the entities size. */
         var collideable = [];
         var i2 = 0;
-        var nx = ent.rect.x + ent.xVel;
-        var ny = ent.rect.y + ent.yVel;
-        var nw = ent.rect.width * 2;
-        var nh = ent.rect.height * 2;
+        var nx = ent.gO.posX + ent.xVel;
+        var ny = ent.gO.posY + ent.yVel;
+        var nw = ent.gO.width * 2;
+        var nh = ent.gO.height * 2;
         for(var i = 0; i < collideable2.length; i++) {
                 if(collideable2[i] == ent)
                         continue;
-                if(nx + nw >= collideable2[i].rect.x && nx - (nw / 2) <= collideable2[i].rect.x + collideable2[i].rect.width && ny + nh >= collideable2[i].rect.y && ny - (nh / 2) <= collideable2[i].rect.y + collideable2[i].rect.height)
+                if(nx + nw >= collideable2[i].gO.posX && nx - (nw / 2) <= collideable2[i].gO.posX + collideable2[i].gO.width && ny + nh >= collideable2[i].gO.posY && ny - (nh / 2) <= collideable2[i].gO.posY + collideable2[i].gO.height)
                         collideable[i2++] = collideable2[i];
         }
         delete nx;
@@ -153,8 +182,9 @@ function processPhysics(ent, doBlocks, doEn, doPly) {
         delete i2;
         delete collideable2;
 
+        /* Actual AABB physics - I've made this for my old BlockCity project for a old version of Moe, converted to the new engine. */
         if(!ent.onGround)
-                if(ent.yVel < ent.rect.height)
+                if(ent.yVel < ent.gO.height)
                         ent.yVel += 1.5;
 
         if(Math.abs(ent.yVel) > 0)
@@ -180,20 +210,20 @@ function processPhysics(ent, doBlocks, doEn, doPly) {
                         ent.yVel = 0;
         }
 
-        if(ent.rect.x + ent.xVel < 0) {
-                ent.rect.x = 0;
+        if(ent.gO.posX + ent.xVel < 0) {
+                ent.gO.posX = 0;
                 ent.xVel = 0;
                 rtn = 1;
-        } else if(ent.rect.x + ent.rect.width + ent.xVel > mainScene.width) {
-                ent.rect.x = mainScene.width - ent.rect.width;
+        } else if(ent.gO.posX + ent.gO.width + ent.xVel > surface.width) {
+                ent.gO.posX = surface.width - ent.gO.width;
                 ent.xVel = 0;
         } else {
                 if(ent.xVel != 0) {
                         for(var i = 0; i < collideable.length; i++) {
                                 if(ent.xVel > 0) {
-                                        if(ent.rect.x + ent.rect.width + ent.xVel > collideable[i].rect.x && ent.rect.x + ent.xVel < collideable[i].rect.x && ent.rect.y + ent.rect.height > collideable[i].rect.y && ent.rect.y < collideable[i].rect.y + collideable[i].rect.height) {
-                                                ent.rect.x = collideable[i].rect.x - ent.rect.width;
-                                                if((collideable[i] == player && (ent instanceof DumbEnemy || ent instanceof CrazyEnemy)) || ((collideable[i] instanceof DumbEnemy || collideable[i] instanceof CrazyEnemy) && ent == player)) {
+                                        if(ent.gO.posX + ent.gO.width + ent.xVel > collideable[i].gO.posX && ent.gO.posX + ent.xVel < collideable[i].gO.posX && ent.gO.posY + ent.gO.height > collideable[i].gO.posY && ent.gO.posY < collideable[i].gO.posY + collideable[i].gO.height) {
+                                                ent.gO.posX = collideable[i].gO.posX - ent.gO.width;
+                                                if((collideable[i] == player && (ent.harmful)) || ((collideable[i].harmful) && ent == player)) {
                                                         player.xVel = 10 + Math.random() * 5;
                                                         player.yVel = -(10 + Math.random() * 5);
                                                         player.takeHealth(10);
@@ -202,9 +232,9 @@ function processPhysics(ent, doBlocks, doEn, doPly) {
                                                 rtn = (ent == player ? collideable[i] : 2);
                                         }
                                 } else if(ent.xVel < 0) {
-                                        if(ent.rect.x + ent.rect.width + ent.xVel > collideable[i].rect.x + collideable[i].rect.width && ent.rect.x + ent.xVel < collideable[i].rect.x + collideable[i].rect.width && ent.rect.y + ent.rect.height > collideable[i].rect.y && ent.rect.y < collideable[i].rect.y + collideable[i].rect.height) {
-                                                ent.rect.x = collideable[i].rect.x + collideable[i].rect.width;
-                                                if((collideable[i] == player && (ent instanceof DumbEnemy || ent instanceof CrazyEnemy)) || ((collideable[i] instanceof DumbEnemy || collideable[i] instanceof CrazyEnemy) && ent == player)) {
+                                        if(ent.gO.posX + ent.gO.width + ent.xVel > collideable[i].gO.posX + collideable[i].gO.width && ent.gO.posX + ent.xVel < collideable[i].gO.posX + collideable[i].gO.width && ent.gO.posY + ent.gO.height > collideable[i].gO.posY && ent.gO.posY < collideable[i].gO.posY + collideable[i].gO.height) {
+                                                ent.gO.posX = collideable[i].gO.posX + collideable[i].gO.width;
+                                                if((collideable[i] == player && (ent.harmful)) || ((collideable[i].harmful) && ent == player)) {
                                                         player.xVel = -(10 + Math.random() * 5);
                                                         player.yVel = -(10 + Math.random() * 5);
                                                         player.takeHealth(10);
@@ -217,20 +247,20 @@ function processPhysics(ent, doBlocks, doEn, doPly) {
                 }
         }
 
-        if(ent.rect.y + ent.yVel < 0) {
-                ent.rect.y = 0;
+        if(ent.gO.posY + ent.yVel < 0) {
+                ent.gO.posY = 0;
                 ent.yVel = 0;
-        } else if(ent.rect.y + ent.rect.height + ent.yVel > mainScene.height) {
-                ent.rect.y = mainScene.height - ent.rect.height;
+        } else if(ent.gO.posY + ent.gO.height + ent.yVel > surface.height) {
+                ent.gO.posY = surface.height - ent.gO.height;
                 ent.yVel = 0;
                 ent.onGround = true;
         } else {
                 if(ent.yVel != 0) {
                         for(i = 0; i < collideable.length; i++) {
                                 if(ent.yVel < 0) {
-                                        if(ent.rect.y + ent.yVel + ent.rect.height > collideable[i].rect.y + collideable[i].rect.height && ent.rect.y + ent.yVel < collideable[i].rect.y + collideable[i].rect.height && ent.rect.x + ent.rect.width > collideable[i].rect.x && ent.rect.x < collideable[i].rect.x + collideable[i].rect.width) {
-                                                ent.rect.y = collideable[i].rect.y + collideable[i].rect.height;
-                                                if((collideable[i] == player && (ent instanceof DumbEnemy || ent instanceof CrazyEnemy)) || ((collideable[i] instanceof DumbEnemy || collideable[i] instanceof CrazyEnemy) && ent == player)) {
+                                        if(ent.gO.posY + ent.yVel + ent.gO.height > collideable[i].gO.posY + collideable[i].gO.height && ent.gO.posY + ent.yVel < collideable[i].gO.posY + collideable[i].gO.height && ent.gO.posX + ent.gO.width > collideable[i].gO.posX && ent.gO.posX < collideable[i].gO.posX + collideable[i].gO.width) {
+                                                ent.gO.posY = collideable[i].gO.posY + collideable[i].gO.height;
+                                               if((collideable[i] == player && (ent.harmful)) || ((collideable[i].harmful) && ent == player)) {
                                                         player.xVel = (Math.round(Math.random() * 1) == 1 ? -(10 + Math.random() * 5) : 10 + Math.random() * 5);
                                                         player.takeHealth(10);
                                                 } else
@@ -238,9 +268,9 @@ function processPhysics(ent, doBlocks, doEn, doPly) {
                                                 rtn = collideable[i];
                                         }
                                 } else if(ent.yVel > 0) {
-                                        if(ent.rect.y + ent.yVel + ent.rect.height > collideable[i].rect.y && ent.rect.y + ent.yVel < collideable[i].rect.y && ent.rect.x + ent.rect.width > collideable[i].rect.x && ent.rect.x < collideable[i].rect.x + collideable[i].rect.width) {
-                                                ent.rect.y = collideable[i].rect.y - ent.rect.height;
-                                                if((collideable[i] == player && (ent instanceof DumbEnemy || ent instanceof CrazyEnemy)) || ((collideable[i] instanceof DumbEnemy || collideable[i] instanceof CrazyEnemy) && ent == player)) {
+                                        if(ent.gO.posY + ent.yVel + ent.gO.height > collideable[i].gO.posY && ent.gO.posY + ent.yVel < collideable[i].gO.posY && ent.gO.posX + ent.gO.width > collideable[i].gO.posX && ent.gO.posX < collideable[i].gO.posX + collideable[i].gO.width) {
+                                                ent.gO.posY = collideable[i].gO.posY - ent.gO.height;
+                                                if((collideable[i] == player && (ent.harmful)) || ((collideable[i].harmful) && ent == player)) {
                                                         player.yVel = -(10 + Math.random() * 5);
                                                         player.xVel = (Math.round(Math.random() * 1) == 1 ? -(10 + Math.random() * 5) : 10 + Math.random() * 5);
                                                         player.takeHealth(10);
@@ -256,8 +286,8 @@ function processPhysics(ent, doBlocks, doEn, doPly) {
                 }
         }
 
-        ent.rect.x += ent.xVel;
-        ent.rect.y += ent.yVel;
+        ent.gO.posX += ent.xVel;
+        ent.gO.posY += ent.yVel;
         delete collideable;
         return rtn;
 }
