@@ -8,7 +8,7 @@ var surface = new GraphicsSurface("BlockCity", Size(800, 600));
 surface.background = Rgb(50, 0, 0);
 
 var curScreen = null;
-var curLevel = new Level();
+var curLevel = null;
 
 function TitleMenu() {
     this.gC = new GraphicsContainer(surface);
@@ -77,7 +77,7 @@ function InGameMenu() {
 
     gOC.mouseMoved.connect(function(point) {
         { //Stub block for if the space bar is down.
-            curLevel.entities[curLevel.entities.length] = new Entity(point.x, point.y, 50, 75, "white");
+            curLevel.enemy[curLevel.enemy.length] = new Entity(point.x, point.y, 50, 75, "white");
         }
     });
 
@@ -87,12 +87,14 @@ function InGameMenu() {
 }
 
 function Level() {
-    this.entities = [];
+    this.enemy = [];
+    this.block = [];
+    this.block[0] = new Entity(0, 0, 25, 800, "grey");
 }
 
 function Entity(x, y, width, height, col) {
     engine.debug("x: " + x + ", y: " + y + ", w: " + width + ", h: " + height + ", col: " + col);
-    this.gO = new GraphicsObject(surface);
+    this.gO = new GraphicsObject(curScreen.gC);
     this.gO.background = col;
     this.gO.setPos(x, y);
     this.gO.setSize(width, height);
@@ -112,6 +114,7 @@ function switchSurfaceContents(int) {
         break;
     case 1:
         curScreen = new InGameMenu();
+        curLevel = new Level();
         break;
     case 2:
         break;
@@ -126,3 +129,135 @@ switchSurfaceContents(0);
 //surface.connected.connect(switchSurfaceContents);
 
 //engine.tick.connect(func);
+
+function processPhysics(ent, doBlocks, doEn, doPly) {
+        var rtn;
+        var collideable2 = [];
+        collideable2 = collideable2.concat((doBlocks ? curLevel.block : []), (doEn ? curLevel.enemy : []), (doPly ? player : []));
+        var collideable = [];
+        var i2 = 0;
+        var nx = ent.rect.x + ent.xVel;
+        var ny = ent.rect.y + ent.yVel;
+        var nw = ent.rect.width * 2;
+        var nh = ent.rect.height * 2;
+        for(var i = 0; i < collideable2.length; i++) {
+                if(collideable2[i] == ent)
+                        continue;
+                if(nx + nw >= collideable2[i].rect.x && nx - (nw / 2) <= collideable2[i].rect.x + collideable2[i].rect.width && ny + nh >= collideable2[i].rect.y && ny - (nh / 2) <= collideable2[i].rect.y + collideable2[i].rect.height)
+                        collideable[i2++] = collideable2[i];
+        }
+        delete nx;
+        delete ny;
+        delete nw;
+        delete nh;
+        delete i2;
+        delete collideable2;
+
+        if(!ent.onGround)
+                if(ent.yVel < ent.rect.height)
+                        ent.yVel += 1.5;
+
+        if(Math.abs(ent.yVel) > 0)
+                ent.onGround = false;
+
+        if(ent.xVel > 0) {
+                ent.xVel--;
+                if(ent.xVel < 0)
+                        ent.xVel = 0;
+        } else if(ent.xVel < 0) {
+                ent.xVel++;
+                if(ent.xVel > 0)
+                        ent.xVel = 0;
+        }
+
+        if(ent.yVel > 0) {
+                ent.yVel--;
+                if(ent.yVel < 0)
+                        ent.yVel = 0;
+        } else if(ent.yVel < 0) {
+                ent.yVel++;
+                if(ent.yVel > 0)
+                        ent.yVel = 0;
+        }
+
+        if(ent.rect.x + ent.xVel < 0) {
+                ent.rect.x = 0;
+                ent.xVel = 0;
+                rtn = 1;
+        } else if(ent.rect.x + ent.rect.width + ent.xVel > mainScene.width) {
+                ent.rect.x = mainScene.width - ent.rect.width;
+                ent.xVel = 0;
+        } else {
+                if(ent.xVel != 0) {
+                        for(var i = 0; i < collideable.length; i++) {
+                                if(ent.xVel > 0) {
+                                        if(ent.rect.x + ent.rect.width + ent.xVel > collideable[i].rect.x && ent.rect.x + ent.xVel < collideable[i].rect.x && ent.rect.y + ent.rect.height > collideable[i].rect.y && ent.rect.y < collideable[i].rect.y + collideable[i].rect.height) {
+                                                ent.rect.x = collideable[i].rect.x - ent.rect.width;
+                                                if((collideable[i] == player && (ent instanceof DumbEnemy || ent instanceof CrazyEnemy)) || ((collideable[i] instanceof DumbEnemy || collideable[i] instanceof CrazyEnemy) && ent == player)) {
+                                                        player.xVel = 10 + Math.random() * 5;
+                                                        player.yVel = -(10 + Math.random() * 5);
+                                                        player.takeHealth(10);
+                                                }
+                                                ent.xVel = 0;
+                                                rtn = (ent == player ? collideable[i] : 2);
+                                        }
+                                } else if(ent.xVel < 0) {
+                                        if(ent.rect.x + ent.rect.width + ent.xVel > collideable[i].rect.x + collideable[i].rect.width && ent.rect.x + ent.xVel < collideable[i].rect.x + collideable[i].rect.width && ent.rect.y + ent.rect.height > collideable[i].rect.y && ent.rect.y < collideable[i].rect.y + collideable[i].rect.height) {
+                                                ent.rect.x = collideable[i].rect.x + collideable[i].rect.width;
+                                                if((collideable[i] == player && (ent instanceof DumbEnemy || ent instanceof CrazyEnemy)) || ((collideable[i] instanceof DumbEnemy || collideable[i] instanceof CrazyEnemy) && ent == player)) {
+                                                        player.xVel = -(10 + Math.random() * 5);
+                                                        player.yVel = -(10 + Math.random() * 5);
+                                                        player.takeHealth(10);
+                                                }
+                                                ent.xVel = 0;
+                                                rtn = (ent == player ? collideable[i] : 1);
+                                        }
+                                }
+                        }
+                }
+        }
+
+        if(ent.rect.y + ent.yVel < 0) {
+                ent.rect.y = 0;
+                ent.yVel = 0;
+        } else if(ent.rect.y + ent.rect.height + ent.yVel > mainScene.height) {
+                ent.rect.y = mainScene.height - ent.rect.height;
+                ent.yVel = 0;
+                ent.onGround = true;
+        } else {
+                if(ent.yVel != 0) {
+                        for(i = 0; i < collideable.length; i++) {
+                                if(ent.yVel < 0) {
+                                        if(ent.rect.y + ent.yVel + ent.rect.height > collideable[i].rect.y + collideable[i].rect.height && ent.rect.y + ent.yVel < collideable[i].rect.y + collideable[i].rect.height && ent.rect.x + ent.rect.width > collideable[i].rect.x && ent.rect.x < collideable[i].rect.x + collideable[i].rect.width) {
+                                                ent.rect.y = collideable[i].rect.y + collideable[i].rect.height;
+                                                if((collideable[i] == player && (ent instanceof DumbEnemy || ent instanceof CrazyEnemy)) || ((collideable[i] instanceof DumbEnemy || collideable[i] instanceof CrazyEnemy) && ent == player)) {
+                                                        player.xVel = (Math.round(Math.random() * 1) == 1 ? -(10 + Math.random() * 5) : 10 + Math.random() * 5);
+                                                        player.takeHealth(10);
+                                                } else
+                                                        ent.yVel = 0;
+                                                rtn = collideable[i];
+                                        }
+                                } else if(ent.yVel > 0) {
+                                        if(ent.rect.y + ent.yVel + ent.rect.height > collideable[i].rect.y && ent.rect.y + ent.yVel < collideable[i].rect.y && ent.rect.x + ent.rect.width > collideable[i].rect.x && ent.rect.x < collideable[i].rect.x + collideable[i].rect.width) {
+                                                ent.rect.y = collideable[i].rect.y - ent.rect.height;
+                                                if((collideable[i] == player && (ent instanceof DumbEnemy || ent instanceof CrazyEnemy)) || ((collideable[i] instanceof DumbEnemy || collideable[i] instanceof CrazyEnemy) && ent == player)) {
+                                                        player.yVel = -(10 + Math.random() * 5);
+                                                        player.xVel = (Math.round(Math.random() * 1) == 1 ? -(10 + Math.random() * 5) : 10 + Math.random() * 5);
+                                                        player.takeHealth(10);
+                                                } else
+                                                        ent.yVel = 0;
+                                                rtn = collideable[i];
+                                                ent.onGround = true;
+                                        }
+                                }
+                        }
+                } else {
+                        ent.onGround = false;
+                }
+        }
+
+        ent.rect.x += ent.xVel;
+        ent.rect.y += ent.yVel;
+        delete collideable;
+        return rtn;
+}
