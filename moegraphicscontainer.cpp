@@ -51,7 +51,7 @@ void MoeGraphicsObject::repaint(QRect region)
 
 QPoint MoeGraphicsObject::mapFromSurface(QPoint p){
     MoeGraphicsContainer* contain = container();
-    while(contain) {
+    while(contain && !contain->isSurface()) {
         p = contain->mapFromParent(p);
         contain = contain->container();
     }
@@ -60,7 +60,7 @@ QPoint MoeGraphicsObject::mapFromSurface(QPoint p){
 
 QRect MoeGraphicsObject::mapFromSurface(QRect rect){
     MoeGraphicsContainer* contain = container();
-    while(contain) {
+    while(contain && !contain->isSurface()) {
         rect = contain->mapFromParent(rect);
         contain = contain->container();
     }

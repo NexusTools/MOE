@@ -6,6 +6,10 @@ title.foreground = "white";
 
 var snakes = [];
 
+surface.keyPressed.connect(function(c){
+    engine.debug(c);
+});
+
 function spawnSnakes() {
     for(var i=0; i<15; i++) {
         var pos = Point(Math.random()*surface.width, Math.random()*surface.height);
@@ -35,8 +39,8 @@ engine.tick.connect(function(){
         cSpeed.y += (center.y - cPos.y) / 14;
         cSpeed.x += -2 + Math.random() * 4;
         cSpeed.y += -2 + Math.random() * 4;
-        cSpeed.x = Math.clamp(-32, cSpeed.x, 32);
-        cSpeed.y = Math.clamp(-32, cSpeed.y, 32);
+        cSpeed.x = Math.clamp(-(surface.width/14), cSpeed.x, surface.width/14);
+        cSpeed.y = Math.clamp(-(surface.height/14), cSpeed.y, surface.height/14);
         cPos.x += cSpeed.x / 7;
         cPos.y += cSpeed.y / 7;
         snakes[i].speed = cSpeed;

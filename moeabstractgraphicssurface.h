@@ -18,13 +18,13 @@ typedef QPointer<MoeAbstractGraphicsSurface> MoeAbstractGraphicsSurfacePointer;
 class MoeAbstractGraphicsSurface : public MoeGraphicsContainer
 {
     Q_OBJECT
+    Q_PROPERTY(QPoint mousePos READ mousePos)
 public:
     enum RenderStateFlag {
         NotReady = 0x0,
         SurfaceDirty = 0x1,
         ViewReady = 0x2
     };
-
     Q_DECLARE_FLAGS(RenderState, RenderStateFlag)
 
     void render(RenderRecorder*, QRect);
@@ -34,6 +34,10 @@ public:
     Q_INVOKABLE inline MoeAbstractGraphicsSurface* surface() {return this;}
 
     Q_INVOKABLE virtual inline bool isRemote() const{return false;}
+
+    Q_INVOKABLE bool isKeyPressed(int btn) const{return buttons.contains(btn);}
+    inline int mouseButtons() const{return _mouseButtons;}
+    inline QPoint mousePos() const{return _mousePos;}
 
 public slots:
     inline void enableRepaintDebug(bool fullFrame =true, QColor repaintColor =QColor(0, 250, 0, 60)) {
@@ -72,8 +76,39 @@ protected slots:
         renderState |= ViewReady;
     }
 
+    inline void keyType(char c) {
+        if(!keyboardFocus.isNull())
+            keyboardFocus.data()->keyTypedEvent(c);
+        else
+            keyTypedEvent(c);
+    }
+
+    inline void keyPress(int k) {
+        if(!buttons.contains(k))
+            buttons.append(k);
+        if(!keyboardFocus.isNull())
+            keyboardFocus.data()->keyPressedEvent(k);
+        else
+            keyPressedEvent(k);
+    }
+
+    inline void keyRelease(int k) {
+        buttons.removeOne(k);
+        if(!keyboardFocus.isNull())
+            keyboardFocus.data()->keyTypedEvent(k);
+        else
+            keyTypedEvent(k);
+    }
+
+    inline void resetKeys() {
+        QList<int> btnCopy = buttons;
+        foreach(int k, btnCopy)
+            keyRelease(k);
+    }
+
     inline void mouseMove(QPoint p){
         makeCurrent();
+        _mousePos = p;
 
         if(!mouseDragFocus.isNull())
             mouseDragFocus.data()->mouseDraggedEvent(mouseDragFocus.data()->mapFromSurface(p));
@@ -97,15 +132,19 @@ protected slots:
     }
 
     inline void mousePress(QPoint p, int b){
+        _mouseButtons = b;
         if(!mouseDragFocus.isNull())
             mouseDragFocus.data()->mousePressedEvent(mouseDragFocus.data()->mapFromSurface(p), b);
         else if(!mouseHoverFocus.isNull()) {
             mouseHoverFocus.data()->mousePressedEvent(mouseHoverFocus.data()->mapFromSurface(p), b);
+            if(mouseHoverFocus.data()->canUseKeyFocus())
+                keyboardFocus = mouseHoverFocus.data();
             mouseDragFocus = mouseHoverFocus;
         }
     }
 
     inline void mouseRelease(QPoint p, int b){
+        _mouseButtons = b;
         if(mouseDragFocus.data()) {
             mouseDragFocus.data()->mouseReleasedEvent(mouseDragFocus.data()->mapFromSurface(p), b);
             if(!b) // All buttons released
@@ -117,7 +156,7 @@ protected slots:
         if(!_connected)
             return;
 
-        //qDebug() << "Surface Backend Disconnected" << this;
+        resetKeys();
         _connected = false;
         emit disconnected();
     }
@@ -132,6 +171,7 @@ private slots:
 
 protected:
     explicit inline MoeAbstractGraphicsSurface(AbstractSurfaceBackend* backend, MoeObject* par =0) : MoeGraphicsContainer(par) {
+        _mouseButtons = 0;
         _connected = false;
         renderState = NotReady;
         _background = QBrush(Qt::darkMagenta);
@@ -143,6 +183,10 @@ protected:
         connect(backend, SIGNAL(mouseMove(QPoint)), this, SLOT(mouseMove(QPoint)), Qt::QueuedConnection);
         connect(backend, SIGNAL(mousePress(QPoint,int)), this, SLOT(mousePress(QPoint,int)), Qt::QueuedConnection);
         connect(backend, SIGNAL(mouseRelease(QPoint,int)), this, SLOT(mouseRelease(QPoint,int)), Qt::QueuedConnection);
+
+        connect(backend, SIGNAL(keyType(char)), this, SLOT(keyType(char)), Qt::QueuedConnection);
+        connect(backend, SIGNAL(keyPress(int)), this, SLOT(keyPress(int)), Qt::QueuedConnection);
+        connect(backend, SIGNAL(keyRelease(int)), this, SLOT(keyRelease(int)), Qt::QueuedConnection);
 
         connect(this, SIGNAL(destroyed()), backend, SLOT(deleteLater()), Qt::QueuedConnection);
         connect(this, SIGNAL(resized(QSizeF)), backend, SLOT(setSize(QSizeF)), Qt::QueuedConnection);
@@ -214,6 +258,11 @@ private:
         RepaintDebugArea,
         RepaintDebugFrame
     };
+
+
+    QList<int> buttons;
+    int _mouseButtons;
+    QPoint _mousePos;
 
     MoeGraphicsObjectPointer keyboardFocus;
     MoeGraphicsObjectPointer mouseDragFocus;

@@ -20,7 +20,7 @@ public:
         GLWidget
     };
 
-    Q_INVOKABLE inline explicit MoeGraphicsSurface(QString title, QSize size, BackendWidgetType type =Auto, MoeGraphicsSurface* parent =NULL)
+    Q_INVOKABLE inline explicit MoeGraphicsSurface(QString title, QSize size, BackendWidgetType type =Auto, MoeGraphicsSurface* parent =0)
         : MoeAbstractGraphicsSurface(new WidgetSurfaceBackend(title, size, (int)type, parent ? parent->backendWidget() : 0)) {}
 
     BackendWidgetType backendWidgetType() {return (BackendWidgetType)((WidgetSurfaceBackend*)backend())->type();}

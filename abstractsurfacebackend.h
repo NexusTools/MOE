@@ -86,10 +86,15 @@ signals:
     void geometryChanged(QRect);
     void readyForFrame();
     void disconnected();
+    void resetFocus();
 
     void mouseMove(QPoint);
     void mousePress(QPoint,int);
     void mouseRelease(QPoint,int);
+
+    void keyType(char);
+    void keyPress(int);
+    void keyRelease(int);
 
 private:
     QTimer geometryUpdateTimer;

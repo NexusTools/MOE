@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QMainWindow>
 #include <QMouseEvent>
+#include <QKeyEvent>
 #include <QGLWidget>
 #include <QDialog>
 #include <QWidget>
@@ -59,6 +60,28 @@ bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
                 }
                 return true;
 
+            case QEvent::KeyPress:
+            {
+                QKeyEvent* keyEv = (QKeyEvent*)event;
+                if(keyEv->count())
+                    foreach(char c, keyEv->text().toUtf8())
+                        emit keyType(c);
+
+                if(keyEv->isAutoRepeat())
+                    break;
+                emit keyPress(keyEv->key());
+                break;
+            }
+
+            case QEvent::KeyRelease:
+            {
+                QKeyEvent* keyEv = (QKeyEvent*)event;
+                if(keyEv->isAutoRepeat())
+                    break;
+                emit keyRelease(keyEv->key());
+                break;
+            }
+
             case QEvent::Leave:
                 emit mouseMove(QPoint(-1,-1));
                 break;
@@ -68,9 +91,24 @@ bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
                 updateGeometry(_widget->geometry());
                 break;
 
+            case QEvent::FocusOut:
+            case QEvent::WindowDeactivate:
+            {
+                emit resetFocus();
+                break;
+            }
+
+            case QEvent::WindowStateChange:
+            {
+                if(!_widget->isMinimized())
+                    break;
+            }
+
             case QEvent::Hide:
+            {
                 emit disconnected();
                 break;
+            }
 
             case QEvent::MouseMove:
                 emit mouseMove(((QMouseEvent*)event)->pos());
