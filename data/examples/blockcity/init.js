@@ -1,5 +1,3 @@
-var PLAYER = 0, WALL = 1, EASY_ENEMY = 2;
-
 var titleMenuButtonForgroundColor = Rgba(255, 255, 255, 200);
 var titleMenuButtonForgroundColorHovered = Rgba(255, 255, 255, 255);
 var titleMenuButtonForgroundColorActive = Rgba(80, 0, 0, 255);
@@ -9,22 +7,22 @@ engine.setTicksPerSecond(30);
 var surface = new GraphicsSurface("BlockCity", Size(800, 600));
 surface.background = Rgb(50, 0, 0);
 
-var curScreen = null;
-var curLevel = null;
+var currentMenu = null;
 
 var player = null;
+var levelInstance = new Level();
 
 function tick() {
-    if(curLevel == null)
+    if(levelInstance == null)
         return;
-    for(var i = 0; i < curLevel.tickable.length; i++) {
-        curLevel.tickable[i].process();
+    for(var i = 0; i < levelInstance.tickable.length; i++) {
+        levelInstance.tickable[i].process();
     }
 }
+engine.tick.connect(tick);
 
 function TitleMenu() {
-    this.gC = new GraphicsContainer(surface);
-    var playGameButton = new GraphicsText("Play!", titleMenuFont, this.gC);
+    var playGameButton = new GraphicsText("Play!", titleMenuFont, surface);
     playGameButton.foreground = titleMenuButtonForgroundColor;
     playGameButton.mouseEntered.connect(function() {
         playGameButton.animate("foreground", titleMenuButtonForgroundColorHovered);
@@ -41,7 +39,7 @@ function TitleMenu() {
     });
 
 
-    var levelEditorButton = new GraphicsText("Level Editor", titleMenuFont, this.gC);
+    var levelEditorButton = new GraphicsText("Level Editor", titleMenuFont, surface);
     levelEditorButton.foreground = titleMenuButtonForgroundColor;
     levelEditorButton.mouseEntered.connect(function() {
         levelEditorButton.animate("foreground", titleMenuButtonForgroundColorHovered);
@@ -58,7 +56,7 @@ function TitleMenu() {
     });
 
 
-    var exitGameButton = new GraphicsText("Exit", titleMenuFont, this.gC);
+    var exitGameButton = new GraphicsText("Exit", titleMenuFont, surface);
     exitGameButton.foreground = titleMenuButtonForgroundColor;
     exitGameButton.mouseEntered.connect(function() {
         exitGameButton.animate("foreground", titleMenuButtonForgroundColorHovered);
@@ -79,93 +77,120 @@ function TitleMenu() {
         playGameButton.setPos(size.width / 2 - playGameButton.width / 2, (size.height / 2 - playGameButton.height / 2) - 64);
         levelEditorButton.setPos(size.width / 2 - levelEditorButton.width / 2, (size.height / 2 - levelEditorButton.height / 2));
         exitGameButton.setPos(size.width / 2 - exitGameButton.width / 2, (size.height / 2 - exitGameButton.height / 2) + 64);
-        this.gC.setSize(size);
+    }
+
+    this.cleanup = function() {
+        surface.remove(playGameButton);
+        surface.remove(exitGameButton);
+        surface.remove(levelEditorButton);
     }
 }
 
 function InGameMenu() {
-    this.gC = new GraphicsContainer(surface);
-    var gOC = this.gC;
-
-    gOC.mousePressed.connect(function(point) {
+    surface.mousePressed.connect(function(point) {
         { //Stub block for if the space bar is down.
-            curLevel.tickable[curLevel.tickable.length] = new Entity(point.x, point.y, 50, 75, "white", EASY_ENEMY);
+            levelInstance.tickable[levelInstance.tickable.length] = new DumbEnemy(point.x, point.y, 50, 75);
         }
     });
 
     this.handleResize = function(size) {
-        this.gC.setSize(size);
-        curLevel.dummy[0].gO.setSize(25, size.height);
-        curLevel.dummy[1].gO.setPos(size.width - 25, 0);
-        curLevel.dummy[1].gO.setSize(25, size.height);
-        curLevel.dummy[2].gO.setPos(0, size.height - 25);
-        curLevel.dummy[2].gO.setSize(size.width, 25);
+    }
+
+    this.cleanup = function() {
     }
 }
 
 function Level() {
     this.tickable = [];
     this.dummy = [];
-    this.dummy[0] = new Entity(0, 0, 25, surface.height, "grey", WALL);
-    this.dummy[1] = new Entity(surface.width - 25, 0, 25, surface.height, "grey", WALL);
-    this.dummy[2] = new Entity(0, surface.height - 25, surface.width, 25, "grey", WALL);
-    player = new Entity(0, 0, 50, 75, PLAYER);
 }
 
-function Entity(x, y, width, height, col, type) {
-    //engine.debug("New Entity: x: " + x + ", y: " + y + ", w: " + width + ", h: " + height + ", col: " + col);
-    this.gO = new GraphicsObject(curScreen.gC);
-    this.gO.background = col;
+function Wall(x, y, width, height, col) {
+    this.gO = new GraphicsObject(surface);
     this.gO.setPos(x, y);
     this.gO.setSize(width, height);
-    this.onGround = true;
-    this.harmful = false;
+    this.gO.background = col;
+}
+
+function Player() {
+    this.gO = new GraphicsObject(surface);
+    this.gO.setPos(0, 0);
+    this.gO.setSize(50, 75);
+    this.defaultColor = Rgb(255, 255, 255);
+    this.gO.background = this.defaultColor;
     this.xVel = 0;
     this.yVel = 0;
-    switch(type) {
-    case EASY_ENEMY:
-        this.process = function() {
-            processPhysics(this, true, true, true);
-            this.harmful = true;
+    this.health = 100;
+    this.dead = false;
+    this.onGround = false;
+    this.process = function() {
+        processPhysics(this, true, true, false);
+        //TODO: Key movements.
+    }
+
+    this.takeHealth = function(amt) {
+        if(this.health-=amt <= 0) {
+            this.health = 0;
+            this.dead = true;
         }
-        break;
+        this.gO.animate("background", Rgb((this.health / 100) * this.defaultColor.r, (this.health / 100) * this.defaultColor.g, (this.health / 100) * this.defaultColor.b));
+    }
+}
+
+function DumbEnemy(x, y, width, height) {
+    this.gO = new GraphicsObject(surface);
+    this.gO.setPos(x, y);
+    this.gO.setSize(width, height);
+    this.gO.background = "purple";
+    this.xVel = 0;
+    this.yVel = 0;
+    this.dir = 2;
+    this.onGround = false;
+    this.process = function() {
+        var rt = processPhysics(this, true, true, true);
+        if(rt > 0) {
+                this.dir = rt;
+        }
+        delete rt;
+        if(this.dir == 1) {
+                if(this.xVel < 10) {
+                        this.xVel += 2;
+                }
+        } else if(this.dir == 2) {
+                if(this.xVel > -10) {
+                        this.xVel -= 2;
+                }
+        }
+        this.harmful = true;
     }
 }
 
 function switchSurfaceContents(int) {
-    if(curScreen == null)
-        int=0;
-    else {
-        engine.debug(curScreen);
-        surface.remove(curScreen.gC);
-        curScreen = null;
-    }
+    if(currentMenu != null)
+        currentMenu.cleanup();
     switch(int) {
     case 0:
-        curScreen = new TitleMenu();
+        currentMenu = new TitleMenu();
         break;
     case 1:
-        curScreen = new InGameMenu();
-        curLevel = new Level();
+        currentMenu = new InGameMenu();
+        loadLevel(1);
         break;
     case 2:
         break;
     }
 
     surface.resized.connect(function(size){
-        curScreen.handleResize(size);
+        if(currentMenu != null)
+            currentMenu.handleResize(size);
     });
-    curScreen.gC.setSize(surface.size());
 }
 switchSurfaceContents(0);
-//surface.connected.connect(switchSurfaceContents);
-
-engine.tick.connect(tick);
 
 function processPhysics(ent, doUntickable, doTickable, doPly) {
         var rtn;
         var collideable2 = [];
-        collideable2 = collideable2.concat((doUntickable ? curLevel.dummy : []), (doTickable ? curLevel.tickable : []), (doPly ? player : []));
+        collideable2 = collideable2.concat((doUntickable ? levelInstance.dummy : []), (doTickable ? levelInstance.tickable : []), (doPly ? player : []));
 
         /* Compiles a list of actual valid entities within the area of the entity that's being processed expanded by a radius of the entities size. */
         var collideable = [];
@@ -295,4 +320,28 @@ function processPhysics(ent, doUntickable, doTickable, doPly) {
         ent.gO.posY += ent.yVel;
         delete collideable;
         return rtn;
+}
+
+function loadLevel(lv) {
+    for(var i = 1; i < levelInstance.tickable.length; i++) {
+        surface.remove(levelInstance.tickable[i].gO);
+        levelInstance.tickable[i] = null;
+    }
+    for(var i = 0; i < levelInstance.dummy.length; i++) {
+        surface.remove(levelInstance.dummy[i].gO);
+        levelInstance.dummy[i] = null;
+    }
+    if(lv > 0 && player == null) {
+        player = new Player();
+        levelInstance.tickable[0] = player;
+    }
+
+    switch(lv) {
+    case 1:
+        var lvBg = Rgb(25, 25, 25);
+        levelInstance.dummy[0] = new Wall(0, 0, 25, surface.height, lvBg);
+        levelInstance.dummy[1] = new Wall(surface.width - 25, 0, 25, surface.height, lvBg);
+        levelInstance.dummy[2] = new Wall(0, surface.height - 25, surface.width, 25, lvBg);
+        break;
+    }
 }
