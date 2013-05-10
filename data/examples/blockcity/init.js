@@ -87,7 +87,7 @@ function InGameMenu() {
     this.gC = new GraphicsContainer(surface);
     var gOC = this.gC;
 
-    gOC.mouseMoved.connect(function(point) {
+    gOC.mousePressed.connect(function(point) {
         { //Stub block for if the space bar is down.
             curLevel.tickable[curLevel.tickable.length] = new Entity(point.x, point.y, 50, 75, "white", EASY_ENEMY);
         }
@@ -95,6 +95,11 @@ function InGameMenu() {
 
     this.handleResize = function(size) {
         this.gC.setSize(size);
+        curLevel.dummy[0].gO.setSize(25, size.height);
+        curLevel.dummy[1].gO.setPos(size.width - 25, 0);
+        curLevel.dummy[1].gO.setSize(25, size.height);
+        curLevel.dummy[2].gO.setPos(0, size.height - 25);
+        curLevel.dummy[2].gO.setSize(size.width, 25);
     }
 }
 
@@ -108,12 +113,12 @@ function Level() {
 }
 
 function Entity(x, y, width, height, col, type) {
-    //engine.debug("Entity: " + x: " + x + ", y: " + y + ", w: " + width + ", h: " + height + ", col: " + col);
+    //engine.debug("New Entity: x: " + x + ", y: " + y + ", w: " + width + ", h: " + height + ", col: " + col);
     this.gO = new GraphicsObject(curScreen.gC);
     this.gO.background = col;
     this.gO.setPos(x, y);
     this.gO.setSize(width, height);
-    this.onGround = false;
+    this.onGround = true;
     this.harmful = false;
     this.xVel = 0;
     this.yVel = 0;
@@ -157,7 +162,7 @@ switchSurfaceContents(0);
 
 engine.tick.connect(tick);
 
-function processPhysics(ent, doUntickable, doTickable, doPly) { //Currently broken, has to be logic'd
+function processPhysics(ent, doUntickable, doTickable, doPly) {
         var rtn;
         var collideable2 = [];
         collideable2 = collideable2.concat((doUntickable ? curLevel.dummy : []), (doTickable ? curLevel.tickable : []), (doPly ? player : []));
