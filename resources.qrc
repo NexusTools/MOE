@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/">
+        <file>examples/blockcity/info.xml</file>
+        <file>examples/blockcity/init.js</file>
+        <file>libraries/prototype.js</file>
+        <file>libraries/shared.js</file>
+        <file>examples/crash/info.xml</file>
+        <file>examples/crash/init.js</file>
+        <file>content-select/info.xml</file>
+        <file>content-select/init.js</file>
+        <file>resources/rgb.txt</file>
+        <file>examples/image-viewer/info.xml</file>
+        <file>examples/image-viewer/init.js</file>
+    </qresource>
+</RCC>

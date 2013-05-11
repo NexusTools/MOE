@@ -52,8 +52,9 @@ function fixBoardLayout(size) {
     });
 }
 
+engine.changeFileContext("https://api.4chan.org/");
 function updateBoardList() {
-    requestJSON("https://api.4chan.org/boards.json", function(boardData){
+    requestJSON("boards.json", function(boardData){
         var sleepFadeIn = 0;
         boardData.boards.forEach(function(board){
             if(!boardEntryMap[board.board]) {
@@ -93,8 +94,3 @@ boardPage.resized.connect(function(size){
 });
 boardPage.setSize(surface.size());
 surface.connected.connect(updateBoardList);
-
-engine.pause();
-
-var initUrl = Url("init.js");
-engine.debug(initUrl.toString());

@@ -14,57 +14,57 @@ TEMPLATE = app
 
 QMAKE_CXXFLAGS+="-std=c++0x"
 
-SOURCES += main.cpp\
-	qargumentparser.cpp \
-	moeobject.cpp \
-	moegraphicsobject.cpp \
-	moegraphicscontainer.cpp \
-	moeengine.cpp \
-	moegraphicssurface.cpp \
-    transferdelegate.cpp \
-    moegraphicstext.cpp \
-    moescriptregisters.cpp \
-    moegraphicsimage.cpp \
-    moeabstractgraphicssurface.cpp \
-    widgetsurfacebackend.cpp \
-    crashdialog.cpp
+SOURCES += source/main.cpp\
+        source/qargumentparser.cpp \
+        source/moeobject.cpp \
+        source/moegraphicsobject.cpp \
+        source/moegraphicscontainer.cpp \
+        source/moeengine.cpp \
+        source/moegraphicssurface.cpp \
+    source/transferdelegate.cpp \
+    source/moegraphicstext.cpp \
+    source/moescriptregisters.cpp \
+    source/moegraphicsimage.cpp \
+    source/moeabstractgraphicssurface.cpp \
+    source/widgetsurfacebackend.cpp \
+    source/crashdialog.cpp
 
 HEADERS  += \
-	qargumentparser.h \
-	moeobject.h \
-	moegraphicsobject.h \
-	moegraphicscontainer.h \
-	moeengine.h \
-	moegraphicssurface.h \
-    renderrecorder.h \
-    moeresourcerequest.h \
-    transferdelegate.h \
-    moescriptregisters.h \
-    moegraphicstext.h \
-    moegraphicsimage.h \
-    renderbuffer.h \
-    moeabstractgraphicssurface.h \
-    renderinstruction.h \
-    abstractsurfacebackend.h \
-    qpaintersurfacebackend.h \
-    widgetsurfacebackend.h \
-    crashdialog.h \
-    moeurl.h
+        source/qargumentparser.h \
+        source/moeobject.h \
+        source/moegraphicsobject.h \
+        source/moegraphicscontainer.h \
+        source/moeengine.h \
+        source/moegraphicssurface.h \
+    source/renderrecorder.h \
+    source/moeresourcerequest.h \
+    source/transferdelegate.h \
+    source/moescriptregisters.h \
+    source/moegraphicstext.h \
+    source/moegraphicsimage.h \
+    source/renderbuffer.h \
+    source/moeabstractgraphicssurface.h \
+    source/renderinstruction.h \
+    source/abstractsurfacebackend.h \
+    source/qpaintersurfacebackend.h \
+    source/widgetsurfacebackend.h \
+    source/crashdialog.h \
+    source/moeurl.h
 
 FORMS    += \
-    crashdialog.ui
+    source/crashdialog.ui
 
 OTHER_FILES += \
-    data/shared.js \
-    data/rgb.txt \
-    data/prototype.js \
-    data/content-select/init.js \
-    data/examples/image-viewer/init.js \
-    data/examples/crash/init.js \
-    data/examples/blockcity/info.xml \
-    data/examples/blockcity/init.js \
-    data/examples/crash/info.xml \
-    data/examples/image-viewer/info.xml
+    libraries/shared.js \
+    resources/rgb.txt \
+    libraries/prototype.js \
+    content-select/init.js \
+    examples/image-viewer/init.js \
+    examples/crash/init.js \
+    examples/blockcity/info.xml \
+    examples/blockcity/init.js \
+    examples/crash/info.xml \
+    examples/image-viewer/info.xml
 
 RESOURCES += \
-	res.qrc
+        resources.qrc
