@@ -91,9 +91,12 @@ void MoeEngine::setState(State state)
 
 QScriptValue MoeEngine::eval(QString script)
 {
-    scriptEngine()->pushContext();
+    if(QThread::currentThread() != this || !_scriptEngine)
+        return QScriptValue();
+
     QScriptValue val = scriptEngine()->evaluate(script);
-    scriptEngine()->popContext();
+    if(scriptEngine()->hasUncaughtException())
+        exceptionThrown(scriptEngine()->uncaughtException());
     return val;
 }
 
@@ -156,18 +159,10 @@ void MoeEngine::exceptionThrown(QScriptValue exception)
 }
 
 void MoeEngine::evalFile(QString filePath){
-    //qDebug() << "Reading File" << filePath;
-
     QFile file(filePath);
-    if(file.open(QFile::ReadOnly)) {
-        _scriptEngine->pushContext();
-        _scriptEngine->currentContext()->pushScope(_scriptEngine->globalObject());
-        _scriptEngine->currentContext()->setActivationObject(_scriptEngine->globalObject());
+    if(file.open(QFile::ReadOnly))
         _scriptEngine->evaluate(QString(file.readAll()), filePath);
-        _scriptEngine->currentContext()->popScope();
-        _scriptEngine->popContext();
-        //qDebug() << filePath;
-    } else
+    else
         _scriptEngine->currentContext()->throwError(QScriptContext::UnknownError, QString("File Not Found: %1").arg(filePath));
 }
 
