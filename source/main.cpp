@@ -21,16 +21,10 @@ int main(int argc, char *argv[])
     else
         app = new QApplication(argc, argv);
 
-    MoeEngine* engine = new MoeEngine(parser.toMap());
+    MoeEngine* engine = new MoeEngine();
     if(!isHeadless)
         CrashDialog::init(engine);
-
-    if(parser.contains("example"))
-        engine->startContent(QString(":/examples/%1/").arg(parser.value("example").toString()));
-    else if(parser.contains("content") || parser.hasDefaultValue())
-        engine->startContent(parser.value("content", parser.defaultValue()).toString());
-    else
-        engine->startContent(":/content-select/");
+    engine->startWithArguments(parser.toMap());
 
     return app->exec();
 }

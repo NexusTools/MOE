@@ -42,10 +42,12 @@ signals:
 
 protected slots:
     void startRequest();
+    inline void dereference() {self.clear();}
 
     inline void progressCallback(qint64 cur, qint64 max) {
         QMutexLocker locker(&mutex);
         _progress = (qreal)cur / (qreal)max;
+        qDebug() << this << _progress;
     }
 
     void finishedCallback() {
@@ -60,7 +62,8 @@ protected slots:
         } else {
             _data = reply->readAll();
             emit receivedData(_data);
-         }
+        }
+        derefTimer.start();
     }
 
 private:
@@ -68,7 +71,14 @@ private:
     TransferDelegateReference self;
 
     inline void connectNotify(const QMetaMethod &signal) {
-        qDebug() << "Connected" << this << signal.name();
+        QMutexLocker locker(&mutex);
+        QString name(signal.name());
+        if(name.startsWith("progress") && _progress > 0)
+            emit progress(_progress);
+        else if(name.startsWith("error") && _progress == -1)
+            emit error(reply->errorString());
+        else if(name.startsWith("receivedData") && _progress >= 1)
+            emit receivedData(_data);
     }
 
     QMutex mutex;
@@ -76,6 +86,7 @@ private:
     float _progress;
     QByteArray _data; // error if -1
     QNetworkReply* reply;
+    QTimer derefTimer;
 
 };
 

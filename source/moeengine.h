@@ -7,6 +7,7 @@
 #include <QPointer>
 #include <QThread>
 #include <QMap>
+#include <QUrl>
 
 class MoeEngine;
 class QEventLoop;
@@ -31,8 +32,20 @@ public:
         Changing // Content is being changed
     };
 
-    MoeEngine(QVariantMap args =QVariantMap());
+    MoeEngine();
     virtual ~MoeEngine();
+
+    inline bool isRunning() const{
+        return _state == Running && QThread::isRunning();
+    }
+
+    inline bool isStopped() const{
+        return !QThread::isRunning();
+    }
+
+    inline bool isActive() const{
+        return QThread::isRunning() && _state != Stopped && _state != Crashed;
+    }
 
     static inline MoeEnginePointer threadEngine() {return _engine.localData();}
     inline QScriptEngine* scriptEngine() const{return _scriptEngine;}
@@ -40,7 +53,8 @@ public:
     inline void makeCurrent() const{_engine.setLocalData(MoeEnginePointer(engine()));}
 
     Q_INVOKABLE void changeFileContext(QString context);
-    Q_INVOKABLE void startContent(QString content);
+    void startWithArguments(QVariantMap args =QVariantMap());
+    Q_INVOKABLE void startContent(QString content, QUrl loaderPath =QUrl("./standard.js"));
 
     inline QString error() const{return _error;}
     inline QString version() const{return "0.1 dev";}
@@ -56,7 +70,6 @@ public slots:
 
     void play();
     void pause();
-
     void quit();
 
     inline int setTimeout(QScriptValue callback, int mdelay) {
@@ -70,13 +83,12 @@ public slots:
         killTimer(handle);
     }
 
-    inline qreal random() {return (qreal)qrand()/(qreal)INT_MAX;}
-    QScriptValue eval(QString script);
-
     void debug(QString);
+    inline qreal random() {return (qreal)qrand()/(qreal)INT_MAX;}
     inline void setTicksPerSecond(uchar ticks) {_tickWait=1000/ticks;}
 
 protected slots:
+    void eval(QString);
     void exceptionThrown(QScriptValue);
     void abort(QString reason, bool crashed =true);
 
@@ -89,7 +101,6 @@ signals:
     void stateChanged(MoeEngine::State state);
 
 protected:
-    void evalFile(QString filePath);
     void timerEvent(QTimerEvent *);
     void setState(State);
     void run();
@@ -109,6 +120,7 @@ private:
     QMap<int, QScriptValue> _timers;
     QList<const QMetaObject*> _classes;
 
+    QUrl loader;
     QString initContentPath;
 };
 

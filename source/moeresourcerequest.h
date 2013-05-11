@@ -33,6 +33,8 @@ protected slots:
     }
 
     inline void completeCallback(QByteArray dat) {
+        qDebug() << this << transferDelegate.data() << dat.length();
+
         static QMetaMethod jsonSignal = metaObject()->method(metaObject()->indexOfSignal("receivedJSON(QScriptValue)"));
         static QMetaMethod stringSignal = metaObject()->method(metaObject()->indexOfSignal("receivedString(QString)"));
         emit receivedData(dat);

@@ -11,5 +11,7 @@
         <file>resources/rgb.txt</file>
         <file>examples/image-viewer/info.xml</file>
         <file>examples/image-viewer/init.js</file>
+        <file>loaders/basic.js</file>
+        <file>loaders/standard.js</file>
     </qresource>
 </RCC>

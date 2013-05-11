@@ -20,6 +20,7 @@ public:
     
 public slots:
     void showError(QString);
+    void setWrapError(bool);
 
 private:
     explicit CrashDialog(MoeEngine* engine, bool quitOnClose);

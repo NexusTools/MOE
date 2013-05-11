@@ -17,8 +17,14 @@ CrashDialog::CrashDialog(MoeEngine* engine, bool quitOnClose) :
 }
 
 void CrashDialog::showError(QString err) {
+    static QRegExp line("[\r\n].+[\r\n]");
+    ui->checkBox->setChecked(!line.exactMatch(err));
     ui->textBrowser->setPlainText(err);
     exec();
+}
+
+void CrashDialog::setWrapError(bool b) {
+    ui->textBrowser->setLineWrapMode(b ? QTextBrowser::WidgetWidth : QTextBrowser::NoWrap);
 }
 
 CrashDialog::~CrashDialog()

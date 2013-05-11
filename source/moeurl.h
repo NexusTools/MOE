@@ -24,12 +24,16 @@ public:
     inline QString path() const{return _url.path();}
     Q_INVOKABLE inline void setPath(QString path) {return _url.setPath(path);}
 
-    inline QUrl url() const{
-        return _url;
+    Q_INVOKABLE bool contains(QUrl url) {
+        return url.toString(QUrl::FullyDecoded).startsWith(_url.toString(QUrl::FullyDecoded));
     }
 
     Q_INVOKABLE inline QString toString() const{
         return _url.toString();
+    }
+
+    inline QUrl url() const{
+        return _url;
     }
 
     static QUrl locate(QString path, QString context =QString());
@@ -38,8 +42,9 @@ private:
     static QThreadStorage<QUrl> context;
     QUrl _url;
 
+    static QUrl urlFromString(QString path);
     inline static void setDefaultContext(QString _context) {context.setLocalData(locate(_context));}
-    inline static QUrl defaultContext() {return context.localData().isEmpty() || context.localData().isRelative() ? QUrl(":/resources/") : context.localData();}
+    inline static QUrl defaultContext() {return context.localData().isEmpty() || context.localData().isRelative() ? QUrl("qrc:/loaders/") : context.localData();}
 
     
 };

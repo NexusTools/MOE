@@ -74,9 +74,9 @@ surface.resized.connect(function(size){
 function start(size) {
     if(size.width < 1 || size.height < 1)
         return;
-    spawnSnakes();
-    surface.animate("background", "black");
     surface.resized.disconnect(start);
+    surface.animate("background", "black");
+    spawnSnakes();
 }
 
 surface.resized.connect(start);

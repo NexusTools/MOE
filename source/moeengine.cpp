@@ -20,15 +20,26 @@
 
 QThreadStorage<MoeEnginePointer> MoeEngine::_engine;
 
-MoeEngine::MoeEngine(QVariantMap args) {
+MoeEngine::MoeEngine() {
     makeCurrent();
-    _arguments = args;
     _scriptEngine = 0;
     _state = Stopped;
     _eventLoop = 0;
 
     moveToThread(this);
     setTicksPerSecond(24);
+}
+
+void MoeEngine::startWithArguments(QVariantMap args) {
+    _arguments = args;
+
+    QUrl loader(MoeUrl::locate(args.value("loader", "standard.js").toString(), ":/loaders/"));
+    if(args.contains("example"))
+        startContent(QString(":/examples/%1/").arg(args.value("example").toString()), loader);
+    else if(args.contains("content") || args.contains(""))
+        startContent(args.value("content", args.value("")).toString(), loader);
+    else
+        startContent(":/content-select/", loader);
 }
 
 MoeEngine::~MoeEngine()
@@ -49,12 +60,13 @@ void MoeEngine::changeFileContext(QString context) {
         initContentPath = context;
 }
 
-void MoeEngine::startContent(QString content) {
+void MoeEngine::startContent(QString content, QUrl _loader) {
     qDebug() << "Starting Content" << content;
     initContentPath = content;
+    loader = _loader;
 
-    if(QThread::currentThread() == this)
-        quit();
+    if(isActive())
+        metaObject()->invokeMethod(this, "quit()", Qt::QueuedConnection);
     else
         start();
 }
@@ -89,17 +101,6 @@ void MoeEngine::setState(State state)
     _state = state;
 }
 
-QScriptValue MoeEngine::eval(QString script)
-{
-    if(QThread::currentThread() != this || !_scriptEngine)
-        return QScriptValue();
-
-    QScriptValue val = scriptEngine()->evaluate(script);
-    if(scriptEngine()->hasUncaughtException())
-        exceptionThrown(scriptEngine()->uncaughtException());
-    return val;
-}
-
 void MoeEngine::play() {
     if(_state == Paused) {
         qDebug() << "Unpausing Engine";
@@ -126,16 +127,23 @@ void MoeEngine::quit()
 void MoeEngine::debug(QString data)
 {
     QDebug debug(QtDebugMsg);
-    debug << "[debug]";
     debug << QString("[%1]").arg(QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate)).toLocal8Bit().data();
+    debug << "[DEBUG]";
     if(_scriptEngine) {
         QString trace = _scriptEngine->currentContext()->backtrace().at(1);
         int at = trace.indexOf(" at ");
-        if(at > 0)
-            trace = trace.mid(at + 4);
+        if(at > -1) {
+            trace = trace.mid(at+4);
+            if(trace.indexOf(":") == -1)
+                trace = "anonymous:" + trace;
+        }
         debug << trace.toLocal8Bit().data();
     }
     debug << '\n' << data.toLocal8Bit().data();
+}
+
+void MoeEngine::eval(QString script) {
+    _scriptEngine->evaluate(script, "loader");
 }
 
 void MoeEngine::exceptionThrown(QScriptValue exception)
@@ -158,12 +166,16 @@ void MoeEngine::exceptionThrown(QScriptValue exception)
     }
 }
 
-void MoeEngine::evalFile(QString filePath){
-    QFile file(filePath);
-    if(file.open(QFile::ReadOnly))
-        _scriptEngine->evaluate(QString(file.readAll()), filePath);
-    else
-        _scriptEngine->currentContext()->throwError(QScriptContext::UnknownError, QString("File Not Found: %1").arg(filePath));
+QScriptValue __eval_func__(QScriptContext* ctx, QScriptEngine* eng) {
+    if(ctx->argument(0).toString().isEmpty()) {
+        ctx->throwError("Evaluating nothing");
+        return eng->nullValue();
+    }
+
+    ctx->pushScope(ctx->thisObject());
+    QScriptValue result = eng->evaluate(ctx->argument(0).toString(), ctx->argument(1).toString());
+    ctx->popScope();
+    return result;
 }
 
 void MoeEngine::run()
@@ -174,9 +186,12 @@ void MoeEngine::run()
     while(!initContentPath.isEmpty() && _error.isEmpty()) {
         QScriptEngine scriptEngine;
         _scriptEngine = &scriptEngine;
+        MoeUrl::setDefaultContext(":/loaders/");
 
         __moe_registerScriptConverters(_scriptEngine);
         QScriptValue globalObject = scriptEngine.globalObject();
+        globalObject.setProperty("global", globalObject, QScriptValue::SkipInEnumeration);
+        globalObject.setProperty("eval", _scriptEngine->newFunction(__eval_func__));
 
         QList<const QMetaObject*> classesToLoad = _classes;
         classesToLoad.append(&MoeUrl::staticMetaObject);
@@ -213,26 +228,8 @@ void MoeEngine::run()
             globalObject.setProperty(iterator.key(), scriptEngine.newVariant(iterator.value()));
         }
 
-        evalFile(":/libraries/prototype.js");
-        if(scriptEngine.hasUncaughtException())
-            exceptionThrown(scriptEngine.uncaughtException());
-        if(_state != Starting) {
-            _scriptEngine = 0;
-            _eventLoop = 0;
-            break;
-        }
-
-        evalFile(":/libraries/shared.js");
-        if(scriptEngine.hasUncaughtException())
-            exceptionThrown(scriptEngine.uncaughtException());
-        if(_state != Starting) {
-            _scriptEngine = 0;
-            _eventLoop = 0;
-            break;
-        }
-
         MoeUrl::setDefaultContext(initContentPath);
-        MoeResourceRequest* initRequest = new MoeResourceRequest("init.js");
+        MoeResourceRequest* initRequest = new MoeResourceRequest(loader);
         connect(initRequest, SIGNAL(receivedString(QString)), this, SLOT(eval(QString)), Qt::QueuedConnection);
         connect(initRequest, SIGNAL(error(QString)), this, SLOT(abort(QString)), Qt::QueuedConnection);
         connect(&scriptEngine, SIGNAL(signalHandlerException(QScriptValue)), this, SLOT(exceptionThrown(QScriptValue)));
@@ -301,11 +298,12 @@ void MoeEngine::inject(QString key, QVariant val)
     _environment.insert(key, val);
 }
 
-inline QUrl stringToUrl(QString path) {
-    static QRegExp absolutePath("^([\\d\\w\\-_]*:)?[/\\\\]");
-    if(absolutePath.indexIn(path) == 0) {
-        if(absolutePath.cap(0) == ":/")
+QUrl MoeUrl::urlFromString(QString path) {
+    static QRegExp absolutePath("^(([\\d\\w\\-_]*:)?[/\\\\]+|[\\d\\w\\-_]+:).*");
+    if(absolutePath.exactMatch(path)) {
+        if(absolutePath.cap(1) == ":/")
             return QUrl(QString("qrc%1").arg(path));
+
         QFileInfo fileInfo(absolutePath.cap(0));
         if(fileInfo.exists())
             return QUrl::fromLocalFile(path);
@@ -316,15 +314,14 @@ inline QUrl stringToUrl(QString path) {
 }
 
 QUrl MoeUrl::locate(QString path, QString context) {
-    QUrl url(stringToUrl(path));
+    QUrl url(urlFromString(path));
     if(url.isRelative()) {
-        QUrl _context(stringToUrl(context));
-        if(_context.isValid() || _context.isRelative())
+        QUrl _context(urlFromString(context));
+        if(_context.isEmpty() || _context.isRelative())
             _context = defaultContext();
 
         url = _context.resolved(url);
     }
-    qDebug() << "Located" << path << "at" << url;
 
     return url;
 }
