@@ -1,3 +1,5 @@
+var KEY_SPACE = 32, KEY_UP_ARROW = 38, KEY_W = 87, KEY_LEFT_ARROW = 37, KEY_A = 65, KEY_RIGHT_ARROW = 39, KEY_D = 68;
+
 var titleMenuButtonForgroundColor = Rgba(255, 255, 255, 200);
 var titleMenuButtonForgroundColorHovered = Rgba(255, 255, 255, 255);
 var titleMenuButtonForgroundColorActive = Rgba(80, 0, 0, 255);
@@ -18,6 +20,7 @@ function tick() {
     for(var i = 0; i < levelInstance.tickable.length; i++) {
         levelInstance.tickable[i].process();
     }
+    currentMenu.tick();
 }
 engine.tick.connect(tick);
 
@@ -84,19 +87,19 @@ function TitleMenu() {
         surface.remove(exitGameButton);
         surface.remove(levelEditorButton);
     }
+    this.tick = function() {}
 }
 
 function InGameMenu() {
-    surface.mousePressed.connect(function(point) {
-        { //Stub block for if the space bar is down.
-            levelInstance.tickable[levelInstance.tickable.length] = new DumbEnemy(point.x, point.y, 50, 75);
-        }
-    });
-
     this.handleResize = function(size) {
     }
 
     this.cleanup = function() {
+    }
+    this.tick = function() {
+        if(surface.isKeyPressed(KEY_SPACE)) {
+            levelInstance.tickable[levelInstance.tickable.length] = new DumbEnemy(surface.mousePos.x, surface.mousePos.y, 50, 75);
+        }
     }
 }
 
@@ -125,15 +128,26 @@ function Player() {
     this.onGround = false;
     this.process = function() {
         processPhysics(this, true, true, false);
-        //TODO: Key movements.
+        if(surface.isKeyPressed(KEY_UP_ARROW) || surface.isKeyPressed(KEY_W)) {
+            if(this.onGround)
+                this.yVel -= 20;
+        }
+        if(surface.isKeyPressed(KEY_LEFT_ARROW) || surface.isKeyPressed(KEY_A)) {
+            if(this.xVel > -15)
+                this.xVel -= 2;
+        }
+        if(surface.isKeyPressed(KEY_RIGHT_ARROW) || surface.isKeyPressed(KEY_D)) {
+            if(this.xVel < 15)
+                this.xVel += 2;
+        }
     }
 
     this.takeHealth = function(amt) {
-        if(this.health-=amt <= 0) {
+        if((this.health-=amt) <= 0) {
             this.health = 0;
             this.dead = true;
         }
-        this.gO.animate("background", Rgb((this.health / 100) * this.defaultColor.r, (this.health / 100) * this.defaultColor.g, (this.health / 100) * this.defaultColor.b));
+        this.gO.animate("background", Rgb(((this.health / 100) * this.defaultColor.red), ((this.health / 100) * this.defaultColor.green), ((this.health / 100) * this.defaultColor.blue)));
     }
 }
 
