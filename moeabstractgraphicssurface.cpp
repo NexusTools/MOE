@@ -21,7 +21,7 @@ void MoeAbstractGraphicsSurface::render(RenderRecorder* p, QRect region)
 
     bool renderForParent = p != 0;
     if(!renderForParent)
-        p = new RenderRecorder(repaintDebug == RepaintDebugFrame ? _localGeometry : region);
+        p = new RenderRecorder(this, repaintDebug == RepaintDebugFrame ? _localGeometry : region);
 
     MoeGraphicsContainer::render(p, repaintDebug == RepaintDebugFrame ? _localGeometry : region);
     if(!renderForParent) {

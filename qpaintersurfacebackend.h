@@ -78,6 +78,31 @@ public:
                         p.setTransform(inst.arguments.first().value<QTransform>());
                 break;
 
+                case RenderInstruction::RenderBuffer:
+                {
+                    quintptr id = inst.arguments.first().value<quintptr>();
+                    QRect dest = inst.arguments.at(1).toRect();
+                    QPixmap buffer;
+                    if(inst.arguments.size() >= 3) {
+                        buffer.loadFromData(inst.arguments.at(2).toByteArray());
+                        renderBuffers.insert(id, buffer);
+                    } else
+                        buffer = renderBuffers.value(id);
+
+                    if(buffer.isNull())
+                        if(!renderBuffers.contains(id)) {
+                            p.drawTiledPixmap(dest, getCheckerBoardImage());
+                            return;
+                        } else
+                            p.drawTiledPixmap(dest, getCheckerBoardImage(Qt::red));
+                    else {
+                        QSize scaledSize(buffer.size().scaled(dest.width(), dest.height(), Qt::KeepAspectRatio));
+                        p.drawPixmap(QRect(dest.topLeft() + QPoint(dest.width()/2-scaledSize.width()/2,
+                                           dest.height()/2-scaledSize.height()/2), scaledSize), buffer);
+                    }
+                }
+                break;
+
                 default:
                     qWarning() << "Unhandled Recorder Instruction" << inst.type;
                 break;
@@ -102,9 +127,29 @@ protected:
         moveToThread(qApp->thread());
     }
 
+    inline QPixmap getCheckerBoardImage(Qt::GlobalColor color =Qt::magenta) {
+        static const QSize boardSize(10, 10);
+        static const Qt::GlobalColor color2(Qt::white);
+        static QMap<Qt::GlobalColor, QPixmap> checkboards;
+
+        QPixmap pixmap = checkboards.value(color);
+        if(pixmap.isNull()) {
+            pixmap = QPixmap(QSize(boardSize.width()*2, boardSize.height()*2));
+            QPainter p(&pixmap);
+            p.fillRect(QRect(QPoint(0,0),boardSize),color);
+            p.fillRect(QRect(QPoint(boardSize.width(),0),boardSize),color2);
+            p.fillRect(QRect(QPoint(0,boardSize.height()),boardSize),color2);
+            p.fillRect(QRect(QPoint(boardSize.width(),boardSize.height()),boardSize),color);
+            checkboards.insert(color, pixmap);
+        }
+
+        return pixmap;
+    }
+
 private:
     QRect pendingPaintRect;
     QSize pendingBufferSize;
+    QMap<quintptr, QPixmap> renderBuffers;
     RenderInstructions pendingInstructions;
 };
 

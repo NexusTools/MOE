@@ -6,16 +6,19 @@
 #include <QObject>
 #include <QThread>
 #include <QPixmap>
+#include <QDebug>
 #include <QHash>
 
 class RenderBuffer;
-class MoeGraphicsSurface;
+class MoeAbstractGraphicsSurface;
 
 typedef QMap<quintptr, RenderBuffer*> RenderBufferStorage;
 
 class RenderBuffer : public QObject
 {
     Q_OBJECT
+    friend class RenderRecorder;
+
 public:
     static inline RenderBuffer* instance(QObject* buffer, bool createIfNoneExist =true) {
         RenderBuffer* instance = 0;
@@ -41,11 +44,31 @@ public:
     inline quintptr id() {
         return _id;
     }
+
+    inline bool updateSurfaceVersion(MoeAbstractGraphicsSurface* surface) {
+        if(!surfaceDataVersion.contains((quintptr)surface)) {
+            //TODO: Notify the newly added surface when this buffer is destroyed
+            qDebug() << this << "has been added to" << surface << "at version" << _dataId;
+            surfaceDataVersion.insert((quintptr)surface, _dataId);
+            return true;
+        }
+        if(surfaceDataVersion.value((quintptr)surface) == _dataId)
+            return false;
+
+        qDebug() << this << "updated for" << surface << "with version" << _dataId;
+        surfaceDataVersion.insert((quintptr)surface, _dataId);
+        return true;
+    }
+
+    inline QByteArray data() const{
+        return _data;
+    }
     
 public slots:
     inline void load(QByteArray data) {
         _data = data;
         _dataId = qHash(_data);
+        qDebug() << this << "new data version" << _dataId;
     }
 
     inline void surfaceDestroyed(QObject* obj) {
@@ -53,8 +76,6 @@ public slots:
     }
     
 private:
-    friend class RenderRecorder;
-
     inline explicit RenderBuffer(QObject *buffer) {
         _id = (quintptr)buffer;
         connect(buffer, SIGNAL(destroyed()), this, SLOT(deleteLater()), Qt::QueuedConnection);

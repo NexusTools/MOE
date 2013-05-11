@@ -1,5 +1,6 @@
 #include "moeurl.h"
 #include "moeengine.h"
+#include "moegraphicsimage.h"
 #include "moeresourcerequest.h"
 #include "moescriptregisters.h"
 #include "moegraphicscontainer.h"
@@ -153,6 +154,7 @@ void MoeEngine::run()
 
     QList<const QMetaObject*> classesToLoad = _classes;
     classesToLoad.append(&MoeUrl::staticMetaObject);
+    classesToLoad.append(&MoeGraphicsImage::staticMetaObject);
     classesToLoad.append(&MoeGraphicsObject::staticMetaObject);
     classesToLoad.append(&MoeResourceRequest::staticMetaObject);
     classesToLoad.append(&MoeGraphicsContainer::staticMetaObject);

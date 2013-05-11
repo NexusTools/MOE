@@ -9,11 +9,14 @@
 #include <QTransform>
 #include <QPainter>
 
+class MoeAbstractGraphicsSurface;
+
 class RenderRecorder : public MoeObject
 {
     Q_OBJECT
 public:
-    explicit inline RenderRecorder(QRect rect) {
+    explicit inline RenderRecorder(MoeAbstractGraphicsSurface* s, QRect rect) {
+        surface = s;
         cbrush = QColor(Qt::darkMagenta);
         brush = cbrush;
         cPenThick = 1;
@@ -49,6 +52,28 @@ public slots:
         instruction.arguments.append(rect);
         instruction.arguments.append((unsigned int)color.rgba());
         _instructions.append(instruction);
+    }
+
+    inline void drawBuffer(RenderBuffer* obj, QRect rect) {
+        if(!obj || !clipRect.intersects(transform.mapRect(rect)))
+            return;
+
+        updateOpacity();
+        requireClipRect();
+        requireTransform();
+        RenderInstruction instruction;
+        instruction.type = RenderInstruction::RenderBuffer;
+        instruction.arguments.append(obj->id());
+        instruction.arguments.append(rect);
+        if(obj->updateSurfaceVersion(surface))
+            instruction.arguments.append(obj->data());
+        _instructions.append(instruction);
+    }
+
+    inline void drawBuffer(QObject* obj, QRect rect) {
+        RenderBuffer* renderBuf = RenderBuffer::instance(obj, false);
+        if(renderBuf)
+            drawBuffer(renderBuf, rect);
     }
 
     inline void drawText(QRect rect, QString text) {
@@ -282,6 +307,7 @@ private:
     QBrush brush, cbrush;
     QTransform cTransform;
     int penThick, cPenThick;
+    MoeAbstractGraphicsSurface* surface;
 };
 
 #endif // RENDERRECORDER_H

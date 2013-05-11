@@ -11,7 +11,8 @@ class MoeGraphicsImage : public MoeGraphicsObject
 {
     Q_OBJECT
 public:
-    explicit MoeGraphicsImage(QString path = QString(), MoeObject *parent = 0);
+    Q_INVOKABLE explicit MoeGraphicsImage(MoeObject *parent = 0);
+    void paintImpl(RenderRecorder*, QRect);
 
     QRgb mainColor();
 
