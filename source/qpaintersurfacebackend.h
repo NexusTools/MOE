@@ -25,6 +25,7 @@ public:
         p.setRenderHint(QPainter::Antialiasing);
         p.setRenderHint(QPainter::TextAntialiasing);
         p.setRenderHint(QPainter::SmoothPixmapTransform);
+        p.setRenderHint(QPainter::HighQualityAntialiasing);
 
         foreach(RenderInstruction inst, pendingInstructions) {
             switch(inst.type){

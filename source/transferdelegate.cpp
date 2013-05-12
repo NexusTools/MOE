@@ -43,41 +43,44 @@ TransferDelegate::TransferDelegate(QUrl url) : _url(url)
 void TransferDelegate::startRequest(){
     qDebug() << "Starting" << this << _url;
 
-//    if(_url.isLocalFile() || _url.scheme() == "qrc") {
-//        QFileInfo info(_url.scheme() == "qrc" ? QString(":%1").arg(_url.path()) : _url.toLocalFile());
-//        qDebug() << this << "is Local";
+    if(_url.isLocalFile() || _url.scheme() == "qrc") {
+        QFileInfo info(_url.scheme() == "qrc" ? QString(":%1").arg(_url.path()) : _url.toLocalFile());
+        qDebug() << this << "is Local";
 
-//        QString _error;
-//        QByteArray _data;
-//        if(!info.exists())
-//            _error = "File doesn't exist";
-//        else {
-//            if(info.isDir())
-//               _error = "Index of emulation not implemented...";
-//            else {
-//                QFile file(info.absoluteFilePath());
-//                if(file.open(QFile::ReadOnly)) {
-//                    _data = file.readAll();
-//                    if(_data.length() < info.size())
-//                        _error = "Unexpected end of stream";
-//                } else
-//                    _error = "Unable to open for reading";
-//            }
-//        }
+        QString _error;
+        QByteArray data;
+        if(!info.exists())
+            _error = "File doesn't exist";
+        else {
+            if(info.isDir())
+               _error = "Index of emulation not implemented...";
+            else {
+                QFile file(info.absoluteFilePath());
+                if(file.open(QFile::ReadOnly)) {
+                    data = file.readAll();
+                    if(data.length() < info.size())
+                        _error = "Unexpected end of stream";
+                } else
+                    _error = "Unable to open for reading";
+            }
+        }
 
-//        QMutexLocker locker(&mutex);
-//        _progress = _error.isEmpty() ? 1 : -1;
-//        emit progress(_progress);
-//        if(_error.isEmpty()) {
-//            qDebug() << this << "Finished" << _data.size();
-//            emit receivedData(_data);
-//        } else {
-//            _error = QString("Error reading `%1`: %2").arg(info.filePath()).arg(_error);
-//            qDebug() << this << _error;
-//            emit error(_error);
-//        }
-//        return;
-//    }
+        QMutexLocker locker(&mutex);
+        if(_error.isEmpty()) {
+            qDebug() << this << "Finished" << _data.size();
+            _data = data;
+            _progress = 1;
+            emit progress(_progress);
+            emit receivedData(_data);
+        } else {
+            _error = QString("Error reading `%1`: %2").arg(info.filePath()).arg(_error);
+            _progress = -1;
+            _data = _error.toLocal8Bit();
+            emit progress(_progress);
+            emit error(_error);
+        }
+        return;
+    }
 
     static QNetworkAccessManager* netMan = 0;
     if(!netMan) //TODO: Add cache support

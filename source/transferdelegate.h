@@ -73,6 +73,7 @@ private:
     inline void connectNotify(const QMetaMethod &signal) {
         QMutexLocker locker(&mutex);
         QString name(signal.name());
+        qDebug() << this << "Signal Connected" << name;
         if(name.startsWith("progress") && _progress > 0)
             emit progress(_progress);
         else if(name.startsWith("error") && _progress == -1)

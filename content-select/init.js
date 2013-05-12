@@ -1,10 +1,8 @@
 
 var surface = new GraphicsSurface("Select Content (MOE Game Engine v" + engine.version + ")", Size(800, 600));
-
-var title = new GraphicsText("Select Content", Font("Arial", 16), surface);
-title.foreground = "white";
-
 var snakes = [];
+
+var moeLogo = new GraphicsImage(Url("../resources/logo.png"));
 
 surface.keyPressed.connect(function(c){
     engine.debug(c);
@@ -67,15 +65,85 @@ surface.paint.connect(function(p) {
     }
 });
 
-var examples = new GraphicsText("Examples", Font("Arial", 9), surface);
-examples.background = VLinearGradient(GradientStop(0, "gray100"), GradientStop(1, "gray90"));
-examples.borderRadius = "3"
-examples.border = "gray95";
-examples.cursor = "pointer";
+function Button(text) {
+    this.button = new GraphicsText(text, Font("Arial", 10), surface);
+    this.button.background = Rgba(173, 216, 230, 60);
+    this.button.foreground = Rgb(173, 216, 230);
+    this.button.border = Rgb(173, 216, 230);
+    this.button.cursor = "pointer";
+    this.button.borderRadius = 3;
+    this.button.margin = 5;
+    this.selected = false;
+    this.button.mouseEntered.connect(function(){
+        if(this.selected)
+            return;
+        this.button.animate("background", Rgba(173, 216, 230, 140), 2);
+        this.button.animate("foreground", Rgb(203, 236, 255), 2);
+    }.bind(this));
+    this.button.mouseLeft.connect(function(){
+        if(this.selected)
+            return;
+        this.button.animate("background", Rgba(173, 216, 230, 60), 2);
+        this.button.animate("foreground", Rgb(173, 216, 230), 2);
+    }.bind(this));
+    this.setSelected = function(sel) {
+        if(sel == this.selected)
+            return;
+        if(sel) {
+            this.button.animate("background", Rgba(173, 216, 230, 200), 2);
+            this.button.animate("foreground", Rgb(203, 236, 255), 2);
+        } else {
+            this.button.animate("background", Rgba(173, 216, 230, 60), 2);
+            this.button.animate("foreground", Rgb(173, 216, 230), 2);
+        }
+
+        this.selected = sel;
+    }
+
+    return this;
+}
+
+function ButtonGroup() {
+    this.buttons = $A();
+    this.groupWidth = 0;
+    this.selectedButton = false;
+    this.selectButton = function(btn) {
+        if(this.selectedButton)
+            this.selectedButton.setSelected(false);
+        this.selectedButton = btn;
+        this.selectedButton.setSelected(true);
+        this.buttonChanged.emit(this.selectedButton.button.text);
+    }
+    this.push = function(btn) {
+        if(btn.button.width > this.groupWidth) {
+            this.groupWidth = btn.button.width;
+            this.buttons.forEach(function(bnt){
+                bnt.button.width = this.groupWidth;
+            }.bind(this));
+        } else
+            btn.button.width = this.groupWidth;
+
+        btn.button.mousePressed.connect(function(){
+            this.selectButton(btn);
+        }.bind(this));
+        this.buttons.push(btn);
+    }
+    this.buttonChanged = new Signal();
+}
+
+var rightButtons = new ButtonGroup();
+rightButtons.push(new Button("Gallery"));
+rightButtons.push(new Button("Downloaded"));
+rightButtons.push(new Button("Content Editor"));
+rightButtons.push(new Button("Examples"));
 
 surface.resized.connect(function(size){
-    examples.setPos(surface.width - examples.width - 5, 5);
-    title.x = size.width/2 - title.width/2;
+    var x = 5;
+    var y = 5;
+    rightButtons.buttons.forEach(function(btn){
+        btn.button.setPos(x, y);
+        y += btn.button.height + 5;
+    });
 });
 
 function start(size) {

@@ -300,7 +300,9 @@ void MoeEngine::inject(QString key, QVariant val)
 
 QUrl MoeUrl::urlFromString(QString path) {
     static QRegExp absolutePath("^(([\\d\\w\\-_]*:)?[/\\\\]+|[\\d\\w\\-_]+:).*");
-    if(absolutePath.exactMatch(path)) {
+    if(path.startsWith('.'))
+        return QUrl(path);
+    else if(absolutePath.exactMatch(path)) {
         if(absolutePath.cap(1) == ":/")
             return QUrl(QString("qrc%1").arg(path));
 
