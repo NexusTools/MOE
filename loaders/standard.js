@@ -9,9 +9,11 @@
 
     var loadInitFile = function() {
         var initFile = new ResourceRequest("init.js");
-        initFile.receivedString.connect(function(source){
-            evalGlobal(source, "init.js");
-        });
+        var processInitFile = (function(source){
+            initFile.receivedString.disconnect(processInitFile);
+            evalGlobal(source, "init");
+        }).bind(this);
+        initFile.receivedString.connect(processInitFile);
         initFile.error.connect(function(error){
             throw "Error downloading init file: " + error;
         });
@@ -23,8 +25,8 @@
             return;
         }
 
-        var lib = libraries.shift() + ".js";
-        var libFile = new ResourceRequest(Url(lib, "qrc:/libraries/"));
+        var lib = libraries.shift();
+        var libFile = new ResourceRequest(Url(lib + ".js", "qrc:/libraries/"));
         libFile.receivedString.connect(function(source){
             evalGlobal(source, lib);
             loadNextLibrary();

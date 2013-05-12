@@ -43,8 +43,7 @@ bool MoeGraphicsObject::canUseKeyFocus(){
  }
 
 bool MoeGraphicsObject::canUseMouseFocus(){
-
-    return  canUseKeyFocus() ||
+    return  _cursor.shape() != Qt::ArrowCursor || canUseKeyFocus() ||
             isHookConnected(mouseMovedHook) || isHookConnected(mousePressedHook) ||
             isHookConnected(mouseReleasedHook) || isHookConnected(mouseEnteredHook) ||
             isHookConnected(mouseLeftHook) || isHookConnected(mouseScrolledHook);
@@ -121,6 +120,7 @@ void MoeGraphicsObject::setCursor(QCursor cursor){
         return;
     _cursor = cursor;
     emit cursorChanged(cursor);
+    notifyParentOfUpdate();
 }
 
 void MoeGraphicsObject::setOpacity(qreal opacity) {

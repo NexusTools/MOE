@@ -77,7 +77,10 @@ MoeGraphicsContainer* MoeGraphicsObject::container() const{
 }
 
 void MoeGraphicsObject::setContainer(MoeGraphicsContainer *contain) {
-    contain->add(this);
+    if(contain)
+        contain->add(this);
+    else
+        setParent(contain);
 }
 
 void MoeGraphicsContainer::render(RenderRecorder * p, QRect region) {

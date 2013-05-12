@@ -82,19 +82,23 @@ public slots:
         if(!clipRect.intersects(targetRect))
             return;
 
+        updatePen();
+        updateFont();
+        updateOpacity();
         if(transform.isScaling()) {
             requireTransform();
             targetRect = rect;
         } else {
             noTransform();
 
-            updatePen();
-            updateFont();
-            updateOpacity();
             if(clipRect.contains(targetRect))
                 noClipRect();
-            else
+            else {
+                QRect oldClip = QRect(clipRect.x()-2,clipRect.y()-2,
+                                      clipRect.width()+4,clipRect.height()+4);
                 requireClipRect();
+                clipRect = oldClip;
+            }
         }
 
         RenderInstruction instruction;

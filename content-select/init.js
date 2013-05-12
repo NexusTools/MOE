@@ -67,7 +67,14 @@ surface.paint.connect(function(p) {
     }
 });
 
+var examples = new GraphicsText("Examples", Font("Arial", 9), surface);
+examples.background = VLinearGradient(GradientStop(0, "gray100"), GradientStop(1, "gray90"));
+examples.borderRadius = "3"
+examples.border = "gray95";
+examples.cursor = "pointer";
+
 surface.resized.connect(function(size){
+    examples.setPos(surface.width - examples.width - 5, 5);
     title.x = size.width/2 - title.width/2;
 });
 

@@ -22,6 +22,9 @@ public:
         p.setPen(Qt::black);
         p.setBrush(Qt::darkMagenta);
         p.setClipRect(pendingPaintRect);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.setRenderHint(QPainter::TextAntialiasing);
+        p.setRenderHint(QPainter::SmoothPixmapTransform);
 
         foreach(RenderInstruction inst, pendingInstructions) {
             switch(inst.type){
@@ -35,7 +38,10 @@ public:
                     break;
 
                 case RenderInstruction::DrawRect:
-                    p.drawRect(inst.arguments.at(0).toRect());
+                    if(inst.arguments.length() >= 2)
+                        p.drawRoundedRect(inst.arguments.at(0).toRect(), inst.arguments.at(1).toReal(), inst.arguments.at(1).toReal(), Qt::AbsoluteSize);
+                    else
+                        p.drawRect(inst.arguments.at(0).toRect());
                     break;
 
                 case RenderInstruction::DrawText:
