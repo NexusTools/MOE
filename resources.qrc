@@ -13,5 +13,6 @@
         <file>examples/image-viewer/init.js</file>
         <file>loaders/basic.js</file>
         <file>loaders/standard.js</file>
+        <file>libraries/standard.js</file>
     </qresource>
 </RCC>

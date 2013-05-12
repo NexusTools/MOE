@@ -72,7 +72,7 @@ public slots:
     void pause();
     void quit();
 
-    inline int setTimeout(QScriptValue callback, int mdelay) {
+    inline int setTimeout(QScriptValue callback, int mdelay =0) {
         int timerId = startTimer(mdelay);
         _timers.insert(timerId, callback);
         return timerId;

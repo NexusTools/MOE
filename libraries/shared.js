@@ -1,3 +1,9 @@
+/*
+  @author       "Katelyn <ktaeyln@gmail.com>"
+  @description  ""
+  @dependancies ["prototype"]
+*/
+
 function setTimeout(callback, delay) {return engine.setTimeout(callback, delay);}
 function clearTimeout(handle) {engine.clearTimeout(handle);}
 

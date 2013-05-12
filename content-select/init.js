@@ -1,4 +1,3 @@
-
 var surface = new GraphicsSurface("Select Content (MOE Game Engine v" + engine.version + ")", Size(800, 600));
 var snakes = [];
 

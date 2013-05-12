@@ -143,7 +143,12 @@ void MoeEngine::debug(QString data)
 }
 
 void MoeEngine::eval(QString script) {
-    _scriptEngine->evaluate(script, "loader");
+    if(loader.isEmpty())
+        _scriptEngine->evaluate(script);
+    else {
+        _scriptEngine->evaluate(script, loader.toString());
+        loader.clear();
+    }
 }
 
 void MoeEngine::exceptionThrown(QScriptValue exception)
@@ -183,7 +188,7 @@ void MoeEngine::run()
     makeCurrent();
     setState(Starting);
     _error = QString();
-    while(!initContentPath.isEmpty() && _error.isEmpty()) {
+    while(!loader.isEmpty() && _error.isEmpty()) {
         QScriptEngine scriptEngine;
         _scriptEngine = &scriptEngine;
         MoeUrl::setDefaultContext(":/loaders/");
@@ -228,18 +233,24 @@ void MoeEngine::run()
             globalObject.setProperty(iterator.key(), scriptEngine.newVariant(iterator.value()));
         }
 
-        MoeUrl::setDefaultContext(initContentPath);
+        QEventLoop eventLoop;
+        _eventLoop = &eventLoop;
+        int nextWait = _tickWait;
+        QElapsedTimer timer;
+        int sleepTime;
+        timer.start();
+
+        if(initContentPath.isEmpty())
+            MoeUrl::setDefaultContext(":/content-select/");
+        else {
+            MoeUrl::setDefaultContext(initContentPath);
+            initContentPath.clear();
+        }
         MoeResourceRequest* initRequest = new MoeResourceRequest(loader);
         connect(initRequest, SIGNAL(receivedString(QString)), this, SLOT(eval(QString)), Qt::QueuedConnection);
         connect(initRequest, SIGNAL(error(QString)), this, SLOT(abort(QString)), Qt::QueuedConnection);
         connect(&scriptEngine, SIGNAL(signalHandlerException(QScriptValue)), this, SLOT(exceptionThrown(QScriptValue)));
-        QElapsedTimer timer;
 
-        QEventLoop eventLoop;
-        _eventLoop = &eventLoop;
-        timer.start();
-        int sleepTime;
-        int nextWait = _tickWait;
         setState(Running);
         while(_state != Stopped && _state != Crashed)
         {

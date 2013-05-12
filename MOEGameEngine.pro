@@ -66,7 +66,8 @@ OTHER_FILES += \
     examples/crash/info.xml \
     examples/image-viewer/info.xml \
     loaders/standard.js \
-    loaders/basic.js
+    loaders/basic.js \
+    libraries/standard.js
 
 RESOURCES += \
         resources.qrc
