@@ -2,8 +2,10 @@
 #define MOERESOURCEREQUEST_H
 
 #include "transferdelegate.h"
+#include <QRegularExpression>
 #include <QThreadStorage>
 #include <QScriptEngine>
+#include <QStringList>
 #include <QMetaMethod>
 #include <QJsonValue>
 
@@ -14,6 +16,7 @@
 class MoeResourceRequest : public MoeObject
 {
     Q_OBJECT
+    Q_PROPERTY(QUrl url READ url)
 public:
     inline MoeResourceRequest(const char* resource){
         init(MoeUrl::locate(resource));
@@ -27,6 +30,10 @@ public:
         init(resource);
     }
 
+    inline QUrl url() const{
+        return _url;
+    }
+
 protected slots:
     inline void progressCallback(float prog) {
         emit progress(prog);
@@ -37,6 +44,7 @@ protected slots:
 
         static QMetaMethod jsonSignal = metaObject()->method(metaObject()->indexOfSignal("receivedJSON(QScriptValue)"));
         static QMetaMethod stringSignal = metaObject()->method(metaObject()->indexOfSignal("receivedString(QString)"));
+        static QMetaMethod childListSignal = metaObject()->method(metaObject()->indexOfSignal("receivedChildList(QStringList)"));
         emit receivedData(dat);
         if(isSignalConnected(jsonSignal)) {
             engine()->scriptEngine()->pushContext();
@@ -44,8 +52,42 @@ protected slots:
             engine()->scriptEngine()->popContext();
             emit receivedJSON(value);
         }
-        if(isSignalConnected(stringSignal))
-            emit receivedString(QString::fromUtf8(dat));
+        if(isSignalConnected(childListSignal) || isSignalConnected(stringSignal)) {
+            QString stringData(QString::fromUtf8(dat));
+
+            if(isSignalConnected(stringSignal))
+                emit receivedString(stringData);
+
+            if(isSignalConnected(childListSignal)) {
+                QStringList children;
+                static QRegularExpression regExp("<[^>]*((src|href|source|file)=(?<src>\"[^\"]+|'[^']+|[^\\s\"'>]+))[^>]+", QRegularExpression::CaseInsensitiveOption);
+                QRegularExpressionMatchIterator i = regExp.globalMatch(dat);
+                QString base = _url.toString();
+                if(!base.endsWith('/'))
+                    base += '/';
+
+                while(i.hasNext()) {
+                    QRegularExpressionMatch match = i.next();
+                    QString fileMatch = match.captured("src");
+                    if(fileMatch.startsWith('"') || fileMatch.startsWith('\''))
+                        fileMatch = fileMatch.mid(1);
+                    QString resolved(MoeUrl::locate(fileMatch, base).toString());
+                    if(resolved.startsWith(base)) {
+                        resolved = resolved.mid(base.length());
+                        if(resolved.endsWith('/'))
+                            resolved = resolved.left(resolved.length()-1);
+                        if(resolved.contains('/'))
+                            continue; // Isn't direct child...
+                        if(resolved.isEmpty())
+                            continue; // Same as parent
+                        if(children.contains(resolved))
+                            continue; // Already found
+                        children << resolved;
+                    }
+                }
+                emit receivedChildList(children);
+            }
+        }
 
         disconnectAll();
     }
@@ -60,11 +102,13 @@ signals:
     void receivedData(QByteArray);
     void receivedJSON(QScriptValue);
     void receivedString(QString);
+    void receivedChildList(QStringList);
     void error(QString err);
     void completed(bool);
 
 private:
     inline void init(QUrl resource){
+        _url = resource;
         qDebug() << "Downloading" << resource;
         transferDelegate = TransferDelegate::getInstance(resource);
     }
@@ -93,6 +137,7 @@ private:
     QMetaObject::Connection receivedConnection;
     QMetaObject::Connection errorConnection;
 
+    QUrl _url;
     static QThreadStorage<QString> context;
     TransferDelegateReference transferDelegate;
 };

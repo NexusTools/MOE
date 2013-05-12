@@ -52,9 +52,17 @@ void TransferDelegate::startRequest(){
         if(!info.exists())
             _error = "File doesn't exist";
         else {
-            if(info.isDir())
-               _error = "Index of emulation not implemented...";
-            else {
+            if(info.isDir()) {
+                data = "<html><head></head><body><h1></h1><hr /><ul>";
+                foreach(QFileInfo childInfo, info.dir().entryInfoList()) {
+                    data += "<a href='";
+                    data += childInfo.absoluteFilePath();
+                    data += "'>";
+                    data += childInfo.fileName();
+                    data += "</a>";
+                }
+                data += "</ul></body></html>";
+            } else {
                 QFile file(info.absoluteFilePath());
                 if(file.open(QFile::ReadOnly)) {
                     data = file.readAll();

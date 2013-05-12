@@ -77,7 +77,7 @@ function Button(text) {
     this.button.mouseEntered.connect(function(){
         if(this.selected)
             return;
-        this.button.animate("background", Rgba(173, 216, 230, 140), 2);
+        this.button.animate("background", Rgba(173, 216, 230, 110), 2);
         this.button.animate("foreground", Rgb(203, 236, 255), 2);
     }.bind(this));
     this.button.mouseLeft.connect(function(){
@@ -90,7 +90,7 @@ function Button(text) {
         if(sel == this.selected)
             return;
         if(sel) {
-            this.button.animate("background", Rgba(173, 216, 230, 200), 2);
+            this.button.animate("background", Rgba(173, 216, 230, 160), 2);
             this.button.animate("foreground", Rgb(203, 236, 255), 2);
         } else {
             this.button.animate("background", Rgba(173, 216, 230, 60), 2);
@@ -103,7 +103,7 @@ function Button(text) {
     return this;
 }
 
-function ButtonGroup() {
+function ButtonGroup(expand) {
     this.buttons = $A();
     this.groupWidth = 0;
     this.selectedButton = false;
@@ -127,15 +127,41 @@ function ButtonGroup() {
             this.selectButton(btn);
         }.bind(this));
         this.buttons.push(btn);
+        if(expand)
+            btn.button.opacity = 0;
     }
+
     this.buttonChanged = new Signal();
 }
 
 var rightButtons = new ButtonGroup();
 rightButtons.push(new Button("Gallery"));
+rightButtons.push(new Button("Examples"));
 rightButtons.push(new Button("Downloaded"));
 rightButtons.push(new Button("Content Editor"));
-rightButtons.push(new Button("Examples"));
+var sumenuButtons = false;
+rightButtons.buttonChanged.connect(function(btn){
+    if(sumenuButtons) {
+        sumenuButtons.destroy();
+        sumenuButtons = false;
+    }
+    switch(btn) {
+    case "Examples":
+        var exampleEntries = ResourceRequest(":/examples/");
+        exampleEntries.receivedChildList.connect(function(children){
+            if(!children.length)
+                throw "Examples missing...";
+            engine.debug(children);
+        });
+        exampleEntries.error.connect(function(error){
+            throw error;
+        });
+        break;
+
+    default:
+        throw "`" + btn + "` isn't implemented yet.";
+    }
+});
 
 surface.resized.connect(function(size){
     var x = 5;

@@ -63,17 +63,16 @@ function HLinearGradient() {
 }
 
 function Signal() {
-    thisObject = this;
     this.connections = [];
     this.emit = function() {
         var args = arguments;
-        thisObject.connections.forEach(function(handler){
-            handler(args);
+        this.connections.forEach(function(handler){
+            handler.apply(this, args);
         });
     }
     this.connect = function(handler) {
-        if(!thisObject.connections.contains(handler))
-            thisObject.connections.push(handler);
+        if(this.connections.indexOf(handler) === -1)
+            this.connections.push(handler);
     }
 }
 

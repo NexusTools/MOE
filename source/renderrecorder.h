@@ -162,13 +162,17 @@ public slots:
     }
 
     inline void setPenThickness(int thick) {
-        penThick = thick;
+        if(thick > 0)
+            penThick = thick;
     }
 
-    inline void setPen(QColor c, int thickness =-1){
+    inline void setPen(QColor c, int thickness =1){
+        setPenColor(c);
+        setPenThickness(thickness);
+    }
+
+    inline void setPenColor(QColor c){
         pen = c;
-        if(thickness > 0)
-            penThick = thickness;
     }
 
     inline void setBrush(QBrush c){

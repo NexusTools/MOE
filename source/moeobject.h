@@ -37,6 +37,7 @@ public:
         return instances.localData().count();
     }
 
+    Q_INVOKABLE inline void destroy() {deleteLater();}
     Q_INVOKABLE QString toString() const;
 
 public slots:
