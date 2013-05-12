@@ -47,6 +47,7 @@ public:
         return QThread::isRunning() && _state != Stopped && _state != Crashed;
     }
 
+    static void registerQDebugHandler();
     static inline MoeEnginePointer threadEngine() {return _engine.localData();}
     inline QScriptEngine* scriptEngine() const{return _scriptEngine;}
     inline MoeEnginePointer engine() const{return MoeEnginePointer((MoeEngine*)this);}
@@ -83,7 +84,7 @@ public slots:
         killTimer(handle);
     }
 
-    void debug(QString);
+    void debug(QString string);
     inline qreal random() {return (qreal)qrand()/(qreal)INT_MAX;}
     inline void setTicksPerSecond(uchar ticks) {_tickWait=1000/ticks;}
 
@@ -99,6 +100,7 @@ signals:
     void preciseTick(qreal);
     void crashed(QString reason);
     void stateChanged(MoeEngine::State state);
+    void uncaughtException(QScriptValue);
 
 protected:
     void timerEvent(QTimerEvent *);

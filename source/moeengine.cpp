@@ -53,6 +53,88 @@ MoeEngine::~MoeEngine()
     }
 }
 
+inline QString pointerToString(void* ptr) {
+    return QString("0x%0").arg((qlonglong)ptr,sizeof(ptr)*2,16,QLatin1Char('0'));
+}
+
+void customMessageHandler(QtMsgType type, const QMessageLogContext& ctx, const QString& msg)
+{
+    static QMutex mutex;
+    QMutexLocker lock(&mutex);
+
+    QTextStream textStream(type != QtDebugMsg ? stderr : stdout, QFile::WriteOnly);
+    textStream << '[';
+    textStream << QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate);
+    textStream << "] [MoeEngine: ";
+    MoeEnginePointer activeEngine = MoeEngine::threadEngine();
+    if(activeEngine.isNull())
+        textStream << "None";
+    else
+        textStream << pointerToString(activeEngine.data());
+    textStream << "] ";
+
+    QString func(ctx.function);
+    if(func.isEmpty())
+        func = "anonymous";
+    else {
+        static QRegExp methodName("[\\s^]([\\w]+[\\w\\d\\-_]*(::[\\w]+[\\w\\d\\-_]*)?)\\(");
+        if(methodName.indexIn(ctx.function) > -1)
+            func = methodName.cap(1);
+    }
+    textStream << '[';
+    textStream << func;
+    textStream << "] ";
+
+    QString file(ctx.file);
+    if(file.isEmpty())
+        file = "Unknown";
+    else {
+        static QRegExp nativeSourcePath("^(\\.\\.|\\w:|\\\\)?[/\\\\].+[/\\\\]source[/\\\\](.+\\.(cpp|c|h|hpp))$", Qt::CaseInsensitive, QRegExp::RegExp2);
+        if(nativeSourcePath.exactMatch(file))
+            file = "https://raw.github.com/NexusTools/MOE/master/" + nativeSourcePath.cap(2);
+    }
+    textStream << file << ':' << ctx.line;
+
+    textStream << "\n";
+
+    switch(type) {
+        case QtDebugMsg:
+            textStream << "[DEBUG]";
+            break;
+
+        case QtWarningMsg:
+            textStream << "[WARNING]";
+            break;
+
+        case QtCriticalMsg:
+            textStream << "[CRITICAL]";
+            break;
+
+        case QtFatalMsg:
+            textStream << "[FATAL]";
+            break;
+
+        default:
+            textStream << "[UNKNOWN]";
+            break;
+    }
+
+    textStream << ' ' << msg;
+    textStream << "\n\n";
+
+    if(type == QtFatalMsg)
+        abort();
+}
+
+void MoeEngine::registerQDebugHandler() {
+    static bool registered = false;
+    if(registered)
+        return;
+    registered = true;
+
+    qInstallMessageHandler(customMessageHandler);
+}
+
 void MoeEngine::changeFileContext(QString context) {
     if(_scriptEngine)
         MoeUrl::setDefaultContext(context);
@@ -124,22 +206,36 @@ void MoeEngine::quit()
     abort("Engine Quit", false);
 }
 
-void MoeEngine::debug(QString data)
+void MoeEngine::debug(QString string)
 {
-    QDebug debug(QtDebugMsg);
-    debug << QString("[%1]").arg(QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate)).toLocal8Bit().data();
-    debug << "[DEBUG]";
     if(_scriptEngine) {
-        QString trace = _scriptEngine->currentContext()->backtrace().at(1);
-        int at = trace.indexOf(" at ");
+        int line = 0;
+        QByteArray function = _scriptEngine->currentContext()->backtrace().at(1).toLocal8Bit();
+        int at = function.indexOf(" at ");
+        QByteArray file;
         if(at > -1) {
-            trace = trace.mid(at+4);
-            if(trace.indexOf(":") == -1)
-                trace = "anonymous:" + trace;
+            file = function.mid(at+4);
+            function = function.mid(0, at);
+            int lineSep = file.lastIndexOf(":");
+            if(lineSep > -1) {
+                line = file.mid(lineSep+1).toInt();
+                file = file.left(lineSep);
+            } else {
+                file = "anonymous";
+                line = file.toInt();
+            }
         }
-        debug << trace.toLocal8Bit().data();
-    }
-    debug << '\n' << data.toLocal8Bit().data();
+        if(function.startsWith('<'))
+            function = function.mid(1, function.indexOf('>')-1);
+        else {
+            int pos = function.indexOf("(");
+            function = function.mid(0, pos);
+        }
+
+        QMessageLogger((const char*)file.data(), line, (const char*)function.data())
+                .debug() << string.toLocal8Bit().data();
+    } else
+        qWarning() << "Engine not running.";
 }
 
 void MoeEngine::eval(QString script) {
@@ -154,6 +250,10 @@ void MoeEngine::eval(QString script) {
 void MoeEngine::exceptionThrown(QScriptValue exception)
 {
     if(_state == Starting || _state == Running) {
+        if(!_error.isEmpty()) {
+            abort(_error);
+            return;
+        }
         QString message("An unhandled exception occured.\n");
         message += exception.toString();
         if(!_scriptEngine->uncaughtExceptionBacktrace().isEmpty()) {
@@ -167,7 +267,17 @@ void MoeEngine::exceptionThrown(QScriptValue exception)
             message += ':';
             message += QString("%1").arg(exception.property("lineNumber").toInt32());
         }
-        abort(message);
+
+
+        static QMetaMethod exceptionSignal = metaObject()->method(metaObject()->indexOfSignal("uncaughtException(QScriptValue)"));
+        if(isSignalConnected(exceptionSignal)) {
+            _error = message;
+            _scriptEngine->clearExceptions();
+            emit uncaughtException(exception);
+            if(!_scriptEngine->hasUncaughtException())
+                _error.clear();
+        } else
+            abort(message);
     }
 }
 
@@ -186,94 +296,99 @@ QScriptValue __eval_func__(QScriptContext* ctx, QScriptEngine* eng) {
 void MoeEngine::run()
 {
     makeCurrent();
+    _error.clear();
     setState(Starting);
-    _error = QString();
+    QEventLoop eventLoop;
+    _eventLoop = &eventLoop;
     while(!loader.isEmpty() && _error.isEmpty()) {
-        QScriptEngine scriptEngine;
-        _scriptEngine = &scriptEngine;
-        MoeUrl::setDefaultContext(":/loaders/");
-
-        __moe_registerScriptConverters(_scriptEngine);
-        QScriptValue globalObject = scriptEngine.globalObject();
-        globalObject.setProperty("global", globalObject, QScriptValue::SkipInEnumeration);
-        globalObject.setProperty("eval", _scriptEngine->newFunction(__eval_func__));
-
-        QList<const QMetaObject*> classesToLoad = _classes;
-        classesToLoad.append(&MoeUrl::staticMetaObject);
-        classesToLoad.append(&MoeGraphicsImage::staticMetaObject);
-        classesToLoad.append(&MoeGraphicsObject::staticMetaObject);
-        classesToLoad.append(&MoeResourceRequest::staticMetaObject);
-        classesToLoad.append(&MoeGraphicsContainer::staticMetaObject);
-        classesToLoad.append(&MoeGraphicsSurface::staticMetaObject);
-        classesToLoad.append(&MoeGraphicsText::staticMetaObject);
-
-        foreach(const QMetaObject* metaObject, classesToLoad)  {
-            QString key(metaObject->className());
-            if(key.startsWith("Moe"))
-                key = key.mid(3);
-            globalObject.setProperty(key, _scriptEngine->newQMetaObject(metaObject));
-        }
-
-        QVariant engine;
-        QVariantMap environmentToLoad = _environment;
-        engine.setValue<QObject*>((QObject*)this);
-        environmentToLoad.insert("engine", engine);
-        QMapIterator<QString, QVariant> iterator(environmentToLoad);
-        while(iterator.hasNext())
         {
-            iterator.next();
+            QScriptEngine scriptEngine;
+            _scriptEngine = &scriptEngine;
+            MoeUrl::setDefaultContext(":/loaders/");
 
-            //qDebug() << "Injecting" << iterator.key() << iterator.value();
-            QObject* obj = iterator.value().value<QObject*>();
-            if(obj) {
-                globalObject.setProperty(iterator.key(), scriptEngine.newQObject(obj));
-                continue;
+            __moe_registerScriptConverters(_scriptEngine);
+            QScriptValue globalObject = scriptEngine.globalObject();
+            globalObject.setProperty("global", globalObject, QScriptValue::SkipInEnumeration);
+            globalObject.setProperty("eval", _scriptEngine->newFunction(__eval_func__));
+
+            QList<const QMetaObject*> classesToLoad = _classes;
+            classesToLoad.append(&MoeUrl::staticMetaObject);
+            classesToLoad.append(&MoeGraphicsImage::staticMetaObject);
+            classesToLoad.append(&MoeGraphicsObject::staticMetaObject);
+            classesToLoad.append(&MoeResourceRequest::staticMetaObject);
+            classesToLoad.append(&MoeGraphicsContainer::staticMetaObject);
+            classesToLoad.append(&MoeGraphicsSurface::staticMetaObject);
+            classesToLoad.append(&MoeGraphicsText::staticMetaObject);
+
+            foreach(const QMetaObject* metaObject, classesToLoad)  {
+                QString key(metaObject->className());
+                if(key.startsWith("Moe"))
+                    key = key.mid(3);
+                globalObject.setProperty(key, _scriptEngine->newQMetaObject(metaObject));
             }
 
-            globalObject.setProperty(iterator.key(), scriptEngine.newVariant(iterator.value()));
-        }
+            QVariant engine;
+            QVariantMap environmentToLoad = _environment;
+            engine.setValue<QObject*>((QObject*)this);
+            environmentToLoad.insert("engine", engine);
+            QMapIterator<QString, QVariant> iterator(environmentToLoad);
+            while(iterator.hasNext())
+            {
+                iterator.next();
 
-        QEventLoop eventLoop;
-        _eventLoop = &eventLoop;
-        int nextWait = _tickWait;
-        QElapsedTimer timer;
-        int sleepTime;
-        timer.start();
+                //qDebug() << "Injecting" << iterator.key() << iterator.value();
+                QObject* obj = iterator.value().value<QObject*>();
+                if(obj) {
+                    globalObject.setProperty(iterator.key(), scriptEngine.newQObject(obj));
+                    continue;
+                }
 
-        if(initContentPath.isEmpty())
-            MoeUrl::setDefaultContext(":/content-select/");
-        else {
-            MoeUrl::setDefaultContext(initContentPath);
-            initContentPath.clear();
-        }
-        MoeResourceRequest* initRequest = new MoeResourceRequest(loader);
-        connect(initRequest, SIGNAL(receivedString(QString)), this, SLOT(eval(QString)), Qt::QueuedConnection);
-        connect(initRequest, SIGNAL(error(QString)), this, SLOT(abort(QString)), Qt::QueuedConnection);
-        connect(&scriptEngine, SIGNAL(signalHandlerException(QScriptValue)), this, SLOT(exceptionThrown(QScriptValue)));
-
-        setState(Running);
-        while(_state != Stopped && _state != Crashed)
-        {
-            if(_state == Running) {
-                emit tick();
-                if((sleepTime = nextWait - timer.elapsed()) > 0)
-                    eventLoop.processEvents(QEventLoop::WaitForMoreEvents, sleepTime);
+                globalObject.setProperty(iterator.key(), scriptEngine.newVariant(iterator.value()));
             }
 
-            while((sleepTime = nextWait - timer.elapsed()) > 0)
-                msleep(sleepTime);
+            int nextWait = _tickWait;
+            QElapsedTimer timer;
+            int sleepTime;
+            timer.start();
 
-            nextWait += _tickWait - timer.restart();
+            if(initContentPath.isEmpty())
+                MoeUrl::setDefaultContext(":/content-select/");
+            else {
+                MoeUrl::setDefaultContext(initContentPath);
+                initContentPath.clear();
+            }
+            MoeResourceRequest* initRequest = new MoeResourceRequest(loader);
+            connect(initRequest, SIGNAL(receivedString(QString)), this, SLOT(eval(QString)), Qt::QueuedConnection);
+            connect(initRequest, SIGNAL(error(QString)), this, SLOT(abort(QString)), Qt::QueuedConnection);
+            connect(&scriptEngine, SIGNAL(signalHandlerException(QScriptValue)), this, SLOT(exceptionThrown(QScriptValue)));
+
+            setState(Running);
+            while(_state != Stopped && _state != Crashed)
+            {
+                if(_state == Running) {
+                    emit tick();
+                    if((sleepTime = nextWait - timer.elapsed()) > 0)
+                        eventLoop.processEvents(QEventLoop::WaitForMoreEvents, sleepTime);
+                }
+
+                while((sleepTime = nextWait - timer.elapsed()) > 0)
+                    msleep(sleepTime);
+
+                nextWait += _tickWait - timer.restart();
+            }
+
+            foreach(int timerId, _timers.keys())
+                killTimer(timerId);
+            _timers.clear();
+
+            _scriptEngine = 0;
+            _eventLoop = 0;
         }
 
-        foreach(int timerId, _timers.keys())
-            killTimer(timerId);
-        _timers.clear();
-
-        _scriptEngine = 0;
-        _eventLoop = 0;
+        eventLoop.processEvents();
     }
 
+    loader.clear();
     initContentPath.clear();
     setState(Stopped);
     exit(0);

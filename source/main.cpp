@@ -5,7 +5,6 @@
 #include <QApplication>
 #include <QMessageBox>
 
-
 int main(int argc, char *argv[])
 {
     QArgumentParser parser(argc, argv);
@@ -21,6 +20,7 @@ int main(int argc, char *argv[])
     else
         app = new QApplication(argc, argv);
 
+    MoeEngine::registerQDebugHandler();
     MoeEngine* engine = new MoeEngine();
     if(!isHeadless)
         CrashDialog::init(engine);
