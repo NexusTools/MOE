@@ -138,6 +138,8 @@ rightButtons.push(new Button("Gallery"));
 rightButtons.push(new Button("Examples"));
 rightButtons.push(new Button("Downloaded"));
 rightButtons.push(new Button("Content Editor"));
+rightButtons.push(new Button("Settings"));
+rightButtons.push(new Button("Quit"));
 var sumenuButtons = false;
 rightButtons.buttonChanged.connect(function(btn){
     if(sumenuButtons) {
@@ -156,6 +158,9 @@ rightButtons.buttonChanged.connect(function(btn){
             throw error;
         });
         break;
+
+    case "Quit":
+        engine.quit();
 
     default:
         throw "`" + btn + "` isn't implemented yet.";

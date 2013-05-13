@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network script opengl
+QT       += core gui network script opengl xml
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -27,7 +27,8 @@ SOURCES += source/main.cpp\
     source/moegraphicsimage.cpp \
     source/moeabstractgraphicssurface.cpp \
     source/widgetsurfacebackend.cpp \
-    source/crashdialog.cpp
+    source/crashdialog.cpp \
+    source/moeresourcerequest.cpp
 
 HEADERS  += \
         source/qargumentparser.h \
@@ -67,7 +68,8 @@ OTHER_FILES += \
     examples/image-viewer/info.xml \
     loaders/standard.js \
     loaders/basic.js \
-    libraries/standard.js
+    libraries/standard.js \
+    content-select/info.xml
 
 RESOURCES += \
         resources.qrc

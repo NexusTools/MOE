@@ -47,7 +47,6 @@ protected slots:
     inline void progressCallback(qint64 cur, qint64 max) {
         QMutexLocker locker(&mutex);
         _progress = (qreal)cur / (qreal)max;
-        qDebug() << this << _progress;
     }
 
     void finishedCallback() {
@@ -55,7 +54,6 @@ protected slots:
         _progress = reply->error() ? -1 : 1;
         reply->deleteLater();
         emit progress(_progress);
-        qDebug() << this << "Finished" << reply->errorString();
         if(reply->error()) {
             _data = reply->errorString().toLocal8Bit();
             emit error(reply->errorString());
@@ -73,7 +71,6 @@ private:
     inline void connectNotify(const QMetaMethod &signal) {
         QMutexLocker locker(&mutex);
         QString name(signal.name());
-        qDebug() << this << "Signal Connected" << name;
         if(name.startsWith("progress") && _progress > 0)
             emit progress(_progress);
         else if(name.startsWith("error") && _progress == -1)

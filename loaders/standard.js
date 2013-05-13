@@ -1,17 +1,14 @@
 (function(){
     var startTime = (new Date()).getTime();
     engine.debug("Using standard loader");
-    engine.debug(Url(".").toString());
     var unresolvedDeps = [];
     var librariesToLoad = [];
     var loadedLibraries = [];
 
     var addLibraryDep = function(dep) {
-        engine.debug(dep);
         dep = Url(dep, "qrc:/libraries/").toString();
         if(dep.indexOf("qrc:/libraries/") == 0 && dep.indexOf(".") == -1)
             dep += ".js";
-        engine.debug(dep);
 
         if(loadedLibraries.indexOf(dep) != -1)
             return false;
@@ -23,10 +20,6 @@
         librariesToLoad.push(dep);
         return true;
     }
-
-     // TODO: Parse content XML file if exists
-    engine.debug("Using standard libraries");
-    addLibraryDep("standard");
 
     var evalGlobal = function(source, filename) {
         engine.debug("Evaluating `" + filename + "`, " + source.length + " bytes");
@@ -41,9 +34,6 @@
 
     var loadInitFile = function() {
         engine.debug(loadedLibraries.length + " libraries loaded in " + ((new Date()).getTime() - startTime) + "ms");
-        engine.debug(loadedLibraries);
-
-        engine.debug("Loading init file");
         var initUrl = Url("init.js");
         var initFile = new ResourceRequest(initUrl);
         var processInitFile = function(source){
@@ -67,7 +57,6 @@
         }
 
         var lib = librariesToLoad.shift();
-        engine.debug("Loading library `" + lib + "`");
         var libFile = new ResourceRequest(lib);
         libFile.receivedString.connect(function(source){
             if(source.indexOf("/*") == 0) {
@@ -119,5 +108,33 @@
             throw "Error downloading library `" + lib + "`: " + error;
         });
     }
-    loadNextLibrary();
+
+    var loadContent = function(contentDesc) {
+        engine.debug(contentDesc);
+        engine.debug("Processing content package `"+contentDesc.Name['#text']+"`");
+        var deps = [];
+        if("Dependancies" in contentDesc)
+            ;// TODO: Implement processing dependancies
+        if(!deps.length)
+            deps.push("standard");
+        deps.forEach(addLibraryDep);
+        loadNextLibrary();
+    }
+
+    engine.debug("Reading content metadata");
+    var contentXML = ResourceRequest("info.xml");
+    contentXML.error.connect(function(){loadContent({"Name":contentXML.url.toString()});})
+    contentXML.receivedXML.connect(function(xmlData){
+        try {
+            engine.debug("Received XML Data: " + xmlData)
+            loadContent(xmlData.MoeContent.ContentInfo);
+        } catch(e) {
+            try {
+                throw "Failed to parse content package: " + contentXML.url + " corrupt.\n" + xmlData.errorMessage + " at Line " + xmlData.errorLine + " on Column" + xmlData.errorColumn;
+            } catch(t) {
+                throw "Failed to process content package: " + contentXML.url + " corrupt.\n" + e.toString();
+            }
+        }
+    });
+
 })();

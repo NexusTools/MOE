@@ -54,7 +54,7 @@ MoeEngine::~MoeEngine()
 }
 
 inline QString pointerToString(void* ptr) {
-    return QString("0x%0").arg((qlonglong)ptr,sizeof(ptr)*2,16,QLatin1Char('0'));
+    return QString("0x%0").arg((qulonglong)ptr,8,16,QChar('0'));
 }
 
 void customMessageHandler(QtMsgType type, const QMessageLogContext& ctx, const QString& msg)
@@ -77,7 +77,7 @@ void customMessageHandler(QtMsgType type, const QMessageLogContext& ctx, const Q
     if(func.isEmpty())
         func = "anonymous";
     else {
-        static QRegExp methodName("[\\s^]([\\w]+[\\w\\d\\-_]*(::[\\w]+[\\w\\d\\-_]*)?)\\(");
+        QRegExp methodName("[\\s^]([\\w]+[\\w\\d\\-_]*(::[\\w]+[\\w\\d\\-_]*)?)\\(");
         if(methodName.indexIn(ctx.function) > -1)
             func = methodName.cap(1);
     }
@@ -88,14 +88,14 @@ void customMessageHandler(QtMsgType type, const QMessageLogContext& ctx, const Q
     QString file(ctx.file);
     if(file.isEmpty())
         file = "Unknown";
+#ifndef QT_NO_DEBUG
     else {
-        static QRegExp nativeSourcePath("^(\\.\\.|\\w:|\\\\)?[/\\\\].+[/\\\\]source[/\\\\](.+\\.(cpp|c|h|hpp))$", Qt::CaseInsensitive, QRegExp::RegExp2);
+        QRegExp nativeSourcePath("^((\\.\\.|\\w:|\\\\)?[/\\\\].*[/\\\\])?source[/\\\\](.+\\.(cpp|c|h|hpp))$", Qt::CaseInsensitive, QRegExp::RegExp2);
         if(nativeSourcePath.exactMatch(file))
-            file = "https://raw.github.com/NexusTools/MOE/master/" + nativeSourcePath.cap(2);
+            file = "https://raw.github.com/NexusTools/MOE/master/source/" + nativeSourcePath.cap(3);
     }
-    textStream << file << ':' << ctx.line;
-
-    textStream << "\n";
+#endif
+    textStream << file << ':' << ctx.line << '\n';
 
     switch(type) {
         case QtDebugMsg:
@@ -119,9 +119,7 @@ void customMessageHandler(QtMsgType type, const QMessageLogContext& ctx, const Q
             break;
     }
 
-    textStream << ' ' << msg;
-    textStream << "\n\n";
-
+    textStream << ' ' << msg << "\n\n";
     if(type == QtFatalMsg)
         abort();
 }
@@ -206,7 +204,7 @@ void MoeEngine::quit()
     abort("Engine Quit", false);
 }
 
-void MoeEngine::debug(QString string)
+void MoeEngine::debug(QVariant value)
 {
     if(_scriptEngine) {
         int line = 0;
@@ -232,8 +230,35 @@ void MoeEngine::debug(QString string)
             function = function.mid(0, pos);
         }
 
-        QMessageLogger((const char*)file.data(), line, (const char*)function.data())
-                .debug() << string.toLocal8Bit().data();
+        QDebug debug = QMessageLogger((const char*)file.data(), line, (const char*)function.data()).debug();
+        switch(value.type()) {
+            case QVariant::String:
+                debug << value.toString();
+                break;
+
+            case QVariant::Double:
+                debug << value.toDouble();
+                break;
+
+            case QVariant::Int:
+                debug << value.toInt();
+                break;
+
+            case QVariant::Map:
+                debug << value.toMap();
+                break;
+
+            case QVariant::List:
+                debug << value.toList();
+                break;
+
+            case QVariant::StringList:
+                debug << value.toStringList();
+                break;
+
+            default:
+                debug << value;
+        }
     } else
         qWarning() << "Engine not running.";
 }
@@ -271,6 +296,7 @@ void MoeEngine::exceptionThrown(QScriptValue exception)
 
         static QMetaMethod exceptionSignal = metaObject()->method(metaObject()->indexOfSignal("uncaughtException(QScriptValue)"));
         if(isSignalConnected(exceptionSignal)) {
+            qDebug() << "Exception deferred to script";
             _error = message;
             _scriptEngine->clearExceptions();
             emit uncaughtException(exception);
@@ -351,6 +377,7 @@ void MoeEngine::run()
             int sleepTime;
             timer.start();
 
+            connect(_scriptEngine, SIGNAL(signalHandlerException(QScriptValue)), this, SLOT(exceptionThrown(QScriptValue)));
             if(initContentPath.isEmpty())
                 MoeUrl::setDefaultContext(":/content-select/");
             else {
@@ -360,16 +387,17 @@ void MoeEngine::run()
             MoeResourceRequest* initRequest = new MoeResourceRequest(loader);
             connect(initRequest, SIGNAL(receivedString(QString)), this, SLOT(eval(QString)), Qt::QueuedConnection);
             connect(initRequest, SIGNAL(error(QString)), this, SLOT(abort(QString)), Qt::QueuedConnection);
-            connect(&scriptEngine, SIGNAL(signalHandlerException(QScriptValue)), this, SLOT(exceptionThrown(QScriptValue)));
 
             setState(Running);
             while(_state != Stopped && _state != Crashed)
             {
-                if(_state == Running) {
+                if(_state == Running)
                     emit tick();
-                    if((sleepTime = nextWait - timer.elapsed()) > 0)
-                        eventLoop.processEvents(QEventLoop::WaitForMoreEvents, sleepTime);
-                }
+
+                if((sleepTime = nextWait - timer.elapsed()) > 0)
+                    eventLoop.processEvents(QEventLoop::WaitForMoreEvents, sleepTime);
+                if(_scriptEngine->hasUncaughtException())
+                    exceptionThrown(_scriptEngine->uncaughtException());
 
                 while((sleepTime = nextWait - timer.elapsed()) > 0)
                     msleep(sleepTime);
@@ -398,7 +426,10 @@ void MoeEngine::abort(QString reason, bool crash)
 {
     _error = reason;
     setState(crash ? Crashed : Stopped);
-    qCritical() << "Execution Aborted" << reason;
+    if(crash)
+        qCritical() << "Execution Aborted" << reason;
+    else
+        qDebug() << reason;
 
     if(!_eventLoop)
         return;
@@ -425,7 +456,7 @@ void MoeEngine::inject(QString key, QVariant val)
 }
 
 QUrl MoeUrl::urlFromString(QString path) {
-    static QRegExp absolutePath("^(([\\d\\w\\-_]*:)?[/\\\\]+|[\\d\\w\\-_]+:).*");
+    QRegExp absolutePath("^(([\\d\\w\\-_]*:)?[/\\\\]+|[\\d\\w\\-_]+:).*");
     if(path.startsWith('.'))
         return QUrl(path);
     else if(absolutePath.exactMatch(path)) {

@@ -17,8 +17,7 @@ CrashDialog::CrashDialog(MoeEngine* engine, bool quitOnClose) :
 }
 
 void CrashDialog::showError(QString err) {
-    static QRegExp line("[\r\n].+[\r\n]");
-    ui->checkBox->setChecked(!line.exactMatch(err));
+    ui->checkBox->setChecked(true);
     ui->textBrowser->setPlainText(err);
     exec();
 }

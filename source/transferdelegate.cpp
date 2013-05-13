@@ -41,11 +41,10 @@ TransferDelegate::TransferDelegate(QUrl url) : _url(url)
 }
 
 void TransferDelegate::startRequest(){
-    qDebug() << "Starting" << this << _url;
+    qDebug() << "Downloading" << _url;
 
     if(_url.isLocalFile() || _url.scheme() == "qrc") {
         QFileInfo info(_url.scheme() == "qrc" ? QString(":%1").arg(_url.path()) : _url.toLocalFile());
-        qDebug() << this << "is Local";
 
         QString _error;
         QByteArray data;
@@ -75,7 +74,6 @@ void TransferDelegate::startRequest(){
 
         QMutexLocker locker(&mutex);
         if(_error.isEmpty()) {
-            qDebug() << this << "Finished" << _data.size();
             _data = data;
             _progress = 1;
             emit progress(_progress);

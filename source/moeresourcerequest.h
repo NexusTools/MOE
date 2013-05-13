@@ -39,58 +39,7 @@ protected slots:
         emit progress(prog);
     }
 
-    inline void completeCallback(QByteArray dat) {
-        qDebug() << this << transferDelegate.data() << dat.length();
-
-        static QMetaMethod jsonSignal = metaObject()->method(metaObject()->indexOfSignal("receivedJSON(QScriptValue)"));
-        static QMetaMethod stringSignal = metaObject()->method(metaObject()->indexOfSignal("receivedString(QString)"));
-        static QMetaMethod childListSignal = metaObject()->method(metaObject()->indexOfSignal("receivedChildList(QStringList)"));
-        emit receivedData(dat);
-        if(isSignalConnected(jsonSignal)) {
-            engine()->scriptEngine()->pushContext();
-            QScriptValue value = engine()->scriptEngine()->evaluate(QString("(%1)").arg(QString(dat)), "evalJSON");
-            engine()->scriptEngine()->popContext();
-            emit receivedJSON(value);
-        }
-        if(isSignalConnected(childListSignal) || isSignalConnected(stringSignal)) {
-            QString stringData(QString::fromUtf8(dat));
-
-            if(isSignalConnected(stringSignal))
-                emit receivedString(stringData);
-
-            if(isSignalConnected(childListSignal)) {
-                QStringList children;
-                static QRegularExpression regExp("<[^>]*((src|href|source|file)=(?<src>\"[^\"]+|'[^']+|[^\\s\"'>]+))[^>]+", QRegularExpression::CaseInsensitiveOption);
-                QRegularExpressionMatchIterator i = regExp.globalMatch(dat);
-                QString base = _url.toString();
-                if(!base.endsWith('/'))
-                    base += '/';
-
-                while(i.hasNext()) {
-                    QRegularExpressionMatch match = i.next();
-                    QString fileMatch = match.captured("src");
-                    if(fileMatch.startsWith('"') || fileMatch.startsWith('\''))
-                        fileMatch = fileMatch.mid(1);
-                    QString resolved(MoeUrl::locate(fileMatch, base).toString());
-                    if(resolved.startsWith(base)) {
-                        resolved = resolved.mid(base.length());
-                        if(resolved.endsWith('/'))
-                            resolved = resolved.left(resolved.length()-1);
-                        if(resolved.contains('/'))
-                            continue; // Isn't direct child...
-                        if(resolved.isEmpty())
-                            continue; // Same as parent
-                        if(children.contains(resolved))
-                            continue; // Already found
-                        children << resolved;
-                    }
-                }
-                emit receivedChildList(children);
-            }
-        }
-
-        disconnectAll();
-    }
+    void completeCallback(QByteArray dat);
 
     inline void errorCallback(QString err) {
         emit error(err);
@@ -103,13 +52,13 @@ signals:
     void receivedJSON(QScriptValue);
     void receivedString(QString);
     void receivedChildList(QStringList);
+    void receivedXML(QVariantMap);
     void error(QString err);
     void completed(bool);
 
 private:
     inline void init(QUrl resource){
         _url = resource;
-        qDebug() << "Downloading" << resource;
         transferDelegate = TransferDelegate::getInstance(resource);
     }
 

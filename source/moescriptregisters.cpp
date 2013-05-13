@@ -142,7 +142,7 @@ void qcolorFromScriptValue(const QScriptValue &object, QColor &out)
     if(object.isString()) {
         QString string = object.toString();
 
-        static QRegExp hex("^#([\\dabcdef]{3,6})$", Qt::CaseInsensitive, QRegExp::RegExp2);
+        QRegExp hex("^#([\\dabcdef]{3,6})$", Qt::CaseInsensitive, QRegExp::RegExp2);
         if(hex.exactMatch(string)) {
             string = hex.cap(1);
             if(string.length() < 6)
@@ -151,7 +151,7 @@ void qcolorFromScriptValue(const QScriptValue &object, QColor &out)
             return;
         }
 
-        static QRegExp cssRgb("rgba?\\(\\s*(\\d)+\\s*,\\s*(\\d)+\\s*,\\s*(\\d+)\\s*(,\\s*(\\d+(\\.\\d+)?))?\\)", Qt::CaseInsensitive, QRegExp::RegExp2);
+        QRegExp cssRgb("rgba?\\(\\s*(\\d)+\\s*,\\s*(\\d)+\\s*,\\s*(\\d+)\\s*(,\\s*(\\d+(\\.\\d+)?))?\\)", Qt::CaseInsensitive, QRegExp::RegExp2);
         if(cssRgb.exactMatch(string)) {
             bool alphaOkay;
             out = QColor(cssRgb.cap(1).toInt(), cssRgb.cap(2).toInt(), cssRgb.cap(3).toInt(), (int)(cssRgb.cap(5).toFloat(&alphaOkay) * 255));

@@ -84,7 +84,7 @@ public slots:
         killTimer(handle);
     }
 
-    void debug(QString string);
+    void debug(QVariant string);
     inline qreal random() {return (qreal)qrand()/(qreal)INT_MAX;}
     inline void setTicksPerSecond(uchar ticks) {_tickWait=1000/ticks;}
 
