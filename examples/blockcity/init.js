@@ -4,15 +4,15 @@ var titleMenuButtonForgroundColor = Rgba(255, 255, 255, 200);
 var titleMenuButtonForgroundColorHovered = Rgba(255, 255, 255, 255);
 var titleMenuButtonForgroundColorActive = Rgba(80, 0, 0, 255);
 var titleMenuFont = Font("monospace", 26);
-
 engine.setTicksPerSecond(30);
 var surface = new GraphicsSurface("BlockCity", Size(800, 600));
 surface.background = Rgb(50, 0, 0);
 
 var currentMenu = null;
-
+var fakeBlock = null;
 var player = null;
 var levelInstance = new Level();
+
 
 function tick() {
     if(levelInstance == null)
@@ -25,77 +25,40 @@ function tick() {
 engine.tick.connect(tick);
 
 function TitleMenu() {
-    var playGameButton = new GraphicsText("Play!", titleMenuFont, surface);
-    playGameButton.foreground = titleMenuButtonForgroundColor;
-    playGameButton.mouseEntered.connect(function() {
-        playGameButton.animate("foreground", titleMenuButtonForgroundColorHovered);
-    });
-
-    playGameButton.mouseLeft.connect(function() {
-        playGameButton.animate("foreground", titleMenuButtonForgroundColor);
-    });
-
-    playGameButton.mousePressed.connect(function() {
-        playGameButton.killAnimation("foreground");
-        playGameButton.foreground = titleMenuButtonForgroundColorActive;
+    var playGameButton = new Button(0, 0, "Play!");
+    playGameButton.mousePressEvent = function() {
         switchSurfaceContents(1);
-    });
+    };
 
 
-    var levelEditorButton = new GraphicsText("Level Editor", titleMenuFont, surface);
-    levelEditorButton.foreground = titleMenuButtonForgroundColor;
-    levelEditorButton.mouseEntered.connect(function() {
-        levelEditorButton.animate("foreground", titleMenuButtonForgroundColorHovered);
-    });
-
-    levelEditorButton.mouseLeft.connect(function() {
-        levelEditorButton.animate("foreground", titleMenuButtonForgroundColor);
-    });
-
-    levelEditorButton.mousePressed.connect(function() {
-        levelEditorButton.killAnimation("foreground");
-        levelEditorButton.foreground = titleMenuButtonForgroundColorActive;
+    var levelEditorButton = new Button(0, 0, "Level Editor");
+    levelEditorButton.mousePressEvent = function() {
         switchSurfaceContents(2);
-    });
+    };
 
-
-    var exitGameButton = new GraphicsText("Exit", titleMenuFont, surface);
-    exitGameButton.foreground = titleMenuButtonForgroundColor;
-    exitGameButton.mouseEntered.connect(function() {
-        exitGameButton.animate("foreground", titleMenuButtonForgroundColorHovered);
-    });
-
-    exitGameButton.mouseLeft.connect(function() {
-        exitGameButton.animate("foreground", titleMenuButtonForgroundColor);
-    });
-
-    exitGameButton.mousePressed.connect(function() {
-        exitGameButton.killAnimation("foreground");
-        exitGameButton.foreground = titleMenuButtonForgroundColorActive;
+    var exitGameButton = new Button(0, 0, "Exit");
+    exitGameButton.mousePressEvent = function() {
         engine.quit();
-    });
-
+    };
 
     this.handleResize = function(size) {
-        playGameButton.setPos(size.width / 2 - playGameButton.width / 2, (size.height / 2 - playGameButton.height / 2) - 64);
-        levelEditorButton.setPos(size.width / 2 - levelEditorButton.width / 2, (size.height / 2 - levelEditorButton.height / 2));
-        exitGameButton.setPos(size.width / 2 - exitGameButton.width / 2, (size.height / 2 - exitGameButton.height / 2) + 64);
+        playGameButton.gT.setPos(size.width / 2 - playGameButton.gT.width / 2, (size.height / 2 - playGameButton.gT.height / 2) - 64);
+        levelEditorButton.gT.setPos(size.width / 2 - levelEditorButton.gT.width / 2, (size.height / 2 - levelEditorButton.gT.height / 2));
+        exitGameButton.gT.setPos(size.width / 2 - exitGameButton.gT.width / 2, (size.height / 2 - exitGameButton.gT.height / 2) + 64);
     }
 
     this.cleanup = function() {
-        surface.remove(playGameButton);
-        surface.remove(exitGameButton);
-        surface.remove(levelEditorButton);
+        surface.remove(playGameButton.gT);
+        surface.remove(exitGameButton.gT);
+        surface.remove(levelEditorButton.gT);
     }
     this.tick = function() {}
 }
 
 function InGameMenu() {
-    this.handleResize = function(size) {
-    }
+    this.handleResize = function(size) {}
 
-    this.cleanup = function() {
-    }
+    this.cleanup = function() {}
     this.tick = function() {
         if(surface.isKeyPressed(KEY_SPACE)) {
             levelInstance.tickable[levelInstance.tickable.length] = new DumbEnemy(surface.mousePos.x, surface.mousePos.y, 50, 75);
@@ -103,9 +66,74 @@ function InGameMenu() {
     }
 }
 
+function LevelEditorMenu() {
+    var backButton = new Button(0, 0, "Back");
+    backButton.mousePressEvent = function() {
+        engine.debug("We've got to go back.");
+        switchSurfaceContents(0);
+    };
+
+    surface.mousePressed.connect(function(point, type) {
+        if(type != 1)
+            return;
+        fakeBlock = new Wall(point.x, point.y, 25, 25, "grey");
+    });
+
+    surface.mouseDragged.connect(function(point) {
+        if(fakeBlock != null) {
+        }
+    });
+
+    surface.mouseReleased.connect(function(point, type) {
+        if(fakeBlock != null) {
+            if(fakeBlock.gO.width == 0 || fakeBlock.gO.height == 0) {
+                surface.remove(fakeBlock.gO);
+                fakeBlock = null;
+            }
+            throw "NyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyanNyan";
+        }
+    });
+
+    this.tick = function() {}
+    this.cleanup = function() {
+        surface.remove(backButton.gT);
+    }
+
+    this.handleResize = function(size) {
+        //Must remove the connected surface events, but thinking of a different method.
+        backButton.gT.setPos(size.width - backButton.gT.width, size.height - backButton.gT.height);
+    }
+}
+
 function Level() {
     this.tickable = [];
     this.dummy = [];
+}
+
+function Button(x, y, text) {
+    this.gT = new GraphicsText(text, titleMenuFont, surface);
+    this.gT.setPos(x, y);
+    this.gT.foreground = titleMenuButtonForgroundColor;
+    this.mousePressEvent = function() {};
+    var local = this; //Will this be neccessary in the future? Currently can't use `this` inside a connect function.
+    this.gT.mouseEntered.connect(function() {
+        local.gT.killAnimation("foreground");
+        local.gT.animate("foreground", titleMenuButtonForgroundColorHovered);
+    });
+
+    this.gT.mouseLeft.connect(function() {
+        local.gT.killAnimation("foreground");
+        local.gT.animate("foreground", titleMenuButtonForgroundColor);
+    });
+
+    this.gT.mousePressed.connect(function() {
+        local.gT.killAnimation("foreground");
+        doClick = function() {
+            local.mousePressEvent();
+            local.gT.animate("foreground", titleMenuButtonForgroundColor);
+        };
+        local.gT.animate("foreground", titleMenuButtonForgroundColorActive, doClick, 1.25);
+    });
 }
 
 function Wall(x, y, width, height, col) {
@@ -182,6 +210,7 @@ function DumbEnemy(x, y, width, height) {
 function switchSurfaceContents(int) {
     if(currentMenu != null)
         currentMenu.cleanup();
+    engine.debug("Switching to menu " + int + ".");
     switch(int) {
     case 0:
         currentMenu = new TitleMenu();
@@ -191,9 +220,10 @@ function switchSurfaceContents(int) {
         loadLevel(1);
         break;
     case 2:
+        currentMenu = new LevelEditorMenu();
         break;
     }
-
+    currentMenu.handleResize(surface.size());
     surface.resized.connect(function(size){
         if(currentMenu != null)
             currentMenu.handleResize(size);
