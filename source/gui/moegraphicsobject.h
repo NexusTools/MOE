@@ -22,10 +22,10 @@ typedef QPointer<MoeGraphicsObject> MoeGraphicsObjectPointer;
 class MoeGraphicsObject : public MoeObject
 {
     Q_OBJECT
-    Q_PROPERTY(qreal x READ posX WRITE setPosX)
-    Q_PROPERTY(qreal y READ posY WRITE setPosY)
+    Q_PROPERTY(QPointF pos READ pos WRITE setPos)
     Q_PROPERTY(qreal posX READ posX WRITE setPosX)
     Q_PROPERTY(qreal posY READ posY WRITE setPosY)
+    Q_PROPERTY(QSizeF size READ size WRITE setSize)
     Q_PROPERTY(qreal width READ width WRITE setWidth)
     Q_PROPERTY(qreal height READ height WRITE setHeight)
     Q_PROPERTY(qreal borderRadius READ borderRadius WRITE setBorderRadius)
@@ -43,6 +43,7 @@ public:
         if(container())
             setContainer(container());
 
+        _disabled = false;
         _foreground = Qt::black;
         _background = Qt::NoBrush;
         _border = Qt::transparent;
@@ -76,12 +77,13 @@ public:
 
     inline qreal posX() const{return _geometry.x();}
     inline qreal posY() const{return _geometry.y();}
-    Q_INVOKABLE inline QPointF pos() const{return _geometry.topLeft();}
+    inline QPointF pos() const{return _geometry.topLeft();}
 
-    Q_INVOKABLE inline QSizeF size() const{return _geometry.size();}
+    inline QSizeF size() const{return _geometry.size();}
     inline qreal width() const{return _geometry.width();}
     inline qreal height() const{return _geometry.height();}
 
+    Q_INVOKABLE void setDisabled(bool d);
     Q_INVOKABLE inline QRectF geomtry() const{return _geometry;}
     Q_INVOKABLE inline QRect realGeometry() const{return _realGeometry;}
 
@@ -218,6 +220,7 @@ protected:
         return _localGeometry;
     }
 
+    bool _disabled;
     QCursor _cursor;
     QBrush _background;
     QColor _foreground;

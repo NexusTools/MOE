@@ -90,11 +90,10 @@ function Button(text) {
         if(!this.selected || this.button.isAnimating("background"))
             return;
 
-        if(this.button.background.alpha < 135)
+        if(this.button.background.alpha < 150)
             this.button.animate("background", Rgba(173, 216, 230, 160), this.selectFade);
         else
-            this.button.animate("background", Rgba(173, 216, 230, 110), this.selectFade);
-
+            this.button.animate("background", Rgba(173, 216, 230, 140), this.selectFade);
     }).bind(this);
     this.setSelected = function(sel) {
         if(sel == this.selected)
@@ -113,10 +112,19 @@ function Button(text) {
 }
 
 function ButtonGroup(defaultProperties) {
-    this.props = $H(defaultProperties);
     this.width = 0;
     this.buttons = $A();
     this.selectedButton = false;
+    this.props = $H(defaultProperties);
+    this.deleteLater = function() {
+        this.buttons.forEach(function(btn){
+            btn.button.deleteLater();
+        });
+    }
+
+    this.getSelectedButtonPos = function() {
+        return this.selectedButton ? this.selectedButton.button.pos : Point(0, 0);
+    }
     this.selectButton = function(btn) {
         if(this.selectedButton)
             this.selectedButton.setSelected(false);
@@ -135,7 +143,10 @@ function ButtonGroup(defaultProperties) {
             }.bind(this));
         } else
             btn.button.width = this.width;
-        Object.extend(btn, this.props);
+        this.props.each(function(pair){
+            engine.debug(pair);
+            btn.button[pair.key] = pair.value;
+        });
 
         btn.button.mousePressed.connect(function(){
             this.selectButton(btn);
@@ -144,9 +155,9 @@ function ButtonGroup(defaultProperties) {
     }
 
     this.animate = function(prop, to, mod, delay) {
-        var delayTime = delay;
+        var delayTime = 0;
         this.buttons.forEach(function(btn){
-            if(delayTime) {
+            if(delay > 0) {
                 setTimeout(function(){
                     btn.button.animate(prop, to, mod)
                 }, delayTime);
@@ -163,6 +174,12 @@ function ButtonGroup(defaultProperties) {
         });
     }
 
+    this.setDisabled = function(dis) {
+        this.buttons.forEach(function(btn){
+            btn.button.setDisabled(dis);
+        });
+    }
+
     this.buttonChanged = new Signal();
 }
 
@@ -173,26 +190,76 @@ leftButtons.push(new Button("Downloaded"));
 leftButtons.push(new Button("Content Editor"));
 leftButtons.push(new Button("Settings"));
 leftButtons.push(new Button("Quit"));
-leftButtons.setPos(-100, 5);
+leftButtons.setPos(-leftButtons.width, 5);
 
+function loadChildSelectionSubmenu(path) {
+    var loading = new GraphicsText("Loading...", Font("Arial", 10), surface);
+    loading.margin = 4;
+    loading.foreground = "white";
+    loading.background = Rgba(0, 0, 0, 80);
+    var selPos = leftButtons.getSelectedButtonPos();
+    engine.debug(selPos);
+    loading.setPos(5, selPos.y);
+    var exampleEntries = ResourceRequest(path);
+    exampleEntries.receivedChildList.connect(function(children){
+        if(!children.length) {
+            loading.foreground = "red";
+            loading.text = "No entries";
+        } else {
+            loading.animate("opacity", 0, function(){
+                loading.deleteLater();
+            });
+            sumenuButtons = new ButtonGroup({"opacity": 0});
+            children.each(function(path){
+                sumenuButtons.push(new Button(path));
+            });
+            sumenuButtons.push(new Button("<<"));
+            sumenuButtons.setPos(5, selPos.y);
+            sumenuButtons.animate("posX", 10, 3, 80);
+            sumenuButtons.animate("opacity", 1, 3, 80);
+            sumenuButtons.buttonChanged.connect(function(btn){
+                switch(btn) {
+                case "<<":
+                    destroySubmenu();
+                    break;
 
-var sumenuButtons = false;
+                default:
+                    engine.startContent(Url(btn, path));
+                }
+            });
+        }
+    });
+    exampleEntries.error.connect(function(error){
+        loading.foreground = "red";
+        loading.text = error;
+    });
+}
+
+function destroySubmenu() {
+    sumenuButtons.deleteLater();
+    delete submenuButtons;
+    sumenuButtons = null;
+
+    leftButtons.setDisabled(false);
+    leftButtons.animate("posX", 5);
+    leftButtons.animate("opacity", 1);
+}
+
+var sumenuButtons;
 leftButtons.buttonChanged.connect(function(btn){
     if(sumenuButtons) {
-        sumenuButtons.destroy();
-        sumenuButtons = false;
+        sumenuButtons.deleteLater();
+        delete sumenuButtons;
+        sumenuButtons = null;
     }
+
     switch(btn) {
     case "Examples":
-        var exampleEntries = ResourceRequest(":/examples/");
-        exampleEntries.receivedChildList.connect(function(children){
-            if(!children.length)
-                throw "Examples missing...";
-            print(children);
-        });
-        exampleEntries.error.connect(function(error){
-            throw error;
-        });
+        loadChildSelectionSubmenu(":/examples/");
+        break;
+
+    case "Gallery":
+        loadChildSelectionSubmenu("http://moe.nexustools.net/gallery/");
         break;
 
     case "Quit":
@@ -201,9 +268,13 @@ leftButtons.buttonChanged.connect(function(btn){
     default:
         throw "`" + btn + "` isn't implemented yet.";
     }
+
+    leftButtons.setDisabled(true);
+    leftButtons.animate("posX", -5);
+    leftButtons.animate("opacity", 0.4);
 });
 
-var rightButtons = new ButtonGroup();
+var rightButtons = new ButtonGroup({"opacity": 0});
 rightButtons.push(new Button("Login"));
 rightButtons.push(new Button("Register"));
 rightButtons.push(new Button("NexusTools.net"));
@@ -213,12 +284,12 @@ function start(size) {
     if(size.width < 1 || size.height < 1)
         return;
     surface.resized.disconnect(start);
+    leftButtons.animate("posX", 5, 5, 80);
+    leftButtons.animate("opacity", 1, 8, 80);
     surface.animate("background", "black", 30);
-    leftButtons.animate("opacity", 1, 8, 150);
-    leftButtons.animate("x", 5, 5, 150);
     rightButtons.setPos(size.width - rightButtons.width + 95, 5);
-    rightButtons.animate("opacity", 1, 8, 150);
-    rightButtons.animate("x", size.width - rightButtons.width - 5, 5, 150);
+    rightButtons.animate("posX", size.width - rightButtons.width - 5, 5, 80);
+    rightButtons.animate("opacity", 1, 8, 80);
 
     surface.resized.connect(function(size){
         rightButtons.setPos(size.width - rightButtons.width - 5, 5);

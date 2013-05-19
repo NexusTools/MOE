@@ -21,8 +21,8 @@ struct AnimationState {
 
 MoeObject::MoeObject(MoeObject* parent) : QObject(parent)
 {
-    Q_ASSERT(!MoeEngine::threadEngine().isNull());
-    moveToThread(MoeEngine::threadEngine().data());
+    Q_ASSERT(!MoeEngine::current().isNull());
+    moveToThread(MoeEngine::current().data());
     //instances.localData().insert(ptr(), MoeObjectPointer(this));
     connect(engine()->scriptEngine(), SIGNAL(destroyed()), this, SLOT(deleteLater()), Qt::QueuedConnection);
     connect(engine(), SIGNAL(destroyed()), this, SLOT(deleteLater()));
@@ -99,7 +99,7 @@ void MoeObject::animate(QString key, QScriptValue to, QScriptValue callback, qre
     if(addToList) {
         animations.insert(key, state);
         if(!animateConnection)
-            animateConnection = connect(engine(), SIGNAL(tick()), this, SLOT(animateTick()), Qt::UniqueConnection);
+            animateConnection = connect(engine(), SIGNAL(preciseTick(qreal)), this, SLOT(animateTick(qreal)), Qt::UniqueConnection);
     }
 }
 
@@ -160,25 +160,22 @@ inline SoothResultFlags smoothInt(int& value, int to, qreal modifier) {
     if(value < to) {
         value += qCeil((qreal)(to - value)/modifier);
         if(value >= to) {
-            qDebug() << "Less than target";
             value = to;
             return ValueChanged;
         }
     } else if(value > to) {
         value -= qCeil((qreal)(value - to)/modifier);
         if(value <= to) {
-            qDebug() << "More than target";
             value = to;
             return ValueChanged;
         }
     } else
         return NoChange;
 
-    qDebug() << "Far from Target";
     return SoothResultFlags(ValueChanged | ValueFarFromTarget);
 }
 
-void MoeObject::animateTick() {
+void MoeObject::animateTick(qreal) {
     if(!animateConnection)
         return;
 
@@ -186,7 +183,6 @@ void MoeObject::animateTick() {
     QList<QScriptValue> callbacks;
     animations.clear();
 
-    qDebug() << "Processing" << _animations.size() << "animations";
     foreach(AnimationStatePointer state, _animations) {
         QMetaProperty metaProp = state->metaProp;
         SoothResultFlags result = NoChange;
@@ -251,14 +247,11 @@ void MoeObject::animateTick() {
             animations.insert(state->metaProp.name(), state);
         else if(state->callback.isFunction())
             callbacks << state->callback;
-        qDebug() << this << "animating" << state->metaProp.name();
     }
 
-    if(!callbacks.isEmpty()) {
-        qDebug() << "Running" << callbacks.size() << "callbacks";
+    if(!callbacks.isEmpty())
         foreach(QScriptValue callback, callbacks)
             callback.call();
-    }
 
     if(animations.isEmpty())
         disconnect(animateConnection);

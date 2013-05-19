@@ -163,14 +163,28 @@ void MoeEngine::changeFileContext(QString context) {
 }
 
 void MoeEngine::startContent(QString content, QUrl _loader) {
-    qDebug() << "Starting content" << content << "using" << _loader;
-    initContentPath = content;
-    loader = _loader.isRelative() ? MoeUrl::locate(_loader.toString(), "qrc:/loaders/") : _loader;
+    if(_loader.isRelative())
+        _loader = MoeUrl::locate(_loader.toString(), "qrc:/loaders/");
+    if(QThread::currentThread() != this) {
+        if(isRunning()) {
+            QMetaMethod startContent = metaObject()->method(metaObject()->indexOfMethod("startContent(QString,QUrl)"));
+            Q_ASSERT(startContent.isValid());
+            startContent.invoke(this, Qt::QueuedConnection, Q_ARG(QString, content), Q_ARG(QUrl, _loader));
+        } else {
+            initContentPath = content;
+            loader = _loader;
+            start();
+        }
+    } else {
+        if(_state == Running) {
+            qDebug() << "Changing content" << content << _loader;
+            initContentPath = content;
+            loader = _loader;
+            stopExecution("Changing content", false, Changing);
+        } else
+            qCritical() << "Cannot change content from this state" << _state;
+    }
 
-    if(isActive())
-        metaObject()->invokeMethod(this, "quit()", Qt::QueuedConnection);
-    else
-        start();
 }
 
 void MoeEngine::timerEvent(QTimerEvent* ev) {
@@ -187,26 +201,25 @@ void MoeEngine::timerEvent(QTimerEvent* ev) {
 
 void MoeEngine::setState(State state)
 {
-    if(_state == state
-            || _state == Deleted)
+    if(_state == state || _state == Deleted)
         return;
 
     static QMetaEnum stateEnum = MoeEngine::staticMetaObject.enumerator(MoeEngine::staticMetaObject.indexOfEnumerator("State"));
     qDebug() << "Engine state changed" << stateEnum.key(state) << "from" << stateEnum.key(_state);
 
-    emit stateChanged(state);
     if(state == Running)
         emit started();
     if(state == Stopped)
         emit stopped();
     if(state == Crashed)
         emit crashed(_error);
+    emit stateChanged(state);
     _state = state;
 }
 
-void MoeEngine::quit()
+void MoeEngine::quit(QString message)
 {
-    abort("Engine Quit", false);
+    stopExecution(message.isEmpty() ? "Engine Quit" : message, false, Stopping);
 }
 
 void MoeEngine::debug(QVariant value)
@@ -324,6 +337,103 @@ QScriptValue __eval_func__(QScriptContext* ctx, QScriptEngine* eng) {
     return result;
 }
 
+void MoeEngine::setupGlobalObject() {
+    QScriptValue globalObject = _scriptEngine->globalObject();
+    globalObject.setProperty("global", globalObject, QScriptValue::SkipInEnumeration);
+    globalObject.setProperty("eval", _scriptEngine->newFunction(__eval_func__));
+
+    QList<const QMetaObject*> classesToLoad = _classes;
+    classesToLoad.append(&MoeUrl::staticMetaObject);
+    classesToLoad.append(&MoeGraphicsImage::staticMetaObject);
+    classesToLoad.append(&MoeGraphicsObject::staticMetaObject);
+    classesToLoad.append(&MoeResourceRequest::staticMetaObject);
+    classesToLoad.append(&MoeGraphicsContainer::staticMetaObject);
+    classesToLoad.append(&MoeGraphicsSurface::staticMetaObject);
+    classesToLoad.append(&MoeGraphicsText::staticMetaObject);
+
+    foreach(const QMetaObject* metaObject, classesToLoad)  {
+        QString key(metaObject->className());
+        if(key.startsWith("Moe"))
+            key = key.mid(3);
+        globalObject.setProperty(key, _scriptEngine->newQMetaObject(metaObject));
+    }
+
+    QVariant engine;
+    QVariantMap environmentToLoad = _environment;
+    engine.setValue<QObject*>((QObject*)this);
+    environmentToLoad.insert("engine", engine);
+    QMapIterator<QString, QVariant> iterator(environmentToLoad);
+    while(iterator.hasNext())
+    {
+        iterator.next();
+
+        QObject* obj = iterator.value().value<QObject*>();
+        if(obj) {
+            globalObject.setProperty(iterator.key(), _scriptEngine->newQObject(obj));
+            continue;
+        }
+
+        globalObject.setProperty(iterator.key(), _scriptEngine->newVariant(iterator.value()));
+    }
+}
+
+static QMetaMethod tickSignal = QMetaMethod::fromSignal(&MoeEngine::tick);
+static QMetaMethod preciseTickSignal = QMetaMethod::fromSignal(&MoeEngine::preciseTick);
+void MoeEngine::mainLoop() {
+    qDebug() << "Preparing main loop";
+    QMetaMethod emitTick = metaObject()->method(metaObject()->indexOfMethod("emitTick()"));
+    Q_ASSERT(emitTick.isValid());
+
+    int nextWait = _tickWait;
+    QElapsedTimer timer;
+    int sleepTime;
+    timer.start();
+
+    connect(_scriptEngine, SIGNAL(signalHandlerException(QScriptValue)), this, SLOT(exceptionThrown(QScriptValue)));
+    if(initContentPath.isEmpty())
+        MoeUrl::setDefaultContext(":/content-select/");
+    else {
+        MoeUrl::setDefaultContext(initContentPath);
+        initContentPath.clear();
+    }
+
+    {
+        MoeResourceRequest* initRequest = new MoeResourceRequest(loader);
+        connect(initRequest, SIGNAL(receivedString(QString)), this, SLOT(eval(QString)));
+        connect(initRequest, SIGNAL(error(QString)), this, SLOT(abort(QString)));
+        connect(initRequest, SIGNAL(completed(bool)), this, SLOT(deleteLater()), Qt::QueuedConnection);
+    }
+
+    if(_state == Starting) {
+        setState(Running);
+        qDebug() << "Entering main loop" << MoeUrl::defaultContext().toString();
+        while(_state == Running)
+        {
+            if(isSignalConnected(tickSignal))
+                emitTick.invoke(this, Qt::QueuedConnection);
+
+            while((sleepTime = nextWait - timer.elapsed()) > 0) {
+                _eventLoop->processEvents(QEventLoop::WaitForMoreEvents, sleepTime);
+                if(_scriptEngine->hasUncaughtException()) {
+                    exceptionThrown(_scriptEngine->uncaughtException());
+                    break;
+                }
+                if((sleepTime = nextWait - timer.elapsed()) > 0)
+                    msleep(qMin(sleepTime, 50));
+            }
+
+            if(_state == Running){
+                qint32 elapsed = _tickWait - timer.restart();
+                if(isSignalConnected(preciseTickSignal))
+                    emit preciseTick((qreal)elapsed/(qreal)_tickWait);
+                nextWait += elapsed;
+            }
+        }
+
+        qDebug() << "Content finished, cleaning up";
+    }
+}
+
 void MoeEngine::run()
 {
     makeCurrent();
@@ -331,100 +441,31 @@ void MoeEngine::run()
     setState(Starting);
     QEventLoop eventLoop;
     _eventLoop = &eventLoop;
-    while(_state == Starting || _state == Changing) {
-        {
-            _scriptEngine = new QScriptEngine();
-            MoeUrl::setDefaultContext(":/loaders/");
+    QScriptEngine scriptEngine;
+    _scriptEngine = &scriptEngine;
+    __moe_registerScriptConverters(_scriptEngine);
 
-            __moe_registerScriptConverters(_scriptEngine);
-            QScriptValue globalObject = _scriptEngine->globalObject();
-            globalObject.setProperty("global", globalObject, QScriptValue::SkipInEnumeration);
-            globalObject.setProperty("eval", _scriptEngine->newFunction(__eval_func__));
+initializeEngine:
+    qDebug() << "Initializing new engine context";
+    MoeUrl::setDefaultContext(":/loaders/");
+    _scriptEngine->pushContext();
 
-            QList<const QMetaObject*> classesToLoad = _classes;
-            classesToLoad.append(&MoeUrl::staticMetaObject);
-            classesToLoad.append(&MoeGraphicsImage::staticMetaObject);
-            classesToLoad.append(&MoeGraphicsObject::staticMetaObject);
-            classesToLoad.append(&MoeResourceRequest::staticMetaObject);
-            classesToLoad.append(&MoeGraphicsContainer::staticMetaObject);
-            classesToLoad.append(&MoeGraphicsSurface::staticMetaObject);
-            classesToLoad.append(&MoeGraphicsText::staticMetaObject);
+    setupGlobalObject();
+    mainLoop();
 
-            foreach(const QMetaObject* metaObject, classesToLoad)  {
-                QString key(metaObject->className());
-                if(key.startsWith("Moe"))
-                    key = key.mid(3);
-                globalObject.setProperty(key, _scriptEngine->newQMetaObject(metaObject));
-            }
+    foreach(int timerId, _timers.keys())
+        killTimer(timerId);
+    _timers.clear();
 
-            QVariant engine;
-            QVariantMap environmentToLoad = _environment;
-            engine.setValue<QObject*>((QObject*)this);
-            environmentToLoad.insert("engine", engine);
-            QMapIterator<QString, QVariant> iterator(environmentToLoad);
-            while(iterator.hasNext())
-            {
-                iterator.next();
+    qDebug() << "Processing remaining events";
+    _scriptEngine->popContext();
+    eventLoop.processEvents();
 
-                //qDebug() << "Injecting" << iterator.key() << iterator.value();
-                QObject* obj = iterator.value().value<QObject*>();
-                if(obj) {
-                    globalObject.setProperty(iterator.key(), _scriptEngine->newQObject(obj));
-                    continue;
-                }
-
-                globalObject.setProperty(iterator.key(), _scriptEngine->newVariant(iterator.value()));
-            }
-
-            int nextWait = _tickWait;
-            QElapsedTimer timer;
-            int sleepTime;
-            timer.start();
-
-            connect(_scriptEngine, SIGNAL(signalHandlerException(QScriptValue)), this, SLOT(exceptionThrown(QScriptValue)));
-            if(initContentPath.isEmpty())
-                MoeUrl::setDefaultContext(":/content-select/");
-            else {
-                MoeUrl::setDefaultContext(initContentPath);
-                initContentPath.clear();
-            }
-
-            {
-                MoeResourceRequest* initRequest = new MoeResourceRequest(loader);
-                connect(initRequest, SIGNAL(receivedString(QString)), this, SLOT(eval(QString)));
-                connect(initRequest, SIGNAL(error(QString)), this, SLOT(abort(QString)));
-                connect(initRequest, SIGNAL(completed(bool)), this, SLOT(deleteLater()), Qt::QueuedConnection);
-            }
-
-            if(_state == Starting) {
-                setState(Running);
-                while(_state == Running)
-                {
-                    emit tick();
-
-                    if((sleepTime = nextWait - timer.elapsed()) > 0)
-                        eventLoop.processEvents(QEventLoop::WaitForMoreEvents, sleepTime);
-                    if(_scriptEngine->hasUncaughtException())
-                        exceptionThrown(_scriptEngine->uncaughtException());
-
-                    while((sleepTime = nextWait - timer.elapsed()) > 0)
-                        msleep(sleepTime);
-
-                    nextWait += _tickWait - timer.restart();
-                }
-            }
-
-            qDebug() << "Content finished, cleaning up";
-            foreach(int timerId, _timers.keys())
-                killTimer(timerId);
-            _timers.clear();
-
-            _scriptEngine->deleteLater();
-            _scriptEngine = 0;
-        }
-
-        qDebug() << "Processing remaining events";
-        eventLoop.processEvents();
+    if(_state == Changing) {
+        _error.clear();
+        setState(Starting);
+        _scriptEngine->clearExceptions();
+        goto initializeEngine;
     }
 
     _eventLoop = 0;
@@ -440,13 +481,17 @@ void MoeEngine::run()
     exit(0);
 }
 
-void MoeEngine::abort(QString reason, bool crash, State newState)
+void MoeEngine::emitTick() {
+    emit tick();
+}
+
+void MoeEngine::stopExecution(QString reason, bool crash, State newState)
 {
     if(_state == Deleted)
         return;
 
     _error = reason;
-    setState(newState == Auto ? (crash ? Crashed : Stopping) : newState);
+    setState(newState);
     if(crash)
         qCritical() << "Execution Aborted" << reason;
     else
@@ -501,6 +546,8 @@ QUrl MoeUrl::locate(QString path, QString context) {
         if(_context.isEmpty() || _context.isRelative())
             _context = defaultContext();
 
+        if(!_context.path().endsWith('/'))
+            _context.setPath(_context.path()+'/');
         url = _context.resolved(url);
     }
 

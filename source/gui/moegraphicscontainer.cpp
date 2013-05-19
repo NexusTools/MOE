@@ -12,7 +12,7 @@ void MoeGraphicsObject::notifyParentOfUpdate()
 
 bool MoeGraphicsObject::event(QEvent* event) {
     switch(event->type()) {
-        case QEvent::Destroy:
+        case QEvent::DeferredDelete:
         case QEvent::ParentAboutToChange:
             if(container())
                 container()->remove(this);
@@ -74,6 +74,15 @@ bool MoeGraphicsObject::isVisibleToSurface()
 
 MoeGraphicsContainer* MoeGraphicsObject::container() const{
     return qobject_cast<MoeGraphicsContainer*>(parent());
+}
+
+void MoeGraphicsObject::setDisabled(bool d) {
+    _disabled = d;
+    if(_disabled) {
+        if(container())
+            container()->mouseMovedWatchers.removeOne(this);
+    } else if(canUseMouseFocus() && container())
+        container()->mouseMovedWatchers.append(this);
 }
 
 void MoeGraphicsObject::setContainer(MoeGraphicsContainer *contain) {

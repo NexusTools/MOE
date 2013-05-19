@@ -35,13 +35,16 @@ inline void merge(QVariantMap& map, QDomNode& node) {
     }
 }
 
-static QMetaMethod receivedXmlSignal = QMetaMethod::fromSignal(&MoeResourceRequest::receivedXML);
-static QMetaMethod receivedJsonSignal = QMetaMethod::fromSignal(&MoeResourceRequest::receivedJSON);
-static QMetaMethod receivedStringSignal = QMetaMethod::fromSignal(&MoeResourceRequest::receivedString);
-static QMetaMethod receivedChildListSignal = QMetaMethod::fromSignal(&MoeResourceRequest::receivedChildList);
+
 void MoeResourceRequest::completeCallback(QByteArray dat){
     if(!receivedConnection)
         return;
+
+    QMetaMethod receivedXmlSignal = QMetaMethod::fromSignal(&MoeResourceRequest::receivedXML);
+    QMetaMethod receivedJsonSignal = QMetaMethod::fromSignal(&MoeResourceRequest::receivedJSON);
+    QMetaMethod receivedStringSignal = QMetaMethod::fromSignal(&MoeResourceRequest::receivedString);
+    QMetaMethod receivedChildListSignal = QMetaMethod::fromSignal(&MoeResourceRequest::receivedChildList);
+
     qDebug() << this << "processing received data" << _url;
 
     emit receivedData(dat);

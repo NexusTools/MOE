@@ -64,7 +64,7 @@ function updateBoardList() {
                 sleepFadeIn += 50;
             }
         });
-        fixBoardLayout(boardPage.size());
+        fixBoardLayout(boardPage.size);
         surface.animate("background", "royal blue", 30);
     });
 }
@@ -77,11 +77,11 @@ control.opacity = 0.6;
 
 control.mouseEntered.connect(function(){
     control.animate("opacity", 1);
-    control.animate("y", 0);
+    control.animate("posY", 0);
 });
 control.mouseLeft.connect(function(){
     control.animate("opacity", 0.6);
-    control.animate("y", -194);
+    control.animate("posY", -194);
 });
 
 var activePage = boardPage;
@@ -92,5 +92,5 @@ surface.resized.connect(function(size) {
 boardPage.resized.connect(function(size){
     fixBoardLayout(size);
 });
-boardPage.setSize(surface.size());
+boardPage.setSize(surface.size);
 surface.connected.connect(updateBoardList);

@@ -32,9 +32,7 @@ public:
         Starting,
 
         Running,
-        Changing, // Content is being changed
-
-        Auto // Used by abort method
+        Changing // Content is being changed
     };
 
     MoeEngine();
@@ -50,8 +48,8 @@ public:
     }
 
     static void registerQDebugHandler();
-    static inline MoeEnginePointer threadEngine() {return _engine.localData();}
     inline QScriptEngine* scriptEngine() const{return _scriptEngine;}
+    static inline MoeEnginePointer current() {return _engine.localData();}
     inline MoeEnginePointer engine() const{return MoeEnginePointer((MoeEngine*)this);}
     inline void makeCurrent() const{_engine.setLocalData(MoeEnginePointer(engine()));}
 
@@ -71,7 +69,7 @@ public slots:
         return val.isQObject() || val.isQMetaObject();
     }
 
-    void quit();
+    void quit(QString message =QString());
 
     inline int setTimeout(QScriptValue callback, int mdelay =0) {
         int timerId = startTimer(mdelay);
@@ -88,28 +86,35 @@ public slots:
     inline qreal random() {return (qreal)qrand()/(qreal)INT_MAX;}
     inline void setTicksPerSecond(uchar ticks) {_tickWait=1000/ticks;}
 
-protected slots:
-    void eval(QString);
-    void exceptionThrown(QScriptValue);
-    void abort(QString reason, bool crashed =true, State newState =Auto);
-
 signals:
     void tick();
+    void preciseTick(qreal);
+
     void stopped();
     void started();
-    void preciseTick(qreal);
     void crashed(QString reason);
-    void stateChanged(MoeEngine::State state);
     void uncaughtException(QScriptValue);
+    void stateChanged(MoeEngine::State state);
 
 protected:
-    inline void abort(QString reason, State newState) {
-        abort(reason, true, newState);
+    void stopExecution(QString reason, bool crashed, State newState);
+
+    inline void abort(QString reason, bool crashed) {
+        stopExecution(reason, crashed, crashed ? Crashed : Stopping);
     }
 
+    Q_INVOKABLE void emitTick();
     void timerEvent(QTimerEvent *);
     void setState(State);
+
+    void setupGlobalObject();
+    void mainLoop();
     void run();
+
+protected slots:
+    void eval(QString);
+    inline void abort(QString reason) {stopExecution(reason, true, Crashed);}
+    void exceptionThrown(QScriptValue);
 
 private:
     static QThreadStorage<MoeEnginePointer> _engine;

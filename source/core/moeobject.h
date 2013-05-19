@@ -48,7 +48,7 @@ public slots:
     void killAnimation(QString key);
 
 protected slots:
-    void animateTick();
+    void animateTick(qreal);
 
 private:
     QMetaObject::Connection animateConnection;
