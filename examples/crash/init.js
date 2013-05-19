@@ -1,1 +1,1 @@
-throw "Crash Test";
+throw "Crash";

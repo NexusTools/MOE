@@ -56,7 +56,7 @@ protected slots:
         emit progress(_progress);
         if(reply->error()) {
             _data = reply->errorString().toLocal8Bit();
-            emit error(reply->errorString());
+            emit error(QString(_data));
         } else {
             _data = reply->readAll();
             emit receivedData(_data);
@@ -74,7 +74,7 @@ private:
         if(name.startsWith("progress") && _progress > 0)
             emit progress(_progress);
         else if(name.startsWith("error") && _progress == -1)
-            emit error(reply->errorString());
+            emit error(QString(_data));
         else if(name.startsWith("receivedData") && _progress >= 1)
             emit receivedData(_data);
     }

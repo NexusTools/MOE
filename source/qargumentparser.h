@@ -21,7 +21,7 @@ public:
 
     Q_INVOKABLE inline bool hasDefaultValue() const{return contains("");}
     Q_INVOKABLE inline QVariant defaultValue(QVariant def =QVariant()) const{return value("", def);}
-    Q_INVOKABLE inline QVariant value(QString key, QVariant def =QVariant()) const{return _args.value(key, def);}
+    Q_INVOKABLE inline QVariant value(QString key, QVariant def =QVariant()) const{return _args.value(key).isNull() ? def : _args.value(key);}
     Q_INVOKABLE inline bool contains(QString key) const{return _args.contains(key);}
     Q_INVOKABLE inline void insert(QString key, QVariant val) {_args.insert(key, val);}
 

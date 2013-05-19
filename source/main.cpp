@@ -21,10 +21,31 @@ int main(int argc, char *argv[])
         app = new QApplication(argc, argv);
 
     MoeEngine::registerQDebugHandler();
-    MoeEngine* engine = new MoeEngine();
-    if(!isHeadless)
-        CrashDialog::init(engine);
-    engine->startWithArguments(parser.toMap());
+    if(parser.contains("stress")) {
+        int count = parser.value("stress", 15).toInt();
+        QList<MoeEngine*> engines;
+        forever {
+            {
+                QList<MoeEngine*>::iterator iter = engines.begin();
+                while(iter != engines.end()) {
+                    if((*iter)->isFinished())
+                        iter = engines.erase(iter);
+                    else
+                        iter++;
+                }
+            }
+            while(engines.size() < count) {
+                MoeEngine* engine = new MoeEngine();
+                engine->startContent("qrc:/examples/crash/");
+                engines << engine;
+            }
+        }
+    } else {
+        MoeEngine* engine = new MoeEngine();
+        if(!isHeadless)
+            CrashDialog::init(engine);
+        engine->startWithArguments(parser.toMap());
+    }
 
     return app->exec();
 }

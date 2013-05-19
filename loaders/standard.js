@@ -37,6 +37,7 @@
         var initUrl = Url("init.js");
         var initFile = new ResourceRequest(initUrl);
         var processInitFile = function(source){
+            initFile.deleteLater();
             evalGlobal(source, initUrl);
         };
         initFile.receivedString.connect(bind(this,processInitFile));
@@ -59,6 +60,7 @@
         var lib = librariesToLoad.shift();
         var libFile = new ResourceRequest(lib);
         libFile.receivedString.connect(function(source){
+            libFile.deleteLater();
             if(source.indexOf("/*") == 0) {
                 try {
                     var metaString = source.substring(2, source.indexOf("*/"));
@@ -125,6 +127,7 @@
     var contentXML = ResourceRequest("info.xml");
     contentXML.error.connect(function(){loadContent({"Name":contentXML.url.toString()});})
     contentXML.receivedXML.connect(function(xmlData){
+        contentXML.deleteLater();
         try {
             engine.debug("Received XML Data: " + xmlData)
             loadContent(xmlData.MoeContent.ContentInfo);

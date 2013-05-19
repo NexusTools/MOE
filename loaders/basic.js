@@ -1,6 +1,7 @@
 (function(){
     var mainFile = new ResourceRequest("./");
     mainFile.receivedString.connect(function(source){
+        mainFile.deleteLater();
         eval.apply(global, source);
     });
     mainFile.error.connect(function(error){

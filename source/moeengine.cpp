@@ -45,9 +45,9 @@ void MoeEngine::startWithArguments(QVariantMap args) {
 MoeEngine::~MoeEngine()
 {
     //qDebug() << "Destroying MoeEngine";
-    if(isRunning())
+    if(QThread::isRunning())
     {
-        qWarning() << "Destroying Engine while Running" << this;
+        qWarning() << "Destroying engine while thread running" << this;
         quit();
         wait();
     }
@@ -59,67 +59,78 @@ inline QString pointerToString(void* ptr) {
 
 void customMessageHandler(QtMsgType type, const QMessageLogContext& ctx, const QString& msg)
 {
+    QByteArray streamData;
+    {
+        QTextStream textStream(&streamData, QFile::WriteOnly);
+        textStream << '[';
+        textStream << QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate);
+        textStream << "] [";
+        {
+            QObject* thread = QThread::currentThread();
+            QByteArray name = thread->objectName().toLocal8Bit();
+            if(name.isEmpty())
+                name = thread->metaObject()->className();
+            textStream << name;
+            textStream << ' ';
+            textStream << thread;
+        }
+        textStream << "] ";
+
+        QString func(ctx.function);
+        if(func.isEmpty())
+            func = "anonymous";
+        else {
+            QRegExp methodName("[\\s^]([\\w]+[\\w\\d\\-_]*(::[\\w]+[\\w\\d\\-_]*)?)\\(");
+            if(methodName.indexIn(ctx.function) > -1)
+                func = methodName.cap(1);
+        }
+        textStream << '[';
+        textStream << func;
+        textStream << "] ";
+
+        QString file(ctx.file);
+        if(file.isEmpty())
+            file = "Unknown";
+#ifndef QT_NO_DEBUG
+        else {
+            QRegExp nativeSourcePath("^((\\.\\.|\\w:|\\\\)?[/\\\\].*[/\\\\])?source[/\\\\](.+\\.(cpp|c|h|hpp))$", Qt::CaseInsensitive, QRegExp::RegExp2);
+            if(nativeSourcePath.exactMatch(file))
+                file = "https://raw.github.com/NexusTools/MOE/master/source/" + nativeSourcePath.cap(3);
+        }
+#endif
+        textStream << file << ':' << ctx.line << '\n';
+
+        switch(type) {
+            case QtDebugMsg:
+                textStream << "[DEBUG]";
+            break;
+
+            case QtWarningMsg:
+                textStream << "[WARNING]";
+            break;
+
+            case QtCriticalMsg:
+                textStream << "[CRITICAL]";
+            break;
+
+            case QtFatalMsg:
+                textStream << "[FATAL]";
+            break;
+
+            default:
+                textStream << "[UNKNOWN]";
+            break;
+        }
+
+        textStream << ' ' << msg << "\n\n";
+    }
     static QMutex mutex;
     QMutexLocker lock(&mutex);
 
-    QTextStream textStream(type != QtDebugMsg ? stderr : stdout, QFile::WriteOnly);
-    textStream << '[';
-    textStream << QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate);
-    textStream << "] [MoeEngine: ";
-    MoeEnginePointer activeEngine = MoeEngine::threadEngine();
-    if(activeEngine.isNull())
-        textStream << "None";
-    else
-        textStream << pointerToString(activeEngine.data());
-    textStream << "] ";
+    FILE* out = type != QtDebugMsg ? stderr : stdout;
+    fwrite(streamData.data(), 1, streamData.length(), out);
+    fflush(out);
 
-    QString func(ctx.function);
-    if(func.isEmpty())
-        func = "anonymous";
-    else {
-        QRegExp methodName("[\\s^]([\\w]+[\\w\\d\\-_]*(::[\\w]+[\\w\\d\\-_]*)?)\\(");
-        if(methodName.indexIn(ctx.function) > -1)
-            func = methodName.cap(1);
-    }
-    textStream << '[';
-    textStream << func;
-    textStream << "] ";
-
-    QString file(ctx.file);
-    if(file.isEmpty())
-        file = "Unknown";
-#ifndef QT_NO_DEBUG
-    else {
-        QRegExp nativeSourcePath("^((\\.\\.|\\w:|\\\\)?[/\\\\].*[/\\\\])?source[/\\\\](.+\\.(cpp|c|h|hpp))$", Qt::CaseInsensitive, QRegExp::RegExp2);
-        if(nativeSourcePath.exactMatch(file))
-            file = "https://raw.github.com/NexusTools/MOE/master/source/" + nativeSourcePath.cap(3);
-    }
-#endif
-    textStream << file << ':' << ctx.line << '\n';
-
-    switch(type) {
-        case QtDebugMsg:
-            textStream << "[DEBUG]";
-            break;
-
-        case QtWarningMsg:
-            textStream << "[WARNING]";
-            break;
-
-        case QtCriticalMsg:
-            textStream << "[CRITICAL]";
-            break;
-
-        case QtFatalMsg:
-            textStream << "[FATAL]";
-            break;
-
-        default:
-            textStream << "[UNKNOWN]";
-            break;
-    }
-
-    textStream << ' ' << msg << "\n\n";
     if(type == QtFatalMsg)
         abort();
 }
@@ -141,9 +152,9 @@ void MoeEngine::changeFileContext(QString context) {
 }
 
 void MoeEngine::startContent(QString content, QUrl _loader) {
-    qDebug() << "Starting Content" << content;
+    qDebug() << "Starting content" << content << "using" << _loader;
     initContentPath = content;
-    loader = _loader;
+    loader = _loader.isRelative() ? MoeUrl::locate(_loader.toString(), "qrc:/loaders/") : _loader;
 
     if(isActive())
         metaObject()->invokeMethod(this, "quit()", Qt::QueuedConnection);
@@ -165,11 +176,11 @@ void MoeEngine::timerEvent(QTimerEvent* ev) {
 
 void MoeEngine::setState(State state)
 {
-    //static QMetaEnum stateEnum = MoeEngine::staticMetaObject.enumerator(MoeEngine::staticMetaObject.indexOfEnumerator("State"));
-    //qDebug() << "Engine State Changed" << stateEnum.key(state) << "from" << stateEnum.key(_state);
-
     if(_state == state)
         return;
+
+    static QMetaEnum stateEnum = MoeEngine::staticMetaObject.enumerator(MoeEngine::staticMetaObject.indexOfEnumerator("State"));
+    qDebug() << "Engine state changed" << stateEnum.key(state) << "from" << stateEnum.key(_state);
 
     emit stateChanged(state);
     if(state == Running)
@@ -179,24 +190,6 @@ void MoeEngine::setState(State state)
     if(state == Crashed)
         emit crashed(_error);
     _state = state;
-}
-
-void MoeEngine::play() {
-    if(_state == Paused) {
-        qDebug() << "Unpausing Engine";
-        setState(Running);
-    }
-}
-
-void MoeEngine::pause() {
-    if(_state == Running) {
-        qDebug() << "Pausing Engine";
-        setState(Paused);
-        if(QThread::currentThread() == this) {
-            while(_state == Paused)
-                msleep(50);
-        }
-    }
 }
 
 void MoeEngine::quit()
@@ -234,27 +227,27 @@ void MoeEngine::debug(QVariant value)
         switch(value.type()) {
             case QVariant::String:
                 debug << value.toString();
-                break;
+            break;
 
             case QVariant::Double:
                 debug << value.toDouble();
-                break;
+            break;
 
             case QVariant::Int:
                 debug << value.toInt();
-                break;
+            break;
 
             case QVariant::Map:
                 debug << value.toMap();
-                break;
+            break;
 
             case QVariant::List:
                 debug << value.toList();
-                break;
+            break;
 
             case QVariant::StringList:
                 debug << value.toStringList();
-                break;
+            break;
 
             default:
                 debug << value;
@@ -286,7 +279,7 @@ void MoeEngine::exceptionThrown(QScriptValue exception)
             foreach(QString stack, _scriptEngine->uncaughtExceptionBacktrace())
                 message += '\n' + stack;
         } else if(exception.property("lineNumber").isNumber() &&
-                    exception.property("fileName").isString()) {
+                  exception.property("fileName").isString()) {
             message += "\non ";
             message += exception.property("fileName").toString();
             message += ':';
@@ -326,14 +319,13 @@ void MoeEngine::run()
     setState(Starting);
     QEventLoop eventLoop;
     _eventLoop = &eventLoop;
-    while(!loader.isEmpty() && _error.isEmpty()) {
+    while(_state == Starting || _state == Changing) {
         {
-            QScriptEngine scriptEngine;
-            _scriptEngine = &scriptEngine;
+            _scriptEngine = new QScriptEngine();
             MoeUrl::setDefaultContext(":/loaders/");
 
             __moe_registerScriptConverters(_scriptEngine);
-            QScriptValue globalObject = scriptEngine.globalObject();
+            QScriptValue globalObject = _scriptEngine->globalObject();
             globalObject.setProperty("global", globalObject, QScriptValue::SkipInEnumeration);
             globalObject.setProperty("eval", _scriptEngine->newFunction(__eval_func__));
 
@@ -365,11 +357,11 @@ void MoeEngine::run()
                 //qDebug() << "Injecting" << iterator.key() << iterator.value();
                 QObject* obj = iterator.value().value<QObject*>();
                 if(obj) {
-                    globalObject.setProperty(iterator.key(), scriptEngine.newQObject(obj));
+                    globalObject.setProperty(iterator.key(), _scriptEngine->newQObject(obj));
                     continue;
                 }
 
-                globalObject.setProperty(iterator.key(), scriptEngine.newVariant(iterator.value()));
+                globalObject.setProperty(iterator.key(), _scriptEngine->newVariant(iterator.value()));
             }
 
             int nextWait = _tickWait;
@@ -384,48 +376,57 @@ void MoeEngine::run()
                 MoeUrl::setDefaultContext(initContentPath);
                 initContentPath.clear();
             }
-            MoeResourceRequest* initRequest = new MoeResourceRequest(loader);
-            connect(initRequest, SIGNAL(receivedString(QString)), this, SLOT(eval(QString)), Qt::QueuedConnection);
-            connect(initRequest, SIGNAL(error(QString)), this, SLOT(abort(QString)), Qt::QueuedConnection);
 
-            setState(Running);
-            while(_state != Stopped && _state != Crashed)
             {
-                if(_state == Running)
-                    emit tick();
-
-                if((sleepTime = nextWait - timer.elapsed()) > 0)
-                    eventLoop.processEvents(QEventLoop::WaitForMoreEvents, sleepTime);
-                if(_scriptEngine->hasUncaughtException())
-                    exceptionThrown(_scriptEngine->uncaughtException());
-
-                while((sleepTime = nextWait - timer.elapsed()) > 0)
-                    msleep(sleepTime);
-
-                nextWait += _tickWait - timer.restart();
+                MoeResourceRequest* initRequest = new MoeResourceRequest(loader);
+                connect(initRequest, SIGNAL(receivedString(QString)), this, SLOT(eval(QString)));
+                connect(initRequest, SIGNAL(error(QString)), this, SLOT(abort(QString)));
+                connect(initRequest, SIGNAL(completed(bool)), this, SLOT(deleteLater()), Qt::QueuedConnection);
             }
 
+            if(_state == Starting) {
+                setState(Running);
+                while(_state == Running)
+                {
+                    emit tick();
+
+                    if((sleepTime = nextWait - timer.elapsed()) > 0)
+                        eventLoop.processEvents(QEventLoop::WaitForMoreEvents, sleepTime);
+                    if(_scriptEngine->hasUncaughtException())
+                        exceptionThrown(_scriptEngine->uncaughtException());
+
+                    while((sleepTime = nextWait - timer.elapsed()) > 0)
+                        msleep(sleepTime);
+
+                    nextWait += _tickWait - timer.restart();
+                }
+            }
+
+            qDebug() << "Content finished, cleaning up";
             foreach(int timerId, _timers.keys())
                 killTimer(timerId);
             _timers.clear();
 
+            _scriptEngine->deleteLater();
             _scriptEngine = 0;
-            _eventLoop = 0;
         }
 
+        qDebug() << "Processing remaining events";
         eventLoop.processEvents();
     }
 
+    _eventLoop = 0;
     loader.clear();
     initContentPath.clear();
     setState(Stopped);
+    qDebug() << "Engine thread finished";
     exit(0);
 }
 
 void MoeEngine::abort(QString reason, bool crash)
 {
     _error = reason;
-    setState(crash ? Crashed : Stopped);
+    setState(crash ? Crashed : Stopping);
     if(crash)
         qCritical() << "Execution Aborted" << reason;
     else

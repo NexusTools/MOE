@@ -35,26 +35,31 @@ inline void merge(QVariantMap& map, QDomNode& node) {
     }
 }
 
+static QMetaMethod receivedXmlSignal = QMetaMethod::fromSignal(&MoeResourceRequest::receivedXML);
+static QMetaMethod receivedJsonSignal = QMetaMethod::fromSignal(&MoeResourceRequest::receivedJSON);
+static QMetaMethod receivedStringSignal = QMetaMethod::fromSignal(&MoeResourceRequest::receivedString);
+static QMetaMethod receivedChildListSignal = QMetaMethod::fromSignal(&MoeResourceRequest::receivedChildList);
 void MoeResourceRequest::completeCallback(QByteArray dat){
-    static QMetaMethod jsonSignal = metaObject()->method(metaObject()->indexOfSignal("receivedJSON(QScriptValue)"));
-    static QMetaMethod stringSignal = metaObject()->method(metaObject()->indexOfSignal("receivedString(QString)"));
-    static QMetaMethod xmlSignal = metaObject()->method(metaObject()->indexOfSignal("receivedXML(QVariantMap)"));
-    static QMetaMethod childListSignal = metaObject()->method(metaObject()->indexOfSignal("receivedChildList(QStringList)"));
+    if(!receivedConnection)
+        return;
+    qDebug() << this << "processing received data" << _url;
 
     emit receivedData(dat);
-    if(isSignalConnected(jsonSignal)) {
+    if(isSignalConnected(receivedJsonSignal)) {
         engine()->scriptEngine()->pushContext();
         QScriptValue value = engine()->scriptEngine()->evaluate(QString("(%1)").arg(QString(dat)), "evalJSON");
         engine()->scriptEngine()->popContext();
         emit receivedJSON(value);
     }
-    if(isSignalConnected(childListSignal) || isSignalConnected(stringSignal)) {
+    bool childListSignalConnected = isSignalConnected(receivedChildListSignal);
+    bool stringSignalConnected = isSignalConnected(receivedStringSignal);
+    if(childListSignalConnected || stringSignalConnected) {
         QString stringData(QString::fromUtf8(dat));
 
-        if(isSignalConnected(stringSignal))
+        if(stringSignalConnected)
             emit receivedString(stringData);
 
-        if(isSignalConnected(childListSignal)) {
+        if(childListSignalConnected) {
             QStringList children;
             QRegularExpression regExp("<[^>]*((src|href|source|file)=(?<src>\"[^\"]+|'[^']+|[^\\s\"'>]+))[^>]+", QRegularExpression::CaseInsensitiveOption);
             QRegularExpressionMatchIterator i = regExp.globalMatch(dat);
@@ -85,7 +90,7 @@ void MoeResourceRequest::completeCallback(QByteArray dat){
         }
     }
 
-    if(isSignalConnected(xmlSignal)) {
+    if(isSignalConnected(receivedXmlSignal)) {
         qDebug() << "Emitting XML Data";
         QVariantMap xmlData;
 

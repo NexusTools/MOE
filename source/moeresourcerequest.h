@@ -21,13 +21,11 @@ public:
     inline MoeResourceRequest(const char* resource){
         init(MoeUrl::locate(resource));
     }
-
     inline MoeResourceRequest(QString resource){
         init(MoeUrl::locate(resource));
     }
-
     Q_INVOKABLE inline explicit MoeResourceRequest(QUrl resource){
-        init(resource);
+        init(resource.isRelative() ? MoeUrl::locate(resource.toString()) : resource);
     }
 
     inline QUrl url() const{
@@ -36,12 +34,16 @@ public:
 
 protected slots:
     inline void progressCallback(float prog) {
+        if(!progressConnection)
+            return;
         emit progress(prog);
     }
 
     void completeCallback(QByteArray dat);
 
     inline void errorCallback(QString err) {
+        if(!errorConnection)
+            return;
         emit error(err);
         disconnectAll();
     }
@@ -74,12 +76,9 @@ private:
     }
 
     inline void disconnectAll() {
-        if(progressConnection)
-            disconnect(progressConnection);
-        if(receivedConnection)
-            disconnect(receivedConnection);
-        if(errorConnection)
-            disconnect(errorConnection);
+        disconnect(progressConnection);
+        disconnect(receivedConnection);
+        disconnect(errorConnection);
     }
 
     QMetaObject::Connection progressConnection;

@@ -72,8 +72,7 @@ inline QVariant listToValue(QStringList val)
     switch(val.size())
     {
         case 0:
-            return true;
-            break;
+        return QVariant();
 
         case 1:
         {

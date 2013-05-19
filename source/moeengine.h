@@ -25,9 +25,11 @@ public:
     enum State
     {
         Stopped,
-        Paused,
-        Starting,
         Crashed,
+
+        Stopping,
+        Starting,
+
         Running,
         Changing // Content is being changed
     };
@@ -35,16 +37,12 @@ public:
     MoeEngine();
     virtual ~MoeEngine();
 
-    inline bool isRunning() const{
-        return _state == Running && QThread::isRunning();
-    }
-
-    inline bool isStopped() const{
-        return !QThread::isRunning();
-    }
-
     inline bool isActive() const{
-        return QThread::isRunning() && _state != Stopped && _state != Crashed;
+        return _state >= Running;
+    }
+
+    inline bool isProcessing() const{
+        return _state >= Starting;
     }
 
     static void registerQDebugHandler();
@@ -69,8 +67,6 @@ public slots:
         return val.isQObject() || val.isQMetaObject();
     }
 
-    void play();
-    void pause();
     void quit();
 
     inline int setTimeout(QScriptValue callback, int mdelay =0) {

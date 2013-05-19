@@ -25,7 +25,7 @@ class MoeObject : public QObject, public QScriptable
     Q_OBJECT
 public:
     Q_INVOKABLE explicit MoeObject(MoeObject* parent =NULL);
-    inline virtual ~MoeObject() {instances.localData().remove(ptr());}
+    virtual ~MoeObject() {instances.localData().remove(ptr());}
 
     virtual MoeEngine* engine() const;
 
