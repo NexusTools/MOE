@@ -14,6 +14,7 @@ class MoeAbstractGraphicsSurface;
 class RenderRecorder : public MoeObject
 {
     Q_OBJECT
+
 public:
     explicit inline RenderRecorder(MoeAbstractGraphicsSurface* s, QRect rect) {
         surface = s;

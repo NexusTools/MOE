@@ -37,7 +37,7 @@ public:
         return instances.localData().count();
     }
 
-    Q_INVOKABLE inline void destroy() {deleteLater();}
+    Q_INVOKABLE inline bool isAnimating(QString key) const{return animations.contains(key);}
     Q_INVOKABLE QString toString() const;
 
 public slots:

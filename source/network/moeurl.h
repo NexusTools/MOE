@@ -46,7 +46,6 @@ private:
     inline static void setDefaultContext(QString _context) {context.setLocalData(locate(_context));}
     inline static QUrl defaultContext() {return context.localData().isEmpty() || context.localData().isRelative() ? QUrl("qrc:/loaders/") : context.localData();}
 
-    
 };
 
 #endif // URL_H

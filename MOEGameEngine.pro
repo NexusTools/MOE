@@ -14,46 +14,47 @@ TEMPLATE = app
 
 QMAKE_CXXFLAGS+="-std=c++0x"
 
-SOURCES += source/main.cpp\
-        source/qargumentparser.cpp \
-        source/moeobject.cpp \
-        source/moegraphicsobject.cpp \
-        source/moegraphicscontainer.cpp \
-        source/moeengine.cpp \
-        source/moegraphicssurface.cpp \
-    source/transferdelegate.cpp \
-    source/moegraphicstext.cpp \
-    source/moescriptregisters.cpp \
-    source/moegraphicsimage.cpp \
-    source/moeabstractgraphicssurface.cpp \
-    source/widgetsurfacebackend.cpp \
-    source/crashdialog.cpp \
-    source/moeresourcerequest.cpp
+SOURCES +=\
+    source/debug/crashdialog.cpp \
+    source/main.cpp \
+    source/gui/moeabstractgraphicssurface.cpp \
+    source/core/moeengine.cpp \
+    source/gui/moegraphicscontainer.cpp \
+    source/gui/moegraphicsimage.cpp \
+    source/gui/moegraphicsobject.cpp \
+    source/gui/moegraphicssurface.cpp \
+    source/gui/moegraphicstext.cpp \
+    source/network/moeresourcerequest.cpp \
+    source/core/moeobject.cpp \
+    source/core/moescriptregisters.cpp \
+    source/core/qargumentparser.cpp \
+    source/network/transferdelegate.cpp \
+    source/gui/widgetsurfacebackend.cpp
 
 HEADERS  += \
-        source/qargumentparser.h \
-        source/moeobject.h \
-        source/moegraphicsobject.h \
-        source/moegraphicscontainer.h \
-        source/moeengine.h \
-        source/moegraphicssurface.h \
-    source/renderrecorder.h \
-    source/moeresourcerequest.h \
-    source/transferdelegate.h \
-    source/moescriptregisters.h \
-    source/moegraphicstext.h \
-    source/moegraphicsimage.h \
-    source/renderbuffer.h \
-    source/moeabstractgraphicssurface.h \
-    source/renderinstruction.h \
-    source/abstractsurfacebackend.h \
-    source/qpaintersurfacebackend.h \
-    source/widgetsurfacebackend.h \
-    source/crashdialog.h \
-    source/moeurl.h
+    source/gui/moeabstractgraphicssurface.h \
+    source/gui/abstractsurfacebackend.h \
+    source/debug/crashdialog.h \
+    source/core/moeengine.h \
+    source/gui/moegraphicscontainer.h \
+    source/gui/moegraphicsimage.h \
+    source/gui/moegraphicsobject.h \
+    source/gui/moegraphicssurface.h \
+    source/gui/moegraphicstext.h \
+    source/core/moeobject.h \
+    source/network/moeresourcerequest.h \
+    source/core/moescriptregisters.h \
+    source/network/moeurl.h \
+    source/core/qargumentparser.h \
+    source/gui/qpaintersurfacebackend.h \
+    source/gui/renderbuffer.h \
+    source/gui/renderinstruction.h \
+    source/gui/renderrecorder.h \
+    source/network/transferdelegate.h \
+    source/gui/widgetsurfacebackend.h
 
 FORMS    += \
-    source/crashdialog.ui
+    source/debug/crashdialog.ui
 
 OTHER_FILES += \
     libraries/shared.js \

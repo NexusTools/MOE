@@ -10,8 +10,8 @@
 #include <QWeakPointer>
 #include <QScriptValue>
 #include <QPointer>
-
 #include <QTimer>
+#include <QUrl>
 
 typedef QPointer<MoeAbstractGraphicsSurface> MoeAbstractGraphicsSurfacePointer;
 
@@ -40,6 +40,8 @@ public:
     inline QPoint mousePos() const{return _mousePos;}
 
 public slots:
+    virtual void openUrl(QUrl url) {qWarning() << this << "openUrl method isn't implemented." << url;}
+
     inline void enableRepaintDebug(bool fullFrame =true, QColor repaintColor =QColor(0, 250, 0, 60)) {
         repaintDebug = fullFrame ? RepaintDebugFrame : RepaintDebugArea;
         this->repaintColor = repaintColor;

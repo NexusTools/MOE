@@ -42,10 +42,21 @@ void MoeEngine::startWithArguments(QVariantMap args) {
         startContent(":/content-select/", loader);
 }
 
+bool MoeEngine::event(QEvent *event){
+    if(event->type() == QEvent::DeferredDelete) {
+        if(QThread::currentThread() == this) {
+            abort("Engine marked for deletion", Deleted);
+            return false;
+        }
+    }
+
+    return QObject::event(event);
+}
+
 MoeEngine::~MoeEngine()
 {
     //qDebug() << "Destroying MoeEngine";
-    if(QThread::isRunning())
+    if(QThread::isRunning() && this != QThread::currentThread())
     {
         qWarning() << "Destroying engine while thread running" << this;
         quit();
@@ -176,7 +187,8 @@ void MoeEngine::timerEvent(QTimerEvent* ev) {
 
 void MoeEngine::setState(State state)
 {
-    if(_state == state)
+    if(_state == state
+            || _state == Deleted)
         return;
 
     static QMetaEnum stateEnum = MoeEngine::staticMetaObject.enumerator(MoeEngine::staticMetaObject.indexOfEnumerator("State"));
@@ -418,24 +430,33 @@ void MoeEngine::run()
     _eventLoop = 0;
     loader.clear();
     initContentPath.clear();
+    if(_state == Deleted) {
+        deleteLater();
+        qWarning() << "Engine was deleted from within its own thread.";
+        return;
+    }
     setState(Stopped);
     qDebug() << "Engine thread finished";
     exit(0);
 }
 
-void MoeEngine::abort(QString reason, bool crash)
+void MoeEngine::abort(QString reason, bool crash, State newState)
 {
+    if(_state == Deleted)
+        return;
+
     _error = reason;
-    setState(crash ? Crashed : Stopping);
+    setState(newState == Auto ? (crash ? Crashed : Stopping) : newState);
     if(crash)
         qCritical() << "Execution Aborted" << reason;
     else
         qDebug() << reason;
 
+    if(_scriptEngine)
+        _scriptEngine->abortEvaluation();
+
     if(!_eventLoop)
         return;
-
-    _scriptEngine->abortEvaluation();
     _eventLoop->exit(1);
 }
 

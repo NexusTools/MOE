@@ -28,14 +28,18 @@ public:
         Crashed,
 
         Stopping,
+        Deleted,
         Starting,
 
         Running,
-        Changing // Content is being changed
+        Changing, // Content is being changed
+
+        Auto // Used by abort method
     };
 
     MoeEngine();
     virtual ~MoeEngine();
+    bool event(QEvent *event);
 
     inline bool isActive() const{
         return _state >= Running;
@@ -87,7 +91,7 @@ public slots:
 protected slots:
     void eval(QString);
     void exceptionThrown(QScriptValue);
-    void abort(QString reason, bool crashed =true);
+    void abort(QString reason, bool crashed =true, State newState =Auto);
 
 signals:
     void tick();
@@ -99,6 +103,10 @@ signals:
     void uncaughtException(QScriptValue);
 
 protected:
+    inline void abort(QString reason, State newState) {
+        abort(reason, true, newState);
+    }
+
     void timerEvent(QTimerEvent *);
     void setState(State);
     void run();

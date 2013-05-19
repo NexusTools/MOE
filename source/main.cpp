@@ -28,9 +28,10 @@ int main(int argc, char *argv[])
             {
                 QList<MoeEngine*>::iterator iter = engines.begin();
                 while(iter != engines.end()) {
-                    if((*iter)->isFinished())
+                    if((*iter)->isFinished()) {
+                        (*iter)->deleteLater();
                         iter = engines.erase(iter);
-                    else
+                    } else
                         iter++;
                 }
             }

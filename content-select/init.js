@@ -1,6 +1,6 @@
 var surface = new GraphicsSurface("Select Content (MOE Game Engine v" + engine.version + ")", Size(800, 600));
-var snakes = [];
 
+var snakes = [];
 var moeLogo = new GraphicsImage(Url("../resources/logo.png"));
 
 surface.keyPressed.connect(function(c){
@@ -72,6 +72,7 @@ function Button(text) {
     this.button.cursor = "pointer";
     this.button.borderRadius = 3;
     this.button.margin = 5;
+    this.selFade = false;
     this.selected = false;
     this.button.mouseEntered.connect(function(){
         if(this.selected)
@@ -85,63 +86,98 @@ function Button(text) {
         this.button.animate("background", Rgba(173, 216, 230, 60), 2);
         this.button.animate("foreground", Rgb(173, 216, 230), 2);
     }.bind(this));
+    this.selectFade = (function(){
+        if(!this.selected || this.button.isAnimating("background"))
+            return;
+
+        if(this.button.background.alpha < 135)
+            this.button.animate("background", Rgba(173, 216, 230, 160), this.selectFade);
+        else
+            this.button.animate("background", Rgba(173, 216, 230, 110), this.selectFade);
+
+    }).bind(this);
     this.setSelected = function(sel) {
         if(sel == this.selected)
             return;
         if(sel) {
-            this.button.animate("background", Rgba(173, 216, 230, 160), 2);
+            this.button.animate("background", Rgba(173, 216, 230, 160), this.selectFade);
             this.button.animate("foreground", Rgb(203, 236, 255), 2);
         } else {
             this.button.animate("background", Rgba(173, 216, 230, 60), 2);
             this.button.animate("foreground", Rgb(173, 216, 230), 2);
         }
-
         this.selected = sel;
     }
 
     return this;
 }
 
-function ButtonGroup(expand) {
+function ButtonGroup(defaultProperties) {
+    this.props = $H(defaultProperties);
+    this.width = 0;
     this.buttons = $A();
-    this.groupWidth = 0;
     this.selectedButton = false;
     this.selectButton = function(btn) {
         if(this.selectedButton)
             this.selectedButton.setSelected(false);
         this.selectedButton = btn;
-        this.selectedButton.setSelected(true);
-        this.buttonChanged.emit(this.selectedButton.button.text);
+        if(this.selectedButton) {
+            this.selectedButton.setSelected(true);
+            this.buttonChanged.emit(this.selectedButton.button.text);
+        } else
+            this.buttonChanged.emit(false);
     }
     this.push = function(btn) {
-        if(btn.button.width > this.groupWidth) {
-            this.groupWidth = btn.button.width;
+        if(btn.button.width > this.width) {
+            this.width = btn.button.width;
             this.buttons.forEach(function(bnt){
-                bnt.button.width = this.groupWidth;
+                bnt.button.width = this.width;
             }.bind(this));
         } else
-            btn.button.width = this.groupWidth;
+            btn.button.width = this.width;
+        Object.extend(btn, this.props);
 
         btn.button.mousePressed.connect(function(){
             this.selectButton(btn);
         }.bind(this));
         this.buttons.push(btn);
-        if(expand)
-            btn.button.opacity = 0;
+    }
+
+    this.animate = function(prop, to, mod, delay) {
+        var delayTime = delay;
+        this.buttons.forEach(function(btn){
+            if(delayTime) {
+                setTimeout(function(){
+                    btn.button.animate(prop, to, mod)
+                }, delayTime);
+                delayTime += delay;
+            } else
+                btn.button.animate(prop, to, mod);
+        });
+    }
+
+    this.setPos = function(x, y) {
+        this.buttons.forEach(function(btn){
+            btn.button.setPos(x, y);
+            y += btn.button.height + 5;
+        });
     }
 
     this.buttonChanged = new Signal();
 }
 
-var rightButtons = new ButtonGroup();
-rightButtons.push(new Button("Gallery"));
-rightButtons.push(new Button("Examples"));
-rightButtons.push(new Button("Downloaded"));
-rightButtons.push(new Button("Content Editor"));
-rightButtons.push(new Button("Settings"));
-rightButtons.push(new Button("Quit"));
+var leftButtons = new ButtonGroup({"opacity": 0});
+leftButtons.push(new Button("Gallery"));
+leftButtons.push(new Button("Examples"));
+leftButtons.push(new Button("Downloaded"));
+leftButtons.push(new Button("Content Editor"));
+leftButtons.push(new Button("Settings"));
+leftButtons.push(new Button("Quit"));
+leftButtons.setPos(-100, 5);
+
+
 var sumenuButtons = false;
-rightButtons.buttonChanged.connect(function(btn){
+leftButtons.buttonChanged.connect(function(btn){
     if(sumenuButtons) {
         sumenuButtons.destroy();
         sumenuButtons = false;
@@ -152,7 +188,7 @@ rightButtons.buttonChanged.connect(function(btn){
         exampleEntries.receivedChildList.connect(function(children){
             if(!children.length)
                 throw "Examples missing...";
-            engine.debug(children);
+            print(children);
         });
         exampleEntries.error.connect(function(error){
             throw error;
@@ -167,20 +203,27 @@ rightButtons.buttonChanged.connect(function(btn){
     }
 });
 
-surface.resized.connect(function(size){
-    var x = 5;
-    var y = 5;
-    rightButtons.buttons.forEach(function(btn){
-        btn.button.setPos(x, y);
-        y += btn.button.height + 5;
-    });
-});
+var rightButtons = new ButtonGroup();
+rightButtons.push(new Button("Login"));
+rightButtons.push(new Button("Register"));
+rightButtons.push(new Button("NexusTools.net"));
+rightButtons.setPos(0, 5);
 
 function start(size) {
     if(size.width < 1 || size.height < 1)
         return;
     surface.resized.disconnect(start);
-    surface.animate("background", "black");
+    surface.animate("background", "black", 30);
+    leftButtons.animate("opacity", 1, 8, 150);
+    leftButtons.animate("x", 5, 5, 150);
+    rightButtons.setPos(size.width - rightButtons.width + 95, 5);
+    rightButtons.animate("opacity", 1, 8, 150);
+    rightButtons.animate("x", size.width - rightButtons.width - 5, 5, 150);
+
+    surface.resized.connect(function(size){
+        rightButtons.setPos(size.width - rightButtons.width - 5, 5);
+    });
+
     spawnSnakes();
 }
 

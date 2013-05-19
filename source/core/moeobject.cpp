@@ -87,11 +87,13 @@ void MoeObject::animate(QString key, QScriptValue to, QScriptValue callback, qre
         }
     }
 
-    if(callback.isFunction())
+    if(callback.isFunction()) {
         state->callback = callback;
+        state->modifier = modifier;
+    } else
+        state->modifier = callback.isNumber() ? callback.toNumber() : modifier;
 
     state->last = state->metaProp.read(this);
-    state->modifier = callback.isNumber() ? callback.toNumber() : modifier;
     if(addToList) {
         if(animations.isEmpty())
             connect(engine(), SIGNAL(tick()), this, SLOT(animateTick()));
