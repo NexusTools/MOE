@@ -1,7 +1,7 @@
 #ifndef CRASHDIALOG_H
 #define CRASHDIALOG_H
 
-#include "moeengine.h"
+#include "../core/moeengine.h"
 
 #include <QDialog>
 

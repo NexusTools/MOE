@@ -1,7 +1,7 @@
 #ifndef MOEGRAPHICSOBJECT_H
 #define MOEGRAPHICSOBJECT_H
 
-#include "moeobject.h"
+#include "../core/moeobject.h"
 
 #include <QMetaMethod>
 #include <QTransform>

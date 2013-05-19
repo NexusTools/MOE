@@ -1,7 +1,7 @@
-#include "renderrecorder.h"
+#include "../gui/renderrecorder.h"
 #include "moescriptregisters.h"
-#include "moegraphicscontainer.h"
-#include "moeurl.h"
+#include "../gui/moegraphicscontainer.h"
+#include "../network/moeurl.h"
 
 #include <QScriptValueIterator>
 #include <QRadialGradient>

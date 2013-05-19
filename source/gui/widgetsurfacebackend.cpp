@@ -1,6 +1,6 @@
 #include "widgetsurfacebackend.h"
 #include "moegraphicssurface.h"
-#include "moeengine.h"
+#include "../core/moeengine.h"
 
 #include <QApplication>
 #include <QMainWindow>

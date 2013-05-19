@@ -1,11 +1,11 @@
-#include "moeurl.h"
+#include "../network/moeurl.h"
 #include "moeengine.h"
-#include "moegraphicsimage.h"
-#include "moeresourcerequest.h"
+#include "../gui/moegraphicsimage.h"
+#include "../network/moeresourcerequest.h"
 #include "moescriptregisters.h"
-#include "moegraphicscontainer.h"
-#include "moegraphicstext.h"
-#include "moegraphicssurface.h"
+#include "../gui/moegraphicscontainer.h"
+#include "../gui/moegraphicstext.h"
+#include "../gui/moegraphicssurface.h"
 
 #include <QScriptEngine>
 #include <QElapsedTimer>

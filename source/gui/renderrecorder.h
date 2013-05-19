@@ -1,7 +1,7 @@
 #ifndef RENDERRECORDER_H
 #define RENDERRECORDER_H
 
-#include "moeobject.h"
+#include "../core/moeobject.h"
 #include "renderbuffer.h"
 #include "renderinstruction.h"
 

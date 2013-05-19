@@ -9,8 +9,8 @@
 #include <QMetaMethod>
 #include <QJsonValue>
 
-#include "moeobject.h"
-#include "moeengine.h"
+#include "../core/moeobject.h"
+#include "../core/moeengine.h"
 #include "moeurl.h"
 
 class MoeResourceRequest : public MoeObject

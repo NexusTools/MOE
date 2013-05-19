@@ -1,6 +1,6 @@
-#include "qargumentparser.h"
-#include "crashdialog.h"
-#include "moeengine.h"
+#include "core/qargumentparser.h"
+#include "debug/crashdialog.h"
+#include "core/moeengine.h"
 
 #include <QApplication>
 #include <QMessageBox>

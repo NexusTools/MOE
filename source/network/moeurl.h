@@ -1,7 +1,7 @@
 #ifndef URL_H
 #define URL_H
 
-#include "moeobject.h"
+#include "../core/moeobject.h"
 
 #include <QThreadStorage>
 #include <QUrl>

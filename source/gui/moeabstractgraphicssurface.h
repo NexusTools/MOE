@@ -71,7 +71,7 @@ protected slots:
         }
 
         if(renderState.testFlag(SurfaceDirty) && !renderState.testFlag(ViewReady)) {
-            //qDebug() << "Starting Repaint Timer";
+            forceRenderTimer.start();
             renderTimer.start();
         }
 
@@ -165,7 +165,11 @@ protected slots:
 
 private slots:
     inline void renderNow(){
-        //qDebug() << "Rendering Surface" << repaintRegion << this;
+        if(!renderState.testFlag(SurfaceDirty)
+                || !renderState.testFlag(ViewReady))
+            return;
+        renderTimer.stop();
+        forceRenderTimer.stop();
         render(0, repaintRegion);
         repaintRegion = QRect();
         renderState = NotReady;
@@ -199,6 +203,10 @@ protected:
 
         connect(backend, SIGNAL(disconnected()), this, SLOT(notifyDisconnected()), Qt::QueuedConnection);
 
+        forceRenderTimer.setInterval(500);
+        forceRenderTimer.setSingleShot(true);
+        forceRenderTimer.moveToThread(thread());
+        connect(&forceRenderTimer, SIGNAL(timeout()), this, SLOT(renderNow()));
         renderTimer.setInterval(0);
         renderTimer.setSingleShot(true);
         renderTimer.moveToThread(thread());
@@ -228,8 +236,10 @@ protected:
         else
             repaintRegion |= region;
 
-        if(renderState.testFlag(ViewReady) && !renderState.testFlag(SurfaceDirty))
+        if(renderState.testFlag(ViewReady) && !renderState.testFlag(SurfaceDirty)) {
+            forceRenderTimer.start();
             renderTimer.start();
+        }
 
          renderState |= SurfaceDirty;
     }
@@ -278,6 +288,7 @@ private:
     QCursor activeCursor;
     QColor repaintColor;
     QRect repaintRegion;
+    QTimer forceRenderTimer;
     QTimer renderTimer;
     bool _connected;
 };
