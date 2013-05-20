@@ -564,7 +564,10 @@ QUrl MoeUrl::locate(QString path, QString context) {
 
         if(!_context.path().endsWith('/'))
             _context.setPath(_context.path()+'/');
+
+        qDebug() << url << _context;
         url = _context.resolved(url);
+        qDebug() << url;
     }
 
     return url;

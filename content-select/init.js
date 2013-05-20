@@ -200,7 +200,8 @@ leftButtons.push(new Button("Quit"));
 leftButtons.setPos(-leftButtons.width, 5);
 
 function changeContent(url) {
-    destroySubmenu();
+    if(sumenuButtons)
+        destroySubmenu();
     leftButtons.animate("opacity", 0);
     rightButtons.animate("opacity", 0);
     engine.tick.connect(function(){
@@ -215,12 +216,12 @@ function changeContent(url) {
 }
 
 function loadChildSelectionSubmenu(path) {
+    path = Url(path);
     var loading = new GraphicsText("Loading...", Font("Arial", 10), surface);
     loading.margin = 4;
     loading.foreground = "white";
     loading.background = Rgba(0, 0, 0, 80);
     var selPos = leftButtons.getSelectedButtonPos();
-    engine.debug(selPos);
     loading.setPos(5, selPos.y);
     var exampleEntries = ResourceRequest(path);
     exampleEntries.receivedChildList.connect(function(children){
@@ -257,10 +258,11 @@ function loadChildSelectionSubmenu(path) {
     });
 }
 
-var sumenuButtons;
+var sumenuButtons = false;
 function fadeDestroySubmenu() {
+    sumenuButtons.setDisabled(true);
     sumenuButtons.animate("opacity", 0, 4, 50, sumenuButtons.deleteLater);
-    sumenuButtons = null;
+    sumenuButtons = false;
 }
 
 function destroySubmenu() {
@@ -281,12 +283,20 @@ leftButtons.buttonChanged.connect(function(btn){
         break;
 
     case "Examples":
-        loadChildSelectionSubmenu(":/examples/");
+        loadChildSelectionSubmenu("../examples/");
+        break;
+
+    case "Downloaded":
+        loadChildSelectionSubmenu("storage:/downloaded-content/by-category/");
         break;
 
     case "Content Editor":
         changeContent("http://moe.nexustools.net/packages/nexustools/tools/content-editor/");
-        break;
+        return;
+
+    case "Settings":
+        changeContent("settings:/");
+        return;
 
     case "Quit":
         engine.quit();
