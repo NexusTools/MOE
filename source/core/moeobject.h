@@ -23,22 +23,24 @@ typedef QMap<MoeObjectPtr, MoeObjectPointer> MoeObjectPtrMap;
 class MoeObject : public QObject, public QScriptable
 {
     Q_OBJECT
+
+    friend class MoeEngine;
 public:
     Q_INVOKABLE explicit MoeObject(MoeObject* parent =NULL);
     virtual ~MoeObject() {
         disconnect(animateConnection);
-        //instances.localData().remove(ptr());
+        instances.localData().remove(ptr());
     }
 
     virtual MoeEngine* engine() const;
 
     inline MoeObjectPtr ptr() const{return (MoeObjectPtr)this;}
-//    template<typename T> static inline T* instance(MoeObjectPtr ptr) {
-//        return qobject_cast<T*>(instances.localData().value(ptr).data());
-//    }
-//    inline int countInstances() {
-//        return instances.localData().count();
-//    }
+    template<typename T> static inline T* instance(MoeObjectPtr ptr) {
+        return qobject_cast<T*>(instances.localData().value(ptr).data());
+    }
+    inline int countInstances() {
+        return instances.localData().count();
+    }
 
     Q_INVOKABLE inline bool isAnimating(QString key) const{return animations.contains(key);}
     Q_INVOKABLE QString toString() const;
@@ -50,9 +52,12 @@ public slots:
 protected slots:
     void animateTick(qreal);
 
+private slots:
+    void cleanup();
+
 private:
     QMetaObject::Connection animateConnection;
-    //static QThreadStorage<MoeObjectPtrMap> instances;
+    static QThreadStorage<MoeObjectPtrMap> instances;
     QHash<QString, AnimationStatePointer> animations;
 };
 

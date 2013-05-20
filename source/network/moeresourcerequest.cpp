@@ -45,6 +45,11 @@ void MoeResourceRequest::completeCallback(QByteArray dat){
     QMetaMethod receivedStringSignal = QMetaMethod::fromSignal(&MoeResourceRequest::receivedString);
     QMetaMethod receivedChildListSignal = QMetaMethod::fromSignal(&MoeResourceRequest::receivedChildList);
 
+    Q_ASSERT(receivedXmlSignal.isValid());
+    Q_ASSERT(receivedJsonSignal.isValid());
+    Q_ASSERT(receivedStringSignal.isValid());
+    Q_ASSERT(receivedChildListSignal.isValid());
+
     qDebug() << this << "processing received data" << _url;
 
     emit receivedData(dat);

@@ -192,6 +192,18 @@ leftButtons.push(new Button("Settings"));
 leftButtons.push(new Button("Quit"));
 leftButtons.setPos(-leftButtons.width, 5);
 
+function changeContent(url) {
+    leftButtons.animate("opacity", 0);
+    rightButtons.animate("opacity", 0);
+    engine.tick.connect(function(){
+        if(snakePenColor.alpha > 0)
+            snakePenColor.alpha /= 4;
+    });
+    surface.animate("background", "dark magenta", function() {
+        engine.startContent(url);
+    });
+}
+
 function loadChildSelectionSubmenu(path) {
     var loading = new GraphicsText("Loading...", Font("Arial", 10), surface);
     loading.margin = 4;
@@ -224,7 +236,7 @@ function loadChildSelectionSubmenu(path) {
                     break;
 
                 default:
-                    engine.startContent(Url(btn, path));
+                    changeContent(Url(btn, path));
                 }
             });
         }

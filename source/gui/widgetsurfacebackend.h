@@ -2,8 +2,13 @@
 #define SURFACEWIDGETPROVIDER_H
 
 #include "qpaintersurfacebackend.h"
+
+#include <QThreadStorage>
 #include <QWidget>
+#include <QCache>
 #include <QTimer>
+
+typedef QCache<int, QWidget> SurfaceCache;
 
 class WidgetSurfaceBackend : public QPainterSurfaceBackend
 {
@@ -11,6 +16,7 @@ class WidgetSurfaceBackend : public QPainterSurfaceBackend
 public:
     explicit WidgetSurfaceBackend(QString title, QSize size, int type, QWidget* parent);
     explicit WidgetSurfaceBackend(QWidget*);
+    virtual ~WidgetSurfaceBackend();
 
     inline void setGeometryImpl(QRect g) {
         if(_widget->geometry() != g)
@@ -44,8 +50,11 @@ private:
     int _type;
     QPixmap buffer;
     QWidget* _widget;
-    QTimer repaintTimer;
     QRect _repaintRect;
+    QTimer repaintTimer;
+    bool _ownsWidget;
+
+    static QThreadStorage<SurfaceCache> _surfaceCache;
 };
 
 #endif // SURFACEWIDGETPROVIDER_H

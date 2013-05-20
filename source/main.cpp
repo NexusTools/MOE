@@ -17,8 +17,10 @@ int main(int argc, char *argv[])
     QCoreApplication* app;
     if(isHeadless)
         app = new QCoreApplication(argc, argv);
-    else
+    else {
         app = new QApplication(argc, argv);
+        ((QApplication*)app)->setQuitOnLastWindowClosed(false);
+    }
 
     MoeEngine::registerQDebugHandler();
     if(parser.contains("stress")) {
@@ -46,6 +48,7 @@ int main(int argc, char *argv[])
         if(!isHeadless)
             CrashDialog::init(engine);
         engine->startWithArguments(parser.toMap());
+        QObject::connect(engine, SIGNAL(stopped()), app, SLOT(quit()), Qt::QueuedConnection);
     }
 
     return app->exec();

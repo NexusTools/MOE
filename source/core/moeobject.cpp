@@ -7,6 +7,7 @@
 #include <QDebug>
 #include <QColor>
 #include <QBrush>
+#include <QEvent>
 
 #include <qmath.h>
 
@@ -17,15 +18,16 @@ struct AnimationState {
     qreal modifier;
 };
 
-//QThreadStorage<MoeObjectPtrMap> MoeObject::instances;
+QThreadStorage<MoeObjectPtrMap> MoeObject::instances;
 
 MoeObject::MoeObject(MoeObject* parent) : QObject(parent)
 {
     Q_ASSERT(!MoeEngine::current().isNull());
     moveToThread(MoeEngine::current().data());
-    //instances.localData().insert(ptr(), MoeObjectPointer(this));
-    connect(engine()->scriptEngine(), SIGNAL(destroyed()), this, SLOT(deleteLater()), Qt::QueuedConnection);
+    instances.localData().insert(ptr(), this);
+    connect(engine(), SIGNAL(cleanup()), this, SLOT(cleanup()));
     connect(engine(), SIGNAL(destroyed()), this, SLOT(deleteLater()));
+    connect(engine()->scriptEngine(), SIGNAL(destroyed()), this, SLOT(deleteLater()));
 }
 
 MoeEngine* MoeObject::engine() const
@@ -91,7 +93,8 @@ void MoeObject::animate(QString key, QScriptValue to, QScriptValue callback, qre
         state->callback = callback;
         state->modifier = modifier;
     } else {
-        state->modifier = callback.isNumber() ? callback.toNumber() : modifier;
+        state->modifier = !callback.isUndefined() && !callback.isNull() &&
+                callback.isNumber() ? callback.toNumber() : modifier;
         state->callback = QScriptValue();
     }
 
@@ -173,6 +176,11 @@ inline SoothResultFlags smoothInt(int& value, int to, qreal modifier) {
         return NoChange;
 
     return SoothResultFlags(ValueChanged | ValueFarFromTarget);
+}
+
+void MoeObject::cleanup() {
+    qDebug() << "Cleaning up" << this;
+    deleteLater();
 }
 
 void MoeObject::animateTick(qreal) {

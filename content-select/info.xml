@@ -1,7 +1,7 @@
 <MoeContent>
 	<ContentInfo>
-                <Name>BlockCity</Name>
-		<ShortDescription>TBD</ShortDescription>
-		<LongDescription>TBD</LongDescription>
+                <Name>MOE Content Selection</Name>
+                <ShortDescription>Content Selection</ShortDescription>
+                <LongDescription>The default package for MOE, provides a way to manage installed content, and search for more.</LongDescription>
 	</ContentInfo>
 </MoeContent>

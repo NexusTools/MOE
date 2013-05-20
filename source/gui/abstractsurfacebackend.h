@@ -55,7 +55,7 @@ public slots:
 
         _geom = geom;
         _waitForGeomResize = true;
-        geometryUpdateTimer.start();
+        emit geometryChanged(geom);
     }
     inline void updatePos(QPoint pos) {
         updateGeometry(QRect(pos, _geom.size()));
@@ -64,16 +64,8 @@ public slots:
         updateGeometry(QRect(_geom.topLeft(), size));
     }
 
-private slots:
-    inline void updateGeometryNow() {
-        emit geometryChanged(_geom);
-    }
-
 protected:
     explicit inline AbstractSurfaceBackend(QRect geom =QRect()) {
-        geometryUpdateTimer.setSingleShot(true);
-        geometryUpdateTimer.setInterval(0);
-        connect(&geometryUpdateTimer, SIGNAL(timeout()), this, SLOT(updateGeometryNow()), Qt::QueuedConnection);
         connect(this, SIGNAL(updateCursor(QCursor)), this, SLOT(setCursorImpl(QCursor)), Qt::QueuedConnection);
         connect(this, SIGNAL(updateTitle(QString)), this, SLOT(setTitleImpl(QString)), Qt::QueuedConnection);
         _waitForGeomResize = true;
@@ -97,7 +89,6 @@ signals:
     void keyRelease(int);
 
 private:
-    QTimer geometryUpdateTimer;
     bool _waitForGeomResize;
     QRect _geom;
 };

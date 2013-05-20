@@ -198,6 +198,7 @@ protected:
         connect(this, SIGNAL(resized(QSizeF)), backend, SLOT(setSize(QSizeF)), Qt::QueuedConnection);
         connect(this, SIGNAL(moved(QPointF)), backend, SLOT(setPos(QPointF)), Qt::QueuedConnection);
 
+        connect(backend, SIGNAL(geometryChanged(QRect)), this, SLOT(prepareNextFrame()), Qt::QueuedConnection);
         connect(backend, SIGNAL(geometryChanged(QRect)), this, SLOT(setGeometry(QRect)), Qt::QueuedConnection);
         connect(backend, SIGNAL(readyForFrame()), this, SLOT(prepareNextFrame()), Qt::QueuedConnection);
 

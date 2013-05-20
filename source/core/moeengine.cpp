@@ -7,11 +7,11 @@
 #include "../gui/moegraphicstext.h"
 #include "../gui/moegraphicssurface.h"
 
+#include <QAbstractEventDispatcher>
 #include <QScriptEngine>
 #include <QElapsedTimer>
 #include <QMetaMethod>
 #include <QTimerEvent>
-#include <QEventLoop>
 #include <QDateTime>
 #include <QFileInfo>
 #include <QPointF>
@@ -24,7 +24,6 @@ MoeEngine::MoeEngine() {
     makeCurrent();
     _scriptEngine = 0;
     _state = Stopped;
-    _eventLoop = 0;
 
     moveToThread(this);
     setTicksPerSecond(24);
@@ -281,6 +280,10 @@ void MoeEngine::debug(QVariant value)
         qWarning() << "Engine not running.";
 }
 
+void MoeEngine::exitEventLoop() {
+    exit(0);
+}
+
 void MoeEngine::eval(QString script) {
     if(loader.isEmpty())
         _scriptEngine->evaluate(script);
@@ -335,6 +338,11 @@ QScriptValue __eval_func__(QScriptContext* ctx, QScriptEngine* eng) {
     QScriptValue result = eng->evaluate(ctx->argument(0).toString(), ctx->argument(1).toString());
     ctx->popScope();
     return result;
+}
+
+void MoeEngine::processEvents(qint32 until) {
+    QTimer::singleShot(until, Qt::PreciseTimer, this, SLOT(exitEventLoop()));
+    exec();
 }
 
 void MoeEngine::setupGlobalObject() {
@@ -413,7 +421,7 @@ void MoeEngine::mainLoop() {
                 emitTick.invoke(this, Qt::QueuedConnection);
 
             while((sleepTime = nextWait - timer.elapsed()) > 0) {
-                _eventLoop->processEvents(QEventLoop::WaitForMoreEvents, sleepTime);
+                processEvents(sleepTime);
                 if(_scriptEngine->hasUncaughtException()) {
                     exceptionThrown(_scriptEngine->uncaughtException());
                     break;
@@ -439,16 +447,14 @@ void MoeEngine::run()
     makeCurrent();
     _error.clear();
     setState(Starting);
-    QEventLoop eventLoop;
-    _eventLoop = &eventLoop;
-    QScriptEngine scriptEngine;
-    _scriptEngine = &scriptEngine;
-    __moe_registerScriptConverters(_scriptEngine);
+    Q_ASSERT(eventDispatcher());
 
 initializeEngine:
+    _scriptEngine = new QScriptEngine();
+    __moe_registerScriptConverters(_scriptEngine);
+
     qDebug() << "Initializing new engine context";
     MoeUrl::setDefaultContext(":/loaders/");
-    _scriptEngine->pushContext();
 
     setupGlobalObject();
     mainLoop();
@@ -457,18 +463,20 @@ initializeEngine:
         killTimer(timerId);
     _timers.clear();
 
-    qDebug() << "Processing remaining events";
-    _scriptEngine->popContext();
-    eventLoop.processEvents();
+    emit cleanup();
+    MoeObject::instances.localData().clear();
+    qDebug() << "Processing remaining events.";
+    _scriptEngine->collectGarbage();
+    _scriptEngine->deleteLater();
+    _scriptEngine = 0;
+    processEvents(500);
 
     if(_state == Changing) {
         _error.clear();
         setState(Starting);
-        _scriptEngine->clearExceptions();
         goto initializeEngine;
     }
 
-    _eventLoop = 0;
     loader.clear();
     initContentPath.clear();
     if(_state == Deleted) {
@@ -476,9 +484,9 @@ initializeEngine:
         qWarning() << "Engine was deleted from within its own thread.";
         return;
     }
-    setState(Stopped);
+    if(_state != Crashed)
+        setState(Stopped);
     qDebug() << "Engine thread finished";
-    exit(0);
 }
 
 void MoeEngine::emitTick() {
@@ -500,9 +508,7 @@ void MoeEngine::stopExecution(QString reason, bool crash, State newState)
     if(_scriptEngine)
         _scriptEngine->abortEvaluation();
 
-    if(!_eventLoop)
-        return;
-    _eventLoop->exit(1);
+    exitEventLoop();
 }
 
 void MoeEngine::registerClass(const QMetaObject* metaObject)

@@ -92,6 +92,7 @@ signals:
 
     void stopped();
     void started();
+    void cleanup();
     void crashed(QString reason);
     void uncaughtException(QScriptValue);
     void stateChanged(MoeEngine::State state);
@@ -108,11 +109,13 @@ protected:
     void setState(State);
 
     void setupGlobalObject();
+    void processEvents(qint32 until);
     void mainLoop();
     void run();
 
 protected slots:
     void eval(QString);
+    void exitEventLoop();
     inline void abort(QString reason) {stopExecution(reason, true, Crashed);}
     void exceptionThrown(QScriptValue);
 
@@ -126,7 +129,6 @@ private:
     QVariantMap _arguments;
     QVariantMap _environment;
 
-    QEventLoop* _eventLoop;
     QScriptEngine* _scriptEngine;
     QMap<int, QScriptValue> _timers;
     QList<const QMetaObject*> _classes;

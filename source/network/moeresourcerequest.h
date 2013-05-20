@@ -27,6 +27,9 @@ public:
     Q_INVOKABLE inline explicit MoeResourceRequest(QUrl resource){
         init(resource.isRelative() ? MoeUrl::locate(resource.toString()) : resource);
     }
+    virtual ~MoeResourceRequest() {
+        disconnect(receivedConnection);
+    }
 
     inline QUrl url() const{
         return _url;

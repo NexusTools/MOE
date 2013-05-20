@@ -27,7 +27,7 @@ bool MoeGraphicsObject::event(QEvent* event) {
             break;
     }
 
-    return QObject::event(event);
+    return MoeObject::event(event);
 }
 
 void MoeGraphicsObject::repaint(QRect region)

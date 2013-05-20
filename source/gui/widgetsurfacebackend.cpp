@@ -13,9 +13,9 @@
 
 WidgetSurfaceBackend::WidgetSurfaceBackend(QString title, QSize size, int type, QWidget* parent) : QPainterSurfaceBackend(QRect())
 {
+    _widget = 0;
     _type = type;
-    if(_type == 0)
-        _type = MoeGraphicsSurface::Widget;
+    _ownsWidget = true;
     static QMetaMethod createWidgetMethod = metaObject()->method(metaObject()->indexOfMethod("createWidget(QString,QSize,int,QWidget*)"));
     createWidgetMethod.invoke(this, Qt::QueuedConnection, Q_ARG(QString,title), Q_ARG(QSize,size), Q_ARG(int,_type), Q_ARG(QWidget*,parent));
 }
@@ -24,7 +24,31 @@ WidgetSurfaceBackend::WidgetSurfaceBackend(QWidget* widget) : QPainterSurfaceBac
 {
     static QMetaMethod initWidgetMethod = metaObject()->method(metaObject()->indexOfMethod("initWidget(QWidget*)"));
     initWidgetMethod.invoke(this, Qt::QueuedConnection, Q_ARG(QWidget*,widget));
+    _ownsWidget = false;
+    _widget = 0;
     _type = 0;
+}
+
+WidgetSurfaceBackend::~WidgetSurfaceBackend() {
+    if(_ownsWidget && _widget) {
+        qDebug() << "Caching surface widget of type" << _type;
+        _widget->setWindowTitle("Changing Content (MOE Game Engine)");
+        _widget->setObjectName("<cached surface>");
+        if(_widget->parentWidget() && _widget->isWindow())
+            _widget->hide();
+        else {
+            QTimer* hideTimer = new QTimer();
+            hideTimer->setInterval(500);
+            hideTimer->setSingleShot(true);
+            connect(hideTimer, SIGNAL(timeout()), _widget, SLOT(hide()));
+            connect(_widget, SIGNAL(destroyed()), hideTimer, SLOT(deleteLater()));
+            connect(_widget, SIGNAL(objectNameChanged(QString)), hideTimer, SLOT(deleteLater()));
+            connect(hideTimer, SIGNAL(timeout()), hideTimer, SLOT(deleteLater()), Qt::QueuedConnection);
+            hideTimer->start();
+        }
+
+        _surfaceCache.localData().insert(_type, _widget);
+    }
 }
 
 bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
@@ -131,33 +155,53 @@ bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
 }
 
 void WidgetSurfaceBackend::createWidget(QString title, QSize size, int type, QWidget *parent) {
-    QWidget* widget;
-    //qDebug() << "Creating" << type << "Widget";
-    switch((MoeGraphicsSurface::BackendWidgetType)type) {
-        case MoeGraphicsSurface::MainWindow:
-            widget = new QMainWindow();
-            break;
+    QWidget* widget = _surfaceCache.localData().take(type);
+    if(widget) {
+        qDebug() << "Reusing cached widget surface";
 
-        case MoeGraphicsSurface::Dialog:
-            widget = new QDialog();
-            break;
+        _widget = widget;
+        repaintTimer.setInterval(0);
+        repaintTimer.setSingleShot(true);
+        connect(&repaintTimer, SIGNAL(timeout()), this, SLOT(repaintRect()));
 
-        //case MoeGraphicsSurface::GLWidget:
-        //    widget = new QGLWidget();
-        //    break;
+        widget->installEventFilter(this);
+        if(widget->geometry().size() == size)
+            updateGeometry(widget->geometry());
 
-        default:
-            widget = new QWidget();
-            break;
+        if(parent) {
+            Q_ASSERT(widget->isWindow() || !widget->parentWidget());
+            widget->hide();
+        }
+    } else {
+        qDebug() << "Creating new surface widget of type" << type;
+
+        switch((MoeGraphicsSurface::BackendWidgetType)type) {
+            case MoeGraphicsSurface::Widget:
+                widget = new QWidget();
+                break;
+
+            case MoeGraphicsSurface::Dialog:
+                widget = new QDialog();
+                break;
+
+            case MoeGraphicsSurface::GLWidget:
+                widget = new QGLWidget();
+                break;
+
+            default:
+                widget = new QMainWindow();
+                break;
+        }
+
+        widget->setAttribute(Qt::WA_DeleteOnClose);
+        initWidget(widget);
     }
 
-    connect(this, SIGNAL(destroyed()), widget, SLOT(deleteLater()));
-    widget->setParent(parent);
+    widget->setObjectName("MoeGraphicsSurfaceWidget");
     widget->setWindowTitle(title);
+    widget->setParent(parent);
     widget->resize(size);
     widget->show();
-
-    initWidget(widget);
 }
 
 void WidgetSurfaceBackend::initWidget(QWidget* widget) {
@@ -167,9 +211,10 @@ void WidgetSurfaceBackend::initWidget(QWidget* widget) {
     repaintTimer.setInterval(0);
     repaintTimer.setSingleShot(true);
     connect(&repaintTimer, SIGNAL(timeout()), this, SLOT(repaintRect()));
-    updateGeometry(widget->geometry());
     widget->setAttribute(Qt::WA_OpaquePaintEvent);
     widget->installEventFilter(this);
     widget->setMouseTracking(true);
-    widget->repaint();
 }
+
+
+QThreadStorage<SurfaceCache> WidgetSurfaceBackend::_surfaceCache;
