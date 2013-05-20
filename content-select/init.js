@@ -154,15 +154,22 @@ function ButtonGroup(defaultProperties) {
         this.buttons.push(btn);
     }
 
-    this.animate = function(prop, to, mod, delay) {
+    this.animate = function(prop, to, mod, delay, callback) {
         var delayTime = 0;
+        var lastButton = this.buttons[this.buttons.length-1];
         this.buttons.forEach(function(btn){
+            var last = btn == lastButton;
             if(delay > 0) {
                 setTimeout(function(){
-                    btn.button.animate(prop, to, mod)
+                    if(last && typeof callback == "function")
+                        btn.button.animate(prop, to, callback, mod)
+                    else
+                        btn.button.animate(prop, to, mod)
                 }, delayTime);
                 delayTime += delay;
-            } else
+            } else if(last && typeof callback == "function")
+                btn.button.animate(prop, to, callback, mod)
+            else
                 btn.button.animate(prop, to, mod);
         });
     }
@@ -193,13 +200,16 @@ leftButtons.push(new Button("Quit"));
 leftButtons.setPos(-leftButtons.width, 5);
 
 function changeContent(url) {
+    destroySubmenu();
     leftButtons.animate("opacity", 0);
     rightButtons.animate("opacity", 0);
     engine.tick.connect(function(){
-        if(snakePenColor.alpha > 0)
+        if(snakePenColor.alpha > 0) {
             snakePenColor.alpha /= 4;
+            surface.foreground = snakePenColor;
+        }
     });
-    surface.animate("background", "dark magenta", function() {
+    surface.animate("background", defaultBackgroundColor, function() {
         engine.startContent(url);
     });
 }
@@ -247,31 +257,35 @@ function loadChildSelectionSubmenu(path) {
     });
 }
 
-function destroySubmenu() {
-    sumenuButtons.deleteLater();
-    delete submenuButtons;
+var sumenuButtons;
+function fadeDestroySubmenu() {
+    sumenuButtons.animate("opacity", 0, 4, 50, sumenuButtons.deleteLater);
     sumenuButtons = null;
+}
+
+function destroySubmenu() {
+    fadeDestroySubmenu();
 
     leftButtons.setDisabled(false);
     leftButtons.animate("posX", 5);
     leftButtons.animate("opacity", 1);
 }
 
-var sumenuButtons;
 leftButtons.buttonChanged.connect(function(btn){
-    if(sumenuButtons) {
-        sumenuButtons.deleteLater();
-        delete sumenuButtons;
-        sumenuButtons = null;
-    }
+    if(sumenuButtons)
+        fadeDestroySubmenu();
 
     switch(btn) {
+    case "Gallery":
+        loadChildSelectionSubmenu("http://moe.nexustools.net/gallery/");
+        break;
+
     case "Examples":
         loadChildSelectionSubmenu(":/examples/");
         break;
 
-    case "Gallery":
-        loadChildSelectionSubmenu("http://moe.nexustools.net/gallery/");
+    case "Content Editor":
+        changeContent("http://moe.nexustools.net/packages/nexustools/tools/content-editor/");
         break;
 
     case "Quit":
@@ -298,6 +312,7 @@ function start(size) {
     surface.resized.disconnect(start);
     leftButtons.animate("posX", 5, 5, 80);
     leftButtons.animate("opacity", 1, 8, 80);
+    defaultBackgroundColor = surface.background;
     surface.animate("background", "black", 30);
     rightButtons.setPos(size.width - rightButtons.width + 95, 5);
     rightButtons.animate("posX", size.width - rightButtons.width - 5, 5, 80);

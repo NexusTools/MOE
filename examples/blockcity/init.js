@@ -212,16 +212,16 @@ function switchSurfaceContents(int) {
         currentMenu.cleanup();
     engine.debug("Switching to menu " + int + ".");
     switch(int) {
-    case 0:
-        currentMenu = new TitleMenu();
-        break;
-    case 1:
-        currentMenu = new InGameMenu();
-        loadLevel(1);
-        break;
-    case 2:
-        currentMenu = new LevelEditorMenu();
-        break;
+        case 0:
+            currentMenu = new TitleMenu();
+            break;
+        case 1:
+            currentMenu = new InGameMenu();
+            loadLevel(1);
+            break;
+        case 2:
+            currentMenu = new LevelEditorMenu();
+            break;
     }
     currentMenu.handleResize(surface.size);
     surface.resized.connect(function(size){
