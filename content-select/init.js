@@ -1,68 +1,7 @@
 var surface = new GraphicsSurface("Select Content (MOE Game Engine v" + engine.version + ")", Size(800, 600));
 
-var snakes = [];
-var moeLogo = new GraphicsImage(Url("../resources/logo.png"));
-
-surface.keyPressed.connect(function(c){
-    engine.debug(c);
-});
-
-function spawnSnakes() {
-    for(var i=0; i<15; i++) {
-        var pos = Point(Math.random()*surface.width, Math.random()*surface.height);
-        var trail = [];
-        for(var t=0; t<10; t++)
-            trail.push(Point(pos.x, pos.y));
-        snakes.push({
-            "trail": trail,
-            "speed": Point(-8+Math.random()*16, -8+Math.random()*16)
-                    });
-    }
-}
-
-engine.tick.connect(function(){
-    var center = Point(surface.width/2,surface.height/2);
-    for(var i=0; i<snakes.size(); i++) {
-        var lastTrail = snakes[i].trail.length-1;
-        for(var t=0; t<lastTrail; t++) {
-            surface.repaint(Rect(snakes[i].trail[t].x-5,snakes[i].trail[t].y-5,11,11));
-            snakes[i].trail[t] = snakes[i].trail[t+1];
-        }
-        surface.repaint(Rect(snakes[i].trail[t].x-5,snakes[i].trail[t].y-5,11,11));
-
-        var cSpeed = snakes[i].speed;
-        var cPos = snakes[i].trail[t];
-        cSpeed.x += (center.x - cPos.x) / 14;
-        cSpeed.y += (center.y - cPos.y) / 14;
-        cSpeed.x += -2 + Math.random() * 4;
-        cSpeed.y += -2 + Math.random() * 4;
-        cSpeed.x = Math.clamp(-(surface.width/14), cSpeed.x, surface.width/14);
-        cSpeed.y = Math.clamp(-(surface.height/14), cSpeed.y, surface.height/14);
-        cPos.x += cSpeed.x / 7;
-        cPos.y += cSpeed.y / 7;
-        snakes[i].speed = cSpeed;
-        snakes[i].trail[t] = Point(cPos.x, cPos.y);
-        surface.repaint(Rect(snakes[i].trail[t].x-5,snakes[i].trail[t].y-5,11,11));
-    }
-});
-
-surface.foreground = "light blue";
-var snakePenColor = surface.foreground;
-snakePenColor.alpha = 60;
-surface.foreground = snakePenColor;
-surface.paint.connect(function(p) {
-    for(var h=1; h<6; h+=2){
-        p.setPenThickness(h);
-        for(var i=0; i<snakes.length; i++) {
-            var lastPos=false;
-            for(var t=0; t<snakes[i].trail.length; t++) {
-                if(lastPos)
-                    p.drawLine(lastPos,snakes[i].trail[t]);
-                lastPos = snakes[i].trail[t];
-            }
-        }
-    }
-});
+var moeLogo = new GraphicsImage(surface);
+moeLogo.opacity = 0;
 
 function Button(text) {
     this.button = new GraphicsText(text, Font("Arial", 10), surface);
@@ -117,9 +56,11 @@ function ButtonGroup(defaultProperties) {
     this.selectedButton = false;
     this.props = $H(defaultProperties);
     this.deleteLater = function() {
-        this.buttons.forEach(function(btn){
-            btn.button.deleteLater();
-        });
+        try {
+            this.buttons.forEach(function(btn){
+                btn.button.deleteLater();
+            });
+        }catch(e){}
     }
 
     this.getSelectedButtonPos = function() {
@@ -143,6 +84,16 @@ function ButtonGroup(defaultProperties) {
             }.bind(this));
         } else
             btn.button.width = this.width;
+        btn.button.resized.connect(function(size){
+            this.width = 0;
+            this.buttons.forEach(function(btn){
+                if(btn.button.width > this.width)
+                    this.width = btn.button.width;
+            }.bind(this));
+            this.buttons.forEach(function(btn){
+                btn.button.width = this.width;
+            }.bind(this));
+        }.bind(this));
         this.props.each(function(pair){
             engine.debug(pair);
             btn.button[pair.key] = pair.value;
@@ -202,14 +153,9 @@ leftButtons.setPos(-leftButtons.width, 5);
 function changeContent(url) {
     if(sumenuButtons)
         destroySubmenu();
+    moeLogo.animate("opacity", 0);
     leftButtons.animate("opacity", 0);
     rightButtons.animate("opacity", 0);
-    engine.tick.connect(function(){
-        if(snakePenColor.alpha > 0) {
-            snakePenColor.alpha /= 4;
-            surface.foreground = snakePenColor;
-        }
-    });
     surface.animate("background", defaultBackgroundColor, function() {
         engine.startContent(url);
     });
@@ -233,8 +179,17 @@ function loadChildSelectionSubmenu(path) {
                 loading.deleteLater();
             });
             sumenuButtons = new ButtonGroup({"opacity": 0});
-            children.each(function(path){
-                sumenuButtons.push(new Button(path));
+            children.each(function(child){
+                var btn = new Button(child);
+                var xmlPath = Url("info.xml", Url(child, path));
+                engine.debug(xmlPath);
+                var nameRequest = ResourceRequest(xmlPath);
+                nameRequest.receivedXML.connect(function(xmlData){
+                    try {
+                        btn.button.text = xmlData.MoeContent.ContentInfo.Name['#text'];
+                    } catch(e) {}
+                });
+                sumenuButtons.push(btn);
             });
             sumenuButtons.push(new Button("<<"));
             sumenuButtons.setPos(5, selPos.y);
@@ -306,8 +261,8 @@ leftButtons.buttonChanged.connect(function(btn){
     }
 
     leftButtons.setDisabled(true);
-    leftButtons.animate("posX", -5);
-    leftButtons.animate("opacity", 0.4);
+    leftButtons.animate("posX", -8);
+    leftButtons.animate("opacity", 0.2);
 });
 
 var rightButtons = new ButtonGroup({"opacity": 0});
@@ -319,6 +274,13 @@ rightButtons.setPos(0, 5);
 function start(size) {
     if(size.width < 1 || size.height < 1)
         return;
+    var moeLogoDownload = ResourceRequest(Url("../resources/logo.png"));
+    moeLogoDownload.receivedData.connect(function(data){
+        moeLogo.load(data);
+        moeLogo.animate("opacity", 1, 30);
+    });
+    moeLogoDownload.completed.connect(moeLogoDownload.deleteLater);
+
     surface.resized.disconnect(start);
     leftButtons.animate("posX", 5, 5, 80);
     leftButtons.animate("opacity", 1, 8, 80);
@@ -327,12 +289,12 @@ function start(size) {
     rightButtons.setPos(size.width - rightButtons.width + 95, 5);
     rightButtons.animate("posX", size.width - rightButtons.width - 5, 5, 80);
     rightButtons.animate("opacity", 1, 8, 80);
+    moeLogo.setSize(size);
 
     surface.resized.connect(function(size){
+        moeLogo.setSize(size);
         rightButtons.setPos(size.width - rightButtons.width - 5, 5);
     });
-
-    spawnSnakes();
 }
 
 surface.resized.connect(start);

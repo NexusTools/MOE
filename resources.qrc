@@ -14,5 +14,6 @@
         <file>loaders/basic.js</file>
         <file>loaders/standard.js</file>
         <file>libraries/standard.js</file>
+        <file>resources/logo.png</file>
     </qresource>
 </RCC>
