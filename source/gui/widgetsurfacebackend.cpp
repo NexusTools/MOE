@@ -53,36 +53,37 @@ WidgetSurfaceBackend::~WidgetSurfaceBackend() {
 
 bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
     if(obj == _widget) {
-        //static QMetaEnum typeEnum = QEvent::staticMetaObject.enumerator(QEvent::staticMetaObject.indexOfEnumerator("Type"));
-        ////qDebug() << "Unhandled Event" << event->type() << typeEnum.key(event->type());
-
         switch(event->type()) {
-            case QEvent::Paint:
-                {
-                    QPainter p;
-                    if(hasPendingInstructions()) {
-                        if(buffer.size() != bufferSize()) {
-                            //qDebug() << "Resized Buffer" << bufferSize();
-                            buffer = QPixmap(bufferSize());
-                        }
+            case QEvent::Close:
+                deleteLater();
+            break;
 
-                        p.begin(&buffer);
-                        p.setRenderHint(QPainter::Antialiasing);
-                        paint(p);
-                        p.end();
+            case QEvent::Paint:
+            {
+                QPainter p;
+                if(hasPendingInstructions()) {
+                    if(buffer.size() != bufferSize()) {
+                        //qDebug() << "Resized Buffer" << bufferSize();
+                        buffer = QPixmap(bufferSize());
                     }
 
-                    p.begin(widget());
-                    QRect geom(QPoint(0,0),widget()->size());
-                    if(buffer.isNull())
-                        p.fillRect(geom, Qt::darkMagenta);
-                    else
-                        p.drawPixmap(geom, buffer);
+                    p.begin(&buffer);
+                    p.setRenderHint(QPainter::Antialiasing);
+                    paint(p);
                     p.end();
-
-                    emit readyForFrame();
                 }
-                return true;
+
+                p.begin(widget());
+                QRect geom(QPoint(0,0),widget()->size());
+                if(buffer.isNull())
+                    p.fillRect(geom, Qt::darkMagenta);
+                else
+                    p.drawPixmap(geom, buffer);
+                p.end();
+
+                emit readyForFrame();
+            }
+            return true;
 
             case QEvent::KeyPress:
             {
@@ -108,12 +109,12 @@ bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
 
             case QEvent::Leave:
                 emit mouseMove(QPoint(-1,-1));
-                break;
+            break;
 
             case QEvent::Move:
             case QEvent::Resize:
                 updateGeometry(_widget->geometry());
-                break;
+            break;
 
             case QEvent::FocusOut:
             case QEvent::WindowDeactivate:
@@ -136,18 +137,18 @@ bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
 
             case QEvent::MouseMove:
                 emit mouseMove(((QMouseEvent*)event)->pos());
-                break;
+            break;
 
             case QEvent::MouseButtonPress:
                 emit mousePress(((QMouseEvent*)event)->pos(), ((QMouseEvent*)event)->buttons());
-                break;
+            break;
 
             case QEvent::MouseButtonRelease:
                 emit mouseRelease(((QMouseEvent*)event)->pos(), ((QMouseEvent*)event)->buttons());
-                break;
+            break;
 
             default:
-                break;
+            break;
         }
     }
 
@@ -178,19 +179,19 @@ void WidgetSurfaceBackend::createWidget(QString title, QSize size, int type, QWi
         switch((MoeGraphicsSurface::BackendWidgetType)type) {
             case MoeGraphicsSurface::Widget:
                 widget = new QWidget();
-                break;
+            break;
 
             case MoeGraphicsSurface::Dialog:
                 widget = new QDialog();
-                break;
+            break;
 
             case MoeGraphicsSurface::GLWidget:
                 widget = new QGLWidget();
-                break;
+            break;
 
             default:
                 widget = new QMainWindow();
-                break;
+            break;
         }
 
         widget->setAttribute(Qt::WA_DeleteOnClose);

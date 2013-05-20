@@ -127,7 +127,8 @@ protected slots:
                 mouseHoverFocus = newHoverFocus;
                 if(!mouseHoverFocus.isNull()) {
                     connect(mouseHoverFocus.data(), SIGNAL(cursorChanged(QCursor)), backend(), SLOT(setCursor(QCursor)), Qt::DirectConnection);
-                    backend()->setCursor(mouseHoverFocus.data()->cursor());
+                    if(backend())
+                        backend()->setCursor(mouseHoverFocus.data()->cursor());
                 }
             }
         }
@@ -175,6 +176,10 @@ private slots:
         renderState = NotReady;
     }
 
+    inline void disconnectQuit() {
+        disconnect(quitConnection);
+    }
+
 protected:
     explicit inline MoeAbstractGraphicsSurface(AbstractSurfaceBackend* backend, MoeObject* par =0) : MoeGraphicsContainer(par) {
         _mouseButtons = 0;
@@ -194,6 +199,8 @@ protected:
         connect(backend, SIGNAL(keyPress(int)), this, SLOT(keyPress(int)), Qt::QueuedConnection);
         connect(backend, SIGNAL(keyRelease(int)), this, SLOT(keyRelease(int)), Qt::QueuedConnection);
 
+        connect((QObject*)engine(), SIGNAL(changingContent()), this, SLOT(disconnectQuit()));
+        quitConnection = connect(backend, SIGNAL(destroyed()), (QObject*)engine(), SLOT(quit()), Qt::QueuedConnection);
         connect(this, SIGNAL(destroyed()), backend, SLOT(deleteLater()), Qt::QueuedConnection);
         connect(this, SIGNAL(resized(QSizeF)), backend, SLOT(setSize(QSizeF)), Qt::QueuedConnection);
         connect(this, SIGNAL(moved(QPointF)), backend, SLOT(setPos(QPointF)), Qt::QueuedConnection);
@@ -254,7 +261,7 @@ protected:
     }
 
     inline AbstractSurfaceBackend* backend() {
-        return _backend;
+        return _backend.data();
     }
 
 private:
@@ -281,8 +288,9 @@ private:
     MoeGraphicsObjectPointer mouseDragFocus;
     MoeGraphicsObjectPointer mouseHoverFocus;
 
+    QMetaObject::Connection quitConnection;
     static QThreadStorage<MoeAbstractGraphicsSurfacePointer> _currentSurface;
-    AbstractSurfaceBackend* _backend;
+    QPointer<AbstractSurfaceBackend> _backend;
     RepaintDebugMode repaintDebug;
     QList<QRect> repaintRegions;
     RenderState renderState;

@@ -93,6 +93,7 @@ signals:
     void stopped();
     void started();
     void cleanup();
+    void changingContent();
     void crashed(QString reason);
     void uncaughtException(QScriptValue);
     void stateChanged(MoeEngine::State state);

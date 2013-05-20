@@ -206,12 +206,22 @@ void MoeEngine::setState(State state)
     static QMetaEnum stateEnum = MoeEngine::staticMetaObject.enumerator(MoeEngine::staticMetaObject.indexOfEnumerator("State"));
     qDebug() << "Engine state changed" << stateEnum.key(state) << "from" << stateEnum.key(_state);
 
-    if(state == Running)
-        emit started();
-    if(state == Stopped)
-        emit stopped();
-    if(state == Crashed)
-        emit crashed(_error);
+    switch(state){
+        case Running:
+            emit started();
+        break;
+        case Stopped:
+            emit stopped();
+        break;
+        case Changing:
+            emit changingContent();
+        break;
+        case Crashed:
+            emit crashed(_error);
+        break;
+        default:
+        break;
+    }
     emit stateChanged(state);
     _state = state;
 }

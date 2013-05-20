@@ -32,7 +32,8 @@ void MoeAbstractGraphicsSurface::render(RenderRecorder* p, QRect region)
             repaintRegions.clear();
         }
 
-        backend()->renderInstructions(p->instructions(), repaintDebug == RepaintDebugFrame ? _localGeometry : region, _localGeometry.size());
+        if(backend())
+            backend()->renderInstructions(p->instructions(), repaintDebug == RepaintDebugFrame ? _localGeometry : region, _localGeometry.size());
         p->deleteLater();
     }
 }
