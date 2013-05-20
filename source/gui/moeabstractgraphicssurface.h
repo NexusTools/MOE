@@ -199,6 +199,7 @@ protected:
         connect(backend, SIGNAL(keyPress(int)), this, SLOT(keyPress(int)), Qt::QueuedConnection);
         connect(backend, SIGNAL(keyRelease(int)), this, SLOT(keyRelease(int)), Qt::QueuedConnection);
 
+        connect((QObject*)engine(), SIGNAL(crashed(QString)), this, SLOT(disconnectQuit()));
         connect((QObject*)engine(), SIGNAL(changingContent()), this, SLOT(disconnectQuit()));
         quitConnection = connect(backend, SIGNAL(destroyed()), (QObject*)engine(), SLOT(quit()), Qt::QueuedConnection);
         connect(this, SIGNAL(destroyed()), backend, SLOT(deleteLater()), Qt::QueuedConnection);

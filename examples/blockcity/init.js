@@ -223,7 +223,7 @@ function switchSurfaceContents(int) {
         currentMenu = new LevelEditorMenu();
         break;
     }
-    currentMenu.handleResize(surface.size());
+    currentMenu.handleResize(surface.size);
     surface.resized.connect(function(size){
         if(currentMenu != null)
             currentMenu.handleResize(size);
