@@ -72,9 +72,10 @@ function ButtonGroup(defaultProperties) {
         this.selectedButton = btn;
         if(this.selectedButton) {
             this.selectedButton.setSelected(true);
-            this.buttonChanged.emit(this.selectedButton.button.text);
+            this.buttonChanged.emit(this.selectedButton.button.text,
+                          this.buttons.indexOf(this.selectedButton));
         } else
-            this.buttonChanged.emit(false);
+            this.buttonChanged.emit(false, -1);
     }
     this.push = function(btn) {
         if(btn.button.width > this.width) {
@@ -195,14 +196,14 @@ function loadChildSelectionSubmenu(path) {
             sumenuButtons.setPos(5, selPos.y);
             sumenuButtons.animate("posX", 10, 3, 80);
             sumenuButtons.animate("opacity", 1, 3, 80);
-            sumenuButtons.buttonChanged.connect(function(btn){
+            sumenuButtons.buttonChanged.connect(function(btn, index){
                 switch(btn) {
                 case "<<":
                     destroySubmenu();
                     break;
 
                 default:
-                    changeContent(Url(btn, path));
+                    changeContent(Url(children[index], path));
                 }
             });
         }
