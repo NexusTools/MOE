@@ -167,13 +167,8 @@ void WidgetSurfaceBackend::createWidget(QString title, QSize size, int type, QWi
 
         widget->installEventFilter(this);
 
-        if(parent) {
-            Q_ASSERT(widget->isWindow() || !widget->parentWidget());
+        if(parent)
             widget->hide();
-        } else if(widget->isVisible()) {
-            updateGeometry(widget->geometry());
-            markReadyForFrame();
-        }
     } else {
         qDebug() << "Creating new surface widget of type" << type;
 
@@ -197,13 +192,12 @@ void WidgetSurfaceBackend::createWidget(QString title, QSize size, int type, QWi
 
         widget->setAttribute(Qt::WA_DeleteOnClose);
         widget->resize(size);
-        initWidget(widget);
     }
 
     widget->setObjectName("MoeGraphicsSurfaceWidget");
     widget->setWindowTitle(title);
     widget->setParent(parent);
-    widget->show();
+    initWidget(widget);
 }
 
 void WidgetSurfaceBackend::initWidget(QWidget* widget) {
@@ -216,6 +210,21 @@ void WidgetSurfaceBackend::initWidget(QWidget* widget) {
     widget->setAttribute(Qt::WA_OpaquePaintEvent);
     widget->installEventFilter(this);
     widget->setMouseTracking(true);
+
+    if(widget->isVisible()) {
+        qDebug() << "Widget is already visible";
+        updateGeometry(widget->geometry());
+        repaintTimer.start();
+    } else
+        widget->show();
+}
+
+void WidgetSurfaceBackend::repaintRect() {
+     if(_repaintRect.isNull())
+         _widget->repaint();
+     else
+         _widget->repaint(_repaintRect);
+     _repaintRect = QRect();
 }
 
 

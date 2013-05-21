@@ -154,9 +154,11 @@ leftButtons.setPos(-leftButtons.width, 5);
 function changeContent(url) {
     if(sumenuButtons)
         destroySubmenu();
+
     moeLogo.animate("opacity", 0);
     leftButtons.animate("opacity", 0);
     rightButtons.animate("opacity", 0);
+    surface.setTitle("Changing content...");
     surface.animate("background", defaultBackgroundColor, function() {
         engine.startContent(url);
     });

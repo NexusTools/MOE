@@ -61,6 +61,11 @@ protected slots:
         MoeGraphicsObject::setGeometry(rect.x(), rect.y(), rect.width(), rect.height());
     }
 
+    inline void setTitle(QString title) {
+        if(backend())
+            backend()->setTitle(title);
+    }
+
     inline void prepareNextFrame(){
         //qDebug() << "Request to Prepare Next Frame" << this;
         if(!_connected) {

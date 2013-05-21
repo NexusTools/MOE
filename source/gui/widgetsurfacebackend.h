@@ -43,8 +43,8 @@ public:
 
 protected slots:
     void createWidget(QString title, QSize size, int type, QWidget* parent);
-    inline void repaintRect() {_widget->repaint(_repaintRect);}
     void initWidget(QWidget*);
+    void repaintRect();
 
 private:
     int _type;

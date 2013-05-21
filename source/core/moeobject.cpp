@@ -36,7 +36,7 @@ MoeEngine* MoeObject::engine() const
 }
 
 QString MoeObject::toString() const {
-    QString toString = metaObject()->className();
+    QString toString(metaObject()->className());
     toString += '(';
     for(int i=0; i<metaObject()->propertyCount(); i++) {
         if(i > 0)
@@ -48,7 +48,7 @@ QString MoeObject::toString() const {
         debug << prop.read(this).toString();
         toString += QString("%1 = %2").arg(prop.name(), debugBuffer);
     }
-    toString += ')';
+    toString += ")";
 
     return toString;
 }
