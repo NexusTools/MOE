@@ -11,7 +11,30 @@
 class QPainterSurfaceBackend : public AbstractSurfaceBackend {
 public:
     inline void renderInstructions(RenderInstructions instructions, QRect paintRect, QSize bufferSize) {
-        pendingInstructions = instructions;
+        if(!pendingInstructions.isEmpty()) {
+            qWarning() << this << "received new instructions while old instructions pending";
+            if(paintRect == QRect(QPoint(0,0),bufferSize)) {
+                RenderInstructions oldInstructions = pendingInstructions;
+                pendingInstructions.clear();
+                bool breakLoop = false;
+                foreach(RenderInstruction inst, oldInstructions) {
+                    switch(inst.type) {
+                        case RenderInstruction::BufferLoadImage:
+                            pendingInstructions.append(inst);
+                            break;
+
+                        default:
+                            breakLoop = true;
+                            break;
+                    }
+                    if(breakLoop)
+                        break;
+                }
+            }
+            foreach(RenderInstruction inst, instructions)
+                pendingInstructions.append(inst);
+        } else
+            pendingInstructions = instructions;
         pendingBufferSize = bufferSize;
         pendingPaintRect = paintRect;
 
@@ -85,16 +108,21 @@ public:
                         p.setTransform(inst.arguments.first().value<QTransform>());
                 break;
 
+                case RenderInstruction::BufferLoadImage:
+                {
+                    quintptr id = inst.arguments.first().value<quintptr>();
+                    QByteArray data = inst.arguments.at(1).toByteArray();
+                    QPixmap buffer;
+                    buffer.loadFromData(data);
+                    renderBuffers.insert(id, buffer);
+                    break;
+                }
+
                 case RenderInstruction::RenderBuffer:
                 {
                     quintptr id = inst.arguments.first().value<quintptr>();
                     QRect dest = inst.arguments.at(1).toRect();
-                    QPixmap buffer;
-                    if(inst.arguments.size() >= 3) {
-                        buffer.loadFromData(inst.arguments.at(2).toByteArray());
-                        renderBuffers.insert(id, buffer);
-                    } else
-                        buffer = renderBuffers.value(id);
+                    QPixmap buffer = renderBuffers.value(id);
 
                     if(buffer.isNull())
                         if(!renderBuffers.contains(id)) {
@@ -116,7 +144,7 @@ public:
             }
         }
         pendingInstructions.clear();
-        emit readyForFrame();
+        markRendered();
     }
 
     virtual void repaint(QRect) =0;

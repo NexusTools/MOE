@@ -10,6 +10,8 @@
 
 class AbstractSurfaceBackend : public QObject {
     Q_OBJECT
+
+    friend class MoeAbstractGraphicsSurface;
 public:
     virtual void renderInstructions(RenderInstructions instructions, QRect, QSize) =0;
     inline QRect geom() const{return _geom;}
@@ -72,6 +74,17 @@ protected:
         _geom = geom;
     }
 
+    inline void markReadyForFrame() {
+        if(_markedReadyForFrame)
+            return;
+        markRendered();
+    }
+
+    inline void markRendered() {
+        _markedReadyForFrame = true;
+        emit readyForFrame();
+    }
+
 signals:
     void updateTitle(QString);
     void updateCursor(QCursor);
@@ -90,6 +103,7 @@ signals:
 
 private:
     bool _waitForGeomResize;
+    bool _markedReadyForFrame;
     QRect _geom;
 };
 

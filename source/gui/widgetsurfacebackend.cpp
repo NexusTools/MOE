@@ -81,7 +81,7 @@ bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
                     p.drawPixmap(geom, buffer);
                 p.end();
 
-                emit readyForFrame();
+                markReadyForFrame();
             }
             return true;
 

@@ -22,6 +22,7 @@ struct RenderInstruction {
         UpdateFont,
 
         RenderBuffer,
+        BufferLoadImage,
         QueryBufferPixels,
         QueryBufferMetaData,
         StartBufferPaint,

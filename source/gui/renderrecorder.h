@@ -66,9 +66,13 @@ public slots:
         instruction.type = RenderInstruction::RenderBuffer;
         instruction.arguments.append(obj->id());
         instruction.arguments.append(rect);
-        if(obj->updateSurfaceVersion(surface))
-            instruction.arguments.append(obj->data());
         _instructions.append(instruction);
+        if(obj->updateSurfaceVersion(surface)) {
+            instruction.type = RenderInstruction::BufferLoadImage;
+            instruction.arguments.removeLast();
+            instruction.arguments.append(obj->data());
+            _instructions.prepend(instruction);
+        }
     }
 
     inline void drawBuffer(QObject* obj, QRect rect) {
