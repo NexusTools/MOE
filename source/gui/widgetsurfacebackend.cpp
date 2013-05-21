@@ -166,13 +166,12 @@ void WidgetSurfaceBackend::createWidget(QString title, QSize size, int type, QWi
         connect(&repaintTimer, SIGNAL(timeout()), this, SLOT(repaintRect()));
 
         widget->installEventFilter(this);
-        if(widget->geometry().size() == size)
-            updateGeometry(widget->geometry());
 
         if(parent) {
             Q_ASSERT(widget->isWindow() || !widget->parentWidget());
             widget->hide();
-        }
+        } else if(widget->isVisible())
+            updateGeometry(widget->geometry());
     } else {
         qDebug() << "Creating new surface widget of type" << type;
 
@@ -195,13 +194,13 @@ void WidgetSurfaceBackend::createWidget(QString title, QSize size, int type, QWi
         }
 
         widget->setAttribute(Qt::WA_DeleteOnClose);
+        widget->resize(size);
         initWidget(widget);
     }
 
     widget->setObjectName("MoeGraphicsSurfaceWidget");
     widget->setWindowTitle(title);
     widget->setParent(parent);
-    widget->resize(size);
     widget->show();
 }
 

@@ -132,7 +132,8 @@ public slots:
         RenderInstruction instruction;
         instruction.type = RenderInstruction::DrawRect;
         if(hasBorder)
-            rect = QRect(rect.topLeft(), rect.size() - QSize(1, 1));
+            rect = QRect(rect.topLeft() + QPoint(penThick, penThick),
+                         rect.size() - QSize(penThick*2, penThick*2));
         instruction.arguments.append(rect);
         if(radius > 0)
             instruction.arguments.append(radius);

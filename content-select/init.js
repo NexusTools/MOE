@@ -169,7 +169,7 @@ function loadChildSelectionSubmenu(path) {
     loading.foreground = "white";
     loading.background = Rgba(0, 0, 0, 80);
     var selPos = leftButtons.getSelectedButtonPos();
-    loading.setPos(5, selPos.y);
+    loading.setPos(5, selPos.y + 4);
     var exampleEntries = ResourceRequest(path);
     exampleEntries.receivedChildList.connect(function(children){
         if(!children.length) {
@@ -193,8 +193,8 @@ function loadChildSelectionSubmenu(path) {
                 sumenuButtons.push(btn);
             });
             sumenuButtons.push(new Button("<<"));
-            sumenuButtons.setPos(5, selPos.y);
-            sumenuButtons.animate("posX", 10, 3, 80);
+            sumenuButtons.setPos(5, selPos.y + 4);
+            sumenuButtons.animate("posX", 14, 3, 80);
             sumenuButtons.animate("opacity", 1, 3, 80);
             sumenuButtons.buttonChanged.connect(function(btn, index){
                 switch(btn) {
