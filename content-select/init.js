@@ -312,12 +312,26 @@ var rightButtons = new ButtonGroup({"opacity": 0});
 rightButtons.push(new Button("Login"));
 rightButtons.push(new Button("Register"));
 rightButtons.push(new Button("NexusTools.net"));
+rightButtons.push(new Button("Source on GitHub"));
 rightButtons.setPos(0, 5);
+
+function openUrlFeedback(url) {
+    //TODO: add feedback
+    surface.openUrl(url);
+}
+
+surface.mouseReleased.connect(function(point, type) {
+    engine.debug(type); //Always outputs 0.
+});
 
 rightButtons.buttonChanged.connect(function(btn, index){
     switch(index) {
     case 2:
-        surface.openUrl("http://nexustools.net/");
+        openUrlFeedback("http://nexustools.net/");
+        break;
+
+    case 3:
+        openUrlFeedback("https://github.com/NexusTools/MOE");
         break;
     }
 });

@@ -160,8 +160,8 @@ signals:
     void resized(QSizeF);
     void moved(QPointF);
 
-    void mousePressed(QPoint, int);
-    void mouseReleased(QPoint, int);
+    void mousePressed(QPoint, int button, int buttons);
+    void mouseReleased(QPoint, int button, int buttons);
     void mouseMoved(QPoint);
     void mouseDragged(QPoint);
     void mouseScrolled(QPoint);
@@ -239,11 +239,11 @@ private:
         emit mouseLeft();
     }
 
-    inline void mousePressedEvent(QPoint p, int i) {
-        emit mousePressed(p, i);
+    inline void mousePressedEvent(QPoint p, int b, int bs) {
+        emit mousePressed(p, b, bs);
     }
-    inline void mouseReleasedEvent(QPoint p, int i) {
-        emit mouseReleased(p, i);
+    inline void mouseReleasedEvent(QPoint p, int b, int bs) {
+        emit mouseReleased(p, b, bs);
     }
     virtual inline MoeGraphicsObjectPointer mouseMovedEvent(QPoint p) {
         emit mouseMoved(p);

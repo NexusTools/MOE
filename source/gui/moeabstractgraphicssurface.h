@@ -139,11 +139,12 @@ protected slots:
     }
 
     inline void mousePress(QPoint p, int b){
+        int nb = b & ~_mouseButtons;
         _mouseButtons = b;
         if(!mouseDragFocus.isNull() && !mouseDragFocus->isDisabled())
-            mouseDragFocus.data()->mousePressedEvent(mouseDragFocus.data()->mapFromSurface(p), b);
+            mouseDragFocus.data()->mousePressedEvent(mouseDragFocus.data()->mapFromSurface(p), nb, b);
         else if(!mouseHoverFocus.isNull() && !mouseHoverFocus->isDisabled()) {
-            mouseHoverFocus.data()->mousePressedEvent(mouseHoverFocus.data()->mapFromSurface(p), b);
+            mouseHoverFocus.data()->mousePressedEvent(mouseHoverFocus.data()->mapFromSurface(p), nb, b);
             if(mouseHoverFocus.data()->canUseKeyFocus())
                 keyboardFocus = mouseHoverFocus.data();
             mouseDragFocus = mouseHoverFocus;
@@ -151,9 +152,10 @@ protected slots:
     }
 
     inline void mouseRelease(QPoint p, int b){
+        int nb = _mouseButtons & ~b;
         _mouseButtons = b;
         if(mouseDragFocus.data() && !mouseDragFocus->isDisabled()) {
-            mouseDragFocus.data()->mouseReleasedEvent(mouseDragFocus.data()->mapFromSurface(p), b);
+            mouseDragFocus.data()->mouseReleasedEvent(mouseDragFocus.data()->mapFromSurface(p), nb, b);
             if(!b) // All buttons released
                 mouseDragFocus = 0;
         }
