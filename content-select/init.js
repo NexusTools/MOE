@@ -314,6 +314,14 @@ rightButtons.push(new Button("Register"));
 rightButtons.push(new Button("NexusTools.net"));
 rightButtons.setPos(0, 5);
 
+rightButtons.buttonChanged.connect(function(btn, index){
+    switch(index) {
+    case 2:
+        surface.openUrl("http://nexustools.net/");
+        break;
+    }
+});
+
 function start(size) {
     if(size.width < 1 || size.height < 1)
         return;

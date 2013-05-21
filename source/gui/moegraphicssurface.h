@@ -1,6 +1,8 @@
 #ifndef MOEGRAPHICSSURFACE_H
 #define MOEGRAPHICSSURFACE_H
 
+#include <QDesktopServices>
+
 #include "moeabstractgraphicssurface.h"
 #include "widgetsurfacebackend.h"
 
@@ -24,6 +26,7 @@ public:
         : MoeAbstractGraphicsSurface(new WidgetSurfaceBackend(title, size, (int)type, parent ? parent->backendWidget() : 0)) {}
     virtual ~MoeGraphicsSurface() {qDebug() << this << "surface destroyed";}
 
+    void openUrl(QUrl url) {QDesktopServices::openUrl(url);}
     BackendWidgetType backendWidgetType() {return (BackendWidgetType)((WidgetSurfaceBackend*)backend())->type();}
     QWidget* backendWidget() {return ((WidgetSurfaceBackend*)backend())->widget();}
 
