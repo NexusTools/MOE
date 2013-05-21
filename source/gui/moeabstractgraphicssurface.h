@@ -10,6 +10,7 @@
 #include <QWeakPointer>
 #include <QScriptValue>
 #include <QPointer>
+#include <QDebug>
 #include <QTimer>
 #include <QUrl>
 
@@ -26,8 +27,6 @@ public:
         ViewReady = 0x2
     };
     Q_DECLARE_FLAGS(RenderState, RenderStateFlag)
-
-    void render(RenderRecorder*, QRect);
 
     Q_INVOKABLE inline bool isVisibleToSurface() {return _connected;}
     Q_INVOKABLE inline bool isSurface() const{return true;}
@@ -171,9 +170,23 @@ private slots:
             return;
         renderTimer.stop();
         forceRenderTimer.stop();
-        render(0, repaintRegion);
-        repaintRegion = QRect();
         renderState = NotReady;
+
+        RenderRecorder* p = new RenderRecorder(this, repaintRegion);
+
+        render(p, repaintRegion);
+        if(backend()) {
+            if(backend()->renderInstructions(p->instructions(), repaintRegion, _localGeometry.size())) {
+                repaintRegion = QRect();
+            } else {
+                backend()->markReadyForFrame();
+                qWarning() << "Render requested, but nothing to render.";
+            }
+        } else
+            qCritical() << "Render requested, but the backend has been destroyed.";
+
+        p->deleteLater();
+
     }
 
     inline void disconnectQuit() {
@@ -206,7 +219,6 @@ protected:
         connect(this, SIGNAL(resized(QSizeF)), backend, SLOT(setSize(QSizeF)), Qt::QueuedConnection);
         connect(this, SIGNAL(moved(QPointF)), backend, SLOT(setPos(QPointF)), Qt::QueuedConnection);
 
-        connect(backend, SIGNAL(geometryChanged(QRect)), this, SLOT(prepareNextFrame()), Qt::QueuedConnection);
         connect(backend, SIGNAL(geometryChanged(QRect)), this, SLOT(setGeometry(QRect)), Qt::QueuedConnection);
         connect(backend, SIGNAL(readyForFrame()), this, SLOT(prepareNextFrame()), Qt::QueuedConnection);
 

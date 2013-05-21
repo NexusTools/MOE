@@ -10,7 +10,10 @@
 
 class QPainterSurfaceBackend : public AbstractSurfaceBackend {
 public:
-    inline void renderInstructions(RenderInstructions instructions, QRect paintRect, QSize bufferSize) {
+    inline bool renderInstructions(RenderInstructions instructions, QRect paintRect, QSize bufferSize) {
+        if(instructions.isEmpty())
+            return false;
+
         if(!pendingInstructions.isEmpty()) {
             qWarning() << this << "received new instructions while old instructions pending";
             if(paintRect == QRect(QPoint(0,0),bufferSize)) {
@@ -39,6 +42,7 @@ public:
         pendingPaintRect = paintRect;
 
         repaint(paintRect);
+        return true;
     }
 
     void paint(QPainter& p) {

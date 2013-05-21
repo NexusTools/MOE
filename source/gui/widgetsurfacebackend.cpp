@@ -170,8 +170,10 @@ void WidgetSurfaceBackend::createWidget(QString title, QSize size, int type, QWi
         if(parent) {
             Q_ASSERT(widget->isWindow() || !widget->parentWidget());
             widget->hide();
-        } else if(widget->isVisible())
+        } else if(widget->isVisible()) {
             updateGeometry(widget->geometry());
+            markReadyForFrame();
+        }
     } else {
         qDebug() << "Creating new surface widget of type" << type;
 

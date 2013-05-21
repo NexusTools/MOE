@@ -5,7 +5,7 @@
 
 #include <QCursor>
 #include <QTimer>
-
+#include <QDebug>
 #include <QRect>
 
 class AbstractSurfaceBackend : public QObject {
@@ -13,7 +13,7 @@ class AbstractSurfaceBackend : public QObject {
 
     friend class MoeAbstractGraphicsSurface;
 public:
-    virtual void renderInstructions(RenderInstructions instructions, QRect, QSize) =0;
+    virtual bool renderInstructions(RenderInstructions instructions, QRect, QSize) =0;
     inline QRect geom() const{return _geom;}
     inline QPoint pos() const{return _geom.topLeft();}
     inline QSize size() const{return _geom.size();}
@@ -70,6 +70,7 @@ protected:
     explicit inline AbstractSurfaceBackend(QRect geom =QRect()) {
         connect(this, SIGNAL(updateCursor(QCursor)), this, SLOT(setCursorImpl(QCursor)), Qt::QueuedConnection);
         connect(this, SIGNAL(updateTitle(QString)), this, SLOT(setTitleImpl(QString)), Qt::QueuedConnection);
+        _markedReadyForFrame = false;
         _waitForGeomResize = true;
         _geom = geom;
     }
@@ -77,7 +78,9 @@ protected:
     inline void markReadyForFrame() {
         if(_markedReadyForFrame)
             return;
-        markRendered();
+
+        _markedReadyForFrame = true;
+        emit readyForFrame();
     }
 
     inline void markRendered() {
