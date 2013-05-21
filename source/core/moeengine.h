@@ -71,8 +71,8 @@ public slots:
 
     void quit(QString message =QString());
 
-    inline int setTimeout(QScriptValue callback, int mdelay =0) {
-        int timerId = startTimer(mdelay);
+    inline int setTimeout(QScriptValue callback, int mdelay =0, bool precise =true) {
+        int timerId = startTimer(mdelay, precise ? Qt::PreciseTimer : Qt::CoarseTimer);
         _timers.insert(timerId, callback);
         return timerId;
     }

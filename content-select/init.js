@@ -152,12 +152,16 @@ leftButtons.push(new Button("Quit"));
 leftButtons.setPos(-leftButtons.width, 5);
 
 function changeContent(url) {
-    if(subMenuButtons)
-        destroySubmenu();
+    if(subMenuButtons) {
+        subMenuButtons.animate("posX", 0);
+        subMenuButtons.animate("opacity", 0);
+    }
 
     moeLogo.animate("opacity", 0);
     leftButtons.animate("opacity", 0);
+    leftButtons.animate("posX", -leftButtons.width);
     rightButtons.animate("opacity", 0);
+    rightButtons.animate("posX", surface.width);
     surface.setTitle("Changing content...");
     surface.animate("background", defaultBackgroundColor, function() {
         engine.startContent(url);
@@ -171,7 +175,8 @@ function loadChildSelectionSubmenu(path) {
     loading.foreground = "white";
     loading.background = Rgba(0, 0, 0, 80);
     var selPos = leftButtons.getSelectedButtonPos();
-    loading.setPos(5, selPos.y + 4);
+    loading.setPos(0, selPos.y + 4);
+    loading.animate("posX", 10, 7);
     var exampleEntries = ResourceRequest(path);
     function createSubmenu(generator, callback) {
         subMenuButtons = new ButtonGroup({"opacity": 0});
