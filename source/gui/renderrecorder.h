@@ -32,7 +32,7 @@ public:
     inline RenderInstructions instructions() const{return _instructions;}
 
 public slots:
-    inline void fillRect(QRect rect, QColor color, qreal borderRadius = 0){
+    inline void fillRect(QRectF rect, QColor color, qreal borderRadius = 0){
         if(borderRadius > 0) {
             setPen(qRgba(0,0,0,0));
             setBrush(color);
@@ -55,7 +55,7 @@ public slots:
         _instructions.append(instruction);
     }
 
-    inline void drawBuffer(RenderBuffer* obj, QRect rect) {
+    inline void drawBuffer(RenderBuffer* obj, QRectF rect) {
         if(!obj || !clipRect.intersects(transform.mapRect(rect)))
             return;
 
@@ -75,14 +75,14 @@ public slots:
         }
     }
 
-    inline void drawBuffer(QObject* obj, QRect rect) {
+    inline void drawBuffer(QObject* obj, QRectF rect) {
         RenderBuffer* renderBuf = RenderBuffer::instance(obj, false);
         if(renderBuf)
             drawBuffer(renderBuf, rect);
     }
 
-    inline void drawText(QRect rect, QString text) {
-        QRect targetRect = transform.mapRect(rect);
+    inline void drawText(QRectF rect, QString text) {
+        QRectF targetRect = transform.mapRect(rect);
 
         if(!clipRect.intersects(targetRect))
             return;
@@ -99,7 +99,7 @@ public slots:
             if(clipRect.contains(targetRect))
                 noClipRect();
             else {
-                QRect oldClip = QRect(clipRect.x()-2,clipRect.y()-2,
+                QRectF oldClip = QRectF(clipRect.x()-2,clipRect.y()-2,
                                       clipRect.width()+4,clipRect.height()+4);
                 requireClipRect();
                 clipRect = oldClip;
@@ -114,7 +114,7 @@ public slots:
 
     }
 
-    inline void drawRect(QRect rect, qreal radius = 0){
+    inline void drawRect(QRectF rect, qreal radius = 0){
         rect = transform.mapRect(rect);
         bool hasBorder = pen.alpha() > 0;
 
@@ -136,7 +136,7 @@ public slots:
         RenderInstruction instruction;
         instruction.type = RenderInstruction::DrawRect;
         if(hasBorder)
-            rect = QRect(rect.topLeft() + QPoint(penThick, penThick),
+            rect = QRectF(rect.topLeft() + QPointF(penThick, penThick),
                          rect.size() - QSize(penThick*2, penThick*2));
         instruction.arguments.append(rect);
         if(radius > 0)
@@ -144,10 +144,10 @@ public slots:
         _instructions.append(instruction);
     }
 
-    inline void drawLine(QPoint p1, QPoint p2){
+    inline void drawLine(QPointF p1, QPointF p2){
         p1 = transform.map(p1);
         p2 = transform.map(p2);
-        QRect rect(p1, p2);
+        QRectF rect(p1, p2);
 
         if(!clipRect.intersects(rect))
             return;
@@ -269,7 +269,7 @@ protected:
             RenderInstruction instruction;
             instruction.type = RenderInstruction::UpdateClipRect;
             _instructions.append(instruction);
-            cClipRect = QRect();
+            cClipRect = QRectF();
         }
     }
 
@@ -303,8 +303,8 @@ protected:
     }
 
 private:
-    QRect clipRect;
-    QList<QRect> clipRectStack;
+    QRectF clipRect;
+    QList<QRectF> clipRectStack;
 
     qreal opacity, copacity;
     QList<qreal> opacityStack;
@@ -315,7 +315,7 @@ private:
     RenderInstructions _instructions;
     QTransform _transform;
 
-    QRect cClipRect;
+    QRectF cClipRect;
     QColor pen, cpen;
     QFont font, cfont;
     QBrush brush, cbrush;

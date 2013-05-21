@@ -57,23 +57,23 @@ public:
         foreach(RenderInstruction inst, pendingInstructions) {
             switch(inst.type){
                 case RenderInstruction::FillRect:
-                    p.fillRect(inst.arguments.at(0).toRect(), QColor::fromRgba(inst.arguments.at(1).toUInt()));
+                    p.fillRect(inst.arguments.at(0).toRectF(), QColor::fromRgba(inst.arguments.at(1).toUInt()));
                     break;
 
                 case RenderInstruction::DrawLine:
-                    p.drawLine(inst.arguments.at(0).toPoint(),
-                               inst.arguments.at(1).toPoint());
+                    p.drawLine(inst.arguments.at(0).toPointF(),
+                               inst.arguments.at(1).toPointF());
                     break;
 
                 case RenderInstruction::DrawRect:
                     if(inst.arguments.length() >= 2)
-                        p.drawRoundedRect(inst.arguments.at(0).toRect(), inst.arguments.at(1).toReal(), inst.arguments.at(1).toReal(), Qt::AbsoluteSize);
+                        p.drawRoundedRect(inst.arguments.at(0).toRectF(), inst.arguments.at(1).toReal(), inst.arguments.at(1).toReal(), Qt::AbsoluteSize);
                     else
-                        p.drawRect(inst.arguments.at(0).toRect());
+                        p.drawRect(inst.arguments.at(0).toRectF());
                     break;
 
                 case RenderInstruction::DrawText:
-                    p.drawText(inst.arguments.at(0).toRect(), inst.arguments.at(1).toString());
+                    p.drawText(inst.arguments.at(0).toRectF(), inst.arguments.at(1).toString());
                     break;
 
                 case RenderInstruction::UpdatePen:
@@ -94,7 +94,7 @@ public:
                     if(inst.arguments.isEmpty())
                         p.setClipRect(pendingPaintRect, Qt::ReplaceClip);
                     else
-                        p.setClipRect(inst.arguments.first().toRect(), Qt::ReplaceClip);
+                        p.setClipRect(inst.arguments.first().toRectF(), Qt::ReplaceClip);
                 break;
 
                 case RenderInstruction::UpdateOpacity:
@@ -125,7 +125,7 @@ public:
                 case RenderInstruction::RenderBuffer:
                 {
                     quintptr id = inst.arguments.first().value<quintptr>();
-                    QRect dest = inst.arguments.at(1).toRect();
+                    QRectF dest = inst.arguments.at(1).toRectF();
                     QPixmap buffer = renderBuffers.value(id);
 
                     if(buffer.isNull())
@@ -135,9 +135,10 @@ public:
                         } else
                             p.drawTiledPixmap(dest, getCheckerBoardImage(Qt::red));
                     else {
-                        QSize scaledSize(buffer.size().scaled(dest.width(), dest.height(), Qt::KeepAspectRatio));
-                        p.drawPixmap(QRect(dest.topLeft() + QPoint(dest.width()/2-scaledSize.width()/2,
-                                           dest.height()/2-scaledSize.height()/2), scaledSize), buffer);
+                        QSizeF scaledSize(buffer.size().scaled(dest.width(), dest.height(), Qt::KeepAspectRatio));
+                        p.drawPixmap(QRectF(dest.topLeft() + QPointF(dest.width()/2-scaledSize.width()/2,
+                                           dest.height()/2-scaledSize.height()/2), scaledSize), buffer,
+                                            QRectF(QPoint(0,0),buffer.size()));
                     }
                 }
                 break;
