@@ -77,6 +77,9 @@ MoeGraphicsContainer* MoeGraphicsObject::container() const{
 }
 
 void MoeGraphicsObject::setDisabled(bool d) {
+    if(d == _disabled)
+        return;
+
     _disabled = d;
     if(_disabled) {
         if(container())

@@ -116,7 +116,7 @@ protected slots:
         makeCurrent();
         _mousePos = p;
 
-        if(!mouseDragFocus.isNull())
+        if(!mouseDragFocus.isNull() && !mouseDragFocus->isDisabled())
             mouseDragFocus.data()->mouseDraggedEvent(mouseDragFocus.data()->mapFromSurface(p));
         else {
             MoeGraphicsObjectPointer newHoverFocus = _localGeometry.contains(p) ? MoeGraphicsContainer::mouseMovedEvent(p) : 0;
@@ -140,9 +140,9 @@ protected slots:
 
     inline void mousePress(QPoint p, int b){
         _mouseButtons = b;
-        if(!mouseDragFocus.isNull())
+        if(!mouseDragFocus.isNull() && !mouseDragFocus->isDisabled())
             mouseDragFocus.data()->mousePressedEvent(mouseDragFocus.data()->mapFromSurface(p), b);
-        else if(!mouseHoverFocus.isNull()) {
+        else if(!mouseHoverFocus.isNull() && !mouseHoverFocus->isDisabled()) {
             mouseHoverFocus.data()->mousePressedEvent(mouseHoverFocus.data()->mapFromSurface(p), b);
             if(mouseHoverFocus.data()->canUseKeyFocus())
                 keyboardFocus = mouseHoverFocus.data();
@@ -152,7 +152,7 @@ protected slots:
 
     inline void mouseRelease(QPoint p, int b){
         _mouseButtons = b;
-        if(mouseDragFocus.data()) {
+        if(mouseDragFocus.data() && !mouseDragFocus->isDisabled()) {
             mouseDragFocus.data()->mouseReleasedEvent(mouseDragFocus.data()->mapFromSurface(p), b);
             if(!b) // All buttons released
                 mouseDragFocus = 0;

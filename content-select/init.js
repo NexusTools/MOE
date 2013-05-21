@@ -5,7 +5,7 @@ moeLogo.opacity = 0;
 
 function Button(text) {
     this.button = new GraphicsText(text, Font("Arial", 10), surface);
-    this.button.background = Rgba(173, 216, 230, 60);
+    this.button.background = Rgba(54, 72, 77, 220);
     this.button.foreground = Rgb(173, 216, 230);
     this.button.border = Rgb(173, 216, 230);
     this.button.cursor = "pointer";
@@ -16,13 +16,13 @@ function Button(text) {
     this.button.mouseEntered.connect(function(){
         if(this.selected)
             return;
-        this.button.animate("background", Rgba(173, 216, 230, 110), 2);
+        this.button.animate("background", Rgba(97, 121, 129, 220), 2);
         this.button.animate("foreground", Rgb(203, 236, 255), 2);
     }.bind(this));
     this.button.mouseLeft.connect(function(){
         if(this.selected)
             return;
-        this.button.animate("background", Rgba(173, 216, 230, 60), 2);
+        this.button.animate("background", Rgba(54, 72, 77, 220), 2);
         this.button.animate("foreground", Rgb(173, 216, 230), 2);
     }.bind(this));
     this.selectFade = (function(){
@@ -30,9 +30,9 @@ function Button(text) {
             return;
 
         if(this.button.background.alpha < 150)
-            this.button.animate("background", Rgba(173, 216, 230, 160), this.selectFade);
+            this.button.animate("background", Rgba(173, 216, 230, 160), this.selectFade, 8);
         else
-            this.button.animate("background", Rgba(173, 216, 230, 140), this.selectFade);
+            this.button.animate("background", Rgba(173, 216, 230, 140), this.selectFade, 8);
     }).bind(this);
     this.setSelected = function(sel) {
         if(sel == this.selected)
@@ -41,7 +41,7 @@ function Button(text) {
             this.button.animate("background", Rgba(173, 216, 230, 160), this.selectFade);
             this.button.animate("foreground", Rgb(203, 236, 255), 2);
         } else {
-            this.button.animate("background", Rgba(173, 216, 230, 60), 2);
+            this.button.animate("background", Rgba(54, 72, 77, 220), 2);
             this.button.animate("foreground", Rgb(173, 216, 230), 2);
         }
         this.selected = sel;
@@ -152,7 +152,7 @@ leftButtons.push(new Button("Quit"));
 leftButtons.setPos(-leftButtons.width, 5);
 
 function changeContent(url) {
-    if(sumenuButtons)
+    if(subMenuButtons)
         destroySubmenu();
 
     moeLogo.animate("opacity", 0);
@@ -173,66 +173,101 @@ function loadChildSelectionSubmenu(path) {
     var selPos = leftButtons.getSelectedButtonPos();
     loading.setPos(5, selPos.y + 4);
     var exampleEntries = ResourceRequest(path);
+    function createSubmenu(generator, callback) {
+        subMenuButtons = new ButtonGroup({"opacity": 0});
+        generator(subMenuButtons);
+        var y = selPos.y + 4;
+        if(loading)
+            y += loading.height + 5;
+        subMenuButtons.setPos(0, y);
+        subMenuButtons.animate("posX", 14, 7, 120);
+        subMenuButtons.animate("opacity", 1, 7, 120);
+        if(loading)
+            subMenuButtons.buttonChanged.connect(function(text, index){
+                callback(text, index);
+                if(!subMenuButtons)
+                    loading.animate("opacity", 0);
+            });
+        else
+            subMenuButtons.buttonChanged.connect(callback);
+    }
+
     exampleEntries.receivedChildList.connect(function(children){
         if(!children.length) {
             loading.foreground = "red";
             loading.text = "No entries";
-        } else {
-            loading.animate("opacity", 0, function(){
-                loading.deleteLater();
-            });
-            sumenuButtons = new ButtonGroup({"opacity": 0});
-            children.each(function(child){
-                var btn = new Button(child);
-                var xmlPath = Url("info.xml", Url(child, path));
-                engine.debug(xmlPath);
-                var nameRequest = ResourceRequest(xmlPath);
-                nameRequest.receivedXML.connect(function(xmlData){
-                    try {
-                        btn.button.text = xmlData.MoeContent.ContentInfo.Name['#text'];
-                    } catch(e) {}
-                });
-                sumenuButtons.push(btn);
-            });
-            sumenuButtons.push(new Button("<<"));
-            sumenuButtons.setPos(5, selPos.y + 4);
-            sumenuButtons.animate("posX", 14, 3, 80);
-            sumenuButtons.animate("opacity", 1, 3, 80);
-            sumenuButtons.buttonChanged.connect(function(btn, index){
-                switch(btn) {
-                case "<<":
-                    destroySubmenu();
-                    break;
 
-                default:
+            createSubmenu(function(subMenuButtons){
+                subMenuButtons.push(new Button("Retry"));
+                subMenuButtons.push(new Button("<<"));
+            }, function(btn, index) {
+                if(index == 0) {
+                    fadeDestroySubmenu();
+                    loadChildSelectionSubmenu(path);
+                } else
+                    destroySubmenu();
+            });
+        } else {
+            loading.animate("opacity", 0);
+            loading = false;
+
+            createSubmenu(function(subMenuButtons){
+                children.each(function(child){
+                    var btn = new Button(child);
+                    var xmlPath = Url("info.xml", Url(child, path));
+                    engine.debug(xmlPath);
+                    var nameRequest = ResourceRequest(xmlPath);
+                    nameRequest.receivedXML.connect(function(xmlData){
+                        try {
+                            btn.button.text = xmlData.MoeContent.ContentInfo.Name['#text'];
+                        } catch(e) {}
+                    });
+                    subMenuButtons.push(btn);
+                });
+                subMenuButtons.push(new Button("<<"));
+            }, function(btn, index){
+                if(index >= children.length)
+                    destroySubmenu();
+                else
                     changeContent(Url(children[index], path));
-                }
             });
         }
     });
     exampleEntries.error.connect(function(error){
         loading.foreground = "red";
         loading.text = error;
+
+        createSubmenu(function(subMenuButtons){
+            subMenuButtons.push(new Button("Retry"));
+            subMenuButtons.push(new Button("<<"));
+        }, function(btn, index) {
+            if(index == 0) {
+                fadeDestroySubmenu();
+                loadChildSelectionSubmenu(path);
+            } else
+                destroySubmenu();
+        });
     });
 }
 
-var sumenuButtons = false;
+var subMenuButtons = false;
 function fadeDestroySubmenu() {
-    sumenuButtons.setDisabled(true);
-    sumenuButtons.animate("opacity", 0, 4, 50, sumenuButtons.deleteLater);
-    sumenuButtons = false;
+    subMenuButtons.setDisabled(true);
+    subMenuButtons.animate("posX", 0, 4, 80, subMenuButtons.deleteLater);
+    subMenuButtons.animate("opacity", 0, 4, 80, subMenuButtons.deleteLater);
+    subMenuButtons = false;
 }
 
 function destroySubmenu() {
     fadeDestroySubmenu();
 
     leftButtons.setDisabled(false);
-    leftButtons.animate("posX", 5);
-    leftButtons.animate("opacity", 1);
+    leftButtons.animate("posX", 5, 4, 50);
+    leftButtons.animate("opacity", 1, 4, 50);
 }
 
 leftButtons.buttonChanged.connect(function(btn){
-    if(sumenuButtons)
+    if(subMenuButtons)
         fadeDestroySubmenu();
 
     switch(btn) {
@@ -264,8 +299,8 @@ leftButtons.buttonChanged.connect(function(btn){
     }
 
     leftButtons.setDisabled(true);
-    leftButtons.animate("posX", -8);
-    leftButtons.animate("opacity", 0.2);
+    leftButtons.animate("posX", -8, 4, 50);
+    leftButtons.animate("opacity", 0.4, 4, 50);
 });
 
 var rightButtons = new ButtonGroup({"opacity": 0});

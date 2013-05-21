@@ -84,6 +84,7 @@ public:
     inline qreal height() const{return _geometry.height();}
 
     Q_INVOKABLE void setDisabled(bool d);
+    Q_INVOKABLE inline bool isDisabled() {return _disabled;}
     Q_INVOKABLE inline QRectF geomtry() const{return _geometry;}
     Q_INVOKABLE inline QRect realGeometry() const{return _realGeometry;}
 
