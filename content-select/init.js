@@ -320,10 +320,6 @@ function openUrlFeedback(url) {
     surface.openUrl(url);
 }
 
-surface.mouseReleased.connect(function(point, type) {
-    engine.debug(type); //Always outputs 0.
-});
-
 rightButtons.buttonChanged.connect(function(btn, index){
     switch(index) {
     case 2:

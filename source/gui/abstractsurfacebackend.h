@@ -75,6 +75,11 @@ protected:
         _geom = geom;
     }
 
+    inline void markDisconnected() {
+        _markedReadyForFrame = false;
+        emit disconnected();
+    }
+
     inline void markReadyForFrame() {
         if(_markedReadyForFrame)
             return;

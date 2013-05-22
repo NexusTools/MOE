@@ -47,6 +47,7 @@ WidgetSurfaceBackend::~WidgetSurfaceBackend() {
             hideTimer->start();
         }
 
+        _widget->setCursor(Qt::ArrowCursor);
         _surfaceCache.localData().insert(_type, _widget);
     }
 }
@@ -131,7 +132,7 @@ bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
 
             case QEvent::Hide:
             {
-                emit disconnected();
+                markDisconnected();
                 break;
             }
 
