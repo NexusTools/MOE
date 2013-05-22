@@ -2,6 +2,7 @@
 #include "moegraphicssurface.h"
 #include "../core/moeengine.h"
 
+#include <QtOpenGL/QGLShaderProgram>
 #include <QApplication>
 #include <QMainWindow>
 #include <QMouseEvent>
@@ -13,6 +14,7 @@
 
 WidgetSurfaceBackend::WidgetSurfaceBackend(QString title, QSize size, int type, QWidget* parent) : QPainterSurfaceBackend(QRect())
 {
+    glfbo = 0;
     _widget = 0;
     _type = type;
     _ownsWidget = true;
@@ -27,6 +29,7 @@ WidgetSurfaceBackend::WidgetSurfaceBackend(QWidget* widget) : QPainterSurfaceBac
     _ownsWidget = false;
     _widget = 0;
     _type = 0;
+    glfbo = 0;
 }
 
 WidgetSurfaceBackend::~WidgetSurfaceBackend() {
@@ -63,28 +66,56 @@ bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
             {
                 QPainter p;
                 if(hasPendingInstructions()) {
-                    if(buffer.size() != bufferSize()) {
-                        //qDebug() << "Resized Buffer" << bufferSize();
-                        buffer = QPixmap(bufferSize());
+                    if(_type == MoeGraphicsSurface::GLWidget) {
+                        ((QGLWidget*)_widget)->makeCurrent();
+
+                        if(!glfbo)
+                            glfbo = new QGLFramebufferObject(bufferSize());
+                        else if(glfbo->size() != bufferSize()) {
+                            delete glfbo;
+                            qDebug() << "Resizing FBO" << bufferSize();
+                            glfbo = new QGLFramebufferObject(bufferSize());
+                        }
+
+                        //qDebug() << "Rendering to GLFBO" << glfbo->size();
+                        p.begin(glfbo);
+                    } else {
+                        if(pixmap.size() != bufferSize())
+                            pixmap = QPixmap(bufferSize());
+
+                        p.begin(&pixmap);
                     }
 
-                    p.begin(&buffer);
                     p.setRenderHint(QPainter::Antialiasing);
                     paint(p);
                     p.end();
                 }
 
-                p.begin(widget());
+                p.begin(_widget);
                 QRect geom(QPoint(0,0),widget()->size());
-                if(buffer.isNull())
-                    p.fillRect(geom, Qt::darkMagenta);
-                else
-                    p.drawPixmap(geom, buffer);
+                if(_type == MoeGraphicsSurface::GLWidget) {
+                    Q_ASSERT(qobject_cast<QGLWidget*>(_widget) != 0);
+                    if(glfbo) {
+                        p.beginNativePainting();
+                        ((QGLWidget*)_widget)->drawTexture(geom, glfbo->texture());
+                        p.endNativePainting();
+                    } else
+                        p.fillRect(geom, Qt::darkMagenta);
+                } else {
+                    if(pixmap.isNull())
+                        p.fillRect(geom, Qt::darkMagenta);
+                    else
+                        p.drawPixmap(geom, pixmap);
+                }
                 p.end();
 
                 markReadyForFrame();
             }
             return true;
+
+            case QEvent::UpdateRequest:
+                markReadyForFrame();
+                break;
 
             case QEvent::KeyPress:
             {
@@ -183,8 +214,10 @@ void WidgetSurfaceBackend::createWidget(QString title, QSize size, int type, QWi
             break;
 
             case MoeGraphicsSurface::GLWidget:
+            {
                 widget = new QGLWidget();
-            break;
+                break;
+            }
 
             default:
                 widget = new QMainWindow();
@@ -202,7 +235,34 @@ void WidgetSurfaceBackend::createWidget(QString title, QSize size, int type, QWi
 }
 
 void WidgetSurfaceBackend::initWidget(QWidget* widget) {
-    //qDebug() << "Initializing Widget for Surface" << widget;
+    QGLWidget* glWidget = qobject_cast<QGLWidget*>(widget);
+    if(glWidget) {
+        glWidget->makeCurrent();
+
+        _type = MoeGraphicsSurface::GLWidget;
+        if(!QGLShader::hasOpenGLShaders(QGLShader::Vertex)) {
+            qCritical() << "OpenGL Vertex Shaders missing.\nFalling back to Widget surface type.";
+            _type = MoeGraphicsSurface::Widget;
+        } else {
+            if(!QGLFramebufferObject::hasOpenGLFramebufferObjects()) {
+                qWarning() << "OpenGL Frame Buffer Objects missing.\nFalling back to Widget surface type.";
+                _type = MoeGraphicsSurface::Widget;
+            }
+        }
+        if(_type != MoeGraphicsSurface::GLWidget) {
+            if(_ownsWidget) {
+                widget->deleteLater();
+                createWidget(widget->windowTitle(), widget->size(), _type, qobject_cast<QWidget*>(widget->parent()));
+            } else {
+                qCritical() << "Cannot use fallback since this surface isn't owned by MOE.\nDestroying backend...";
+                deleteLater();
+            }
+            return;
+        }
+    } else if(_type == MoeGraphicsSurface::GLWidget) {
+        qWarning() << "Attempted to use" << widget << "as QGLWidget";
+        _type = MoeGraphicsSurface::Widget;
+    }
 
     _widget = widget;
     repaintTimer.setInterval(0);

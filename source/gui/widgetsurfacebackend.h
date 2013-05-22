@@ -3,6 +3,7 @@
 
 #include "qpaintersurfacebackend.h"
 
+#include <QtOpenGL/QGLFramebufferObject>
 #include <QThreadStorage>
 #include <QWidget>
 #include <QCache>
@@ -48,7 +49,11 @@ protected slots:
 
 private:
     int _type;
-    QPixmap buffer;
+
+    // Buffers
+    QPixmap pixmap;
+    QGLFramebufferObject* glfbo;
+
     QWidget* _widget;
     QRect _repaintRect;
     QTimer repaintTimer;

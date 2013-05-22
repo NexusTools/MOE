@@ -1,3 +1,4 @@
+#include "gui/moegraphicssurface.h"
 #include "core/qargumentparser.h"
 #include "debug/crashdialog.h"
 #include "core/moeengine.h"
@@ -20,6 +21,8 @@ int main(int argc, char *argv[])
     else {
         app = new QApplication(argc, argv);
         ((QApplication*)app)->setQuitOnLastWindowClosed(false);
+        if(parser.contains("force-opengl"))
+            MoeGraphicsSurface::setDefaultType(MoeGraphicsSurface::GLWidget);
     }
 
     MoeEngine::registerQDebugHandler();
