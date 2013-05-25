@@ -102,7 +102,7 @@ void QArgumentParser::parse(QStringList args)
 {
     QString key;
     QStringList val;
-    const QRegExp keyValuePair("^(\\-|\\-\\-|/)['\"]?([^=]+)['\"]?(=['\"]?(.+)['\"]?)?$");
+    const QRegExp keyValuePair("^(\\-|\\-\\-)['\"]?([^=]+)['\"]?(=['\"]?(.+)['\"]?)?$");
 
     foreach(QString arg, args)
     {

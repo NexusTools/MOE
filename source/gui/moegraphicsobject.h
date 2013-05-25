@@ -139,6 +139,7 @@ public:
     Q_INVOKABLE virtual MoeAbstractGraphicsSurface* surface();
 
 public slots:
+    inline void repaint() {repaint(localGeometry());}
     inline void repaint(QRectF rec) {repaint(QRect((int)qFloor(rec.x()),(int)qFloor(rec.y()),(int)qCeil(rec.width()),(int)qCeil(rec.height())));}
     inline void setPos(QPointF p) {setGeometry(QRectF(p, size()));}
     inline void setPos(qreal x, qreal y) {setPos(QPointF(x, y));}
@@ -176,7 +177,7 @@ signals:
     void keyReleased(int);
 
 protected:
-    virtual void repaint(QRect =QRect());
+    virtual void repaint(QRect);
 
     enum EventHook {
         mouseMovedHook,

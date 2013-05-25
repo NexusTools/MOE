@@ -29,6 +29,10 @@ MoeEngine::MoeEngine() {
     setTicksPerSecond(24);
 }
 
+inline void _exit(int i) {
+    exit(i);
+}
+
 void MoeEngine::startWithArguments(QVariantMap args) {
     _arguments = args;
 
@@ -479,7 +483,7 @@ initializeEngine:
     _scriptEngine->collectGarbage();
     _scriptEngine->deleteLater();
     _scriptEngine = 0;
-    processEvents(500);
+    processEvents(0);
 
     if(_state == Changing) {
         _error.clear();

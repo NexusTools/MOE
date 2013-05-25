@@ -173,7 +173,7 @@ function loadChildSelectionSubmenu(path) {
     var loading = new GraphicsText("Loading...", Font("Arial", 10), surface);
     loading.margin = 4;
     loading.foreground = "white";
-    loading.background = Rgba(0, 0, 0, 80);
+    loading.background = Rgba(0, 0, 0, 160);
     var selPos = leftButtons.getSelectedButtonPos();
     loading.setPos(0, selPos.y + 4);
     loading.animate("posX", 10, 7);
