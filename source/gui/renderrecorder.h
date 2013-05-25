@@ -14,20 +14,25 @@ class MoeAbstractGraphicsSurface;
 class RenderRecorder : public MoeObject
 {
     Q_OBJECT
+    Q_PROPERTY(QColor pen READ pen WRITE setPen)
+    Q_PROPERTY(QBrush brush READ brush WRITE setBrush)
 
 public:
     explicit inline RenderRecorder(MoeAbstractGraphicsSurface* s, QRect rect) {
         surface = s;
         cbrush = QColor(Qt::darkMagenta);
-        brush = cbrush;
+        _brush = cbrush;
         cPenThick = 1;
         penThick = cPenThick;
         cpen = QColor(0,0,0);
-        pen = cpen;
+        _pen = cpen;
         clipRect = rect;
         copacity = 1;
         opacity = 1;
     }
+
+    inline QColor pen() const{return _pen;}
+    inline QBrush brush() const{return _brush;}
 
     inline RenderInstructions instructions() const{return _instructions;}
 
@@ -116,7 +121,7 @@ public slots:
 
     inline void drawRect(QRectF rect, qreal radius = 0){
         rect = transform.mapRect(rect);
-        bool hasBorder = pen.alpha() > 0;
+        bool hasBorder = _pen.alpha() > 0;
 
         if(!clipRect.intersects(rect))
             return;
@@ -152,8 +157,8 @@ public slots:
         if(!clipRect.intersects(rect))
             return;
 
-        noTransform();
         updatePen();
+        noTransform();
         updateOpacity();
         if(clipRect.contains(rect))
             noClipRect();
@@ -178,11 +183,11 @@ public slots:
     }
 
     inline void setPenColor(QColor c){
-        pen = c;
+        _pen = c;
     }
 
     inline void setBrush(QBrush c){
-        brush = c;
+        _brush = c;
     }
 
     inline void setFont(QFont fon){
@@ -219,27 +224,27 @@ public:
 
 protected:
     inline void updatePen() {
-        if(cpen != pen || penThick != cPenThick) {
+        if(cpen != _pen || penThick != cPenThick) {
             RenderInstruction instruction;
             instruction.type = RenderInstruction::UpdatePen;
-            if(pen.alpha() > 0) {
-                instruction.arguments.append((unsigned int)pen.rgba());
+            if(_pen.alpha() > 0) {
+                instruction.arguments.append((unsigned int)_pen.rgba());
                 instruction.arguments.append(penThick);
             }
             _instructions.append(instruction);
             cPenThick = penThick;
-            cpen = pen;
+            cpen = _pen;
         }
     }
 
     inline void updateBrush() {
-        if(cbrush != brush) {
+        if(cbrush != _brush) {
             RenderInstruction instruction;
             instruction.type = RenderInstruction::UpdateBrush;
-            if(brush.color().alpha() > 0 || brush.gradient())
-                instruction.arguments.append(brush);
+            if(_brush.color().alpha() > 0 || _brush.gradient())
+                instruction.arguments.append(_brush);
             _instructions.append(instruction);
-            cbrush = brush;
+            cbrush = _brush;
         }
     }
 
@@ -316,9 +321,9 @@ private:
     QTransform _transform;
 
     QRectF cClipRect;
-    QColor pen, cpen;
+    QColor _pen, cpen;
     QFont font, cfont;
-    QBrush brush, cbrush;
+    QBrush _brush, cbrush;
     QTransform cTransform;
     int penThick, cPenThick;
     MoeAbstractGraphicsSurface* surface;
