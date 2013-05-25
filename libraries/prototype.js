@@ -1,10 +1,11 @@
-/*  Prototype JavaScript framework, version 1.7.1
- *  (c) 2005-2010 Sam Stephenson
- *
- *  Prototype is freely distributable under the terms of an MIT-style license.
- *  For details, see the Prototype web site: http://www.prototypejs.org/
- *
- *--------------------------------------------------------------------------*/
+/*
+  @name         "Prototype JavaScript framework"
+  @version      "1.7.1"
+  @author       "Sam Stephenson"
+  @copyright    "2005-2010"
+  @description  "Prototype is freely distributable under the terms of an MIT-style license."
+  @website      "http://www.prototypejs.org/"
+*/
 
 var Prototype = {
 

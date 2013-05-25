@@ -115,8 +115,12 @@
         engine.debug(contentDesc);
         engine.debug("Processing content package `"+contentDesc.Name['#text']+"`");
         var deps = [];
-        if("Dependancies" in contentDesc)
-            ;// TODO: Implement processing dependancies
+        if("Dependancies" in contentDesc) {
+            contentDesc.Dependancies.Dependancy.forEach(function(dep){
+                deps.push(dep['#text']);
+            });
+        }
+
         if(!deps.length)
             deps.push("standard");
         deps.forEach(addLibraryDep);

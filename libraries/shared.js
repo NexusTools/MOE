@@ -1,6 +1,5 @@
 /*
-  @author       "Katelyn <ktaeyln@gmail.com>"
-  @description  ""
+  @author       "Katelyn <kate@nexustools.net>"
   @dependancies ["prototype"]
 */
 

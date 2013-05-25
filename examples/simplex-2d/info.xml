@@ -1,0 +1,11 @@
+<MoeContent>
+	<ContentInfo>
+		<Name>Simplex 2D</Name>
+		<ShortDescription>Simplex 2D</ShortDescription>
+		<LongDescription>Using simplex noise and lines, this example renders a 3D plane with 2D graphics.</LongDescription>
+		<Dependancies>
+			<Dependancy>standard</Dependancy>
+			<Dependancy>simplex</Dependancy>
+		</Dependancies>
+	</ContentInfo>
+</MoeContent>

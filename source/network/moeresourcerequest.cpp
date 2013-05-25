@@ -22,7 +22,8 @@ inline void merge(QVariantMap& map, QDomNode& node) {
             if(currentData.type() == QVariant::List)
                 newData = currentData.toList() << newData;
             else if(!currentData.isNull())
-                newData = QVariantList() << currentData;
+                newData = QVariantList() << currentData << newData;
+
             map.insert(name, newData);
         }
     }

@@ -15,5 +15,8 @@
         <file>loaders/standard.js</file>
         <file>libraries/standard.js</file>
         <file>resources/logo.png</file>
+        <file>libraries/simplex.js</file>
+        <file>examples/simplex-2d/info.xml</file>
+        <file>examples/simplex-2d/init.js</file>
     </qresource>
 </RCC>

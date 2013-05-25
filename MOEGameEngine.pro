@@ -70,7 +70,10 @@ OTHER_FILES += \
     loaders/standard.js \
     loaders/basic.js \
     libraries/standard.js \
-    content-select/info.xml
+    content-select/info.xml \
+    libraries/simplex.js \
+    examples/simplex-2d/init.js \
+    examples/simplex-2d/info.xml
 
 RESOURCES += \
         resources.qrc
