@@ -65,6 +65,10 @@ public:
                                inst.arguments.at(1).toPointF());
                     break;
 
+                case RenderInstruction::DrawPixel:
+                    p.drawPoint(inst.arguments.first().toPointF());
+                    break;
+
                 case RenderInstruction::DrawRect:
                     if(inst.arguments.length() >= 2)
                         p.drawRoundedRect(inst.arguments.at(0).toRectF(), inst.arguments.at(1).toReal(), inst.arguments.at(1).toReal(), Qt::AbsoluteSize);

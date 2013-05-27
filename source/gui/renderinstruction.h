@@ -11,6 +11,7 @@ struct RenderInstruction {
 
         DrawRect,
         DrawLine,
+        DrawPixel,
         DrawPolygon,
         DrawText,
 

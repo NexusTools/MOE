@@ -149,6 +149,22 @@ public slots:
         _instructions.append(instruction);
     }
 
+    inline void drawPixel(QPointF p) {
+        p = transform.map(p);
+
+        if(!clipRect.contains(p))
+            return;
+
+        updatePen();
+        noTransform();
+        updateOpacity();
+
+        RenderInstruction instruction;
+        instruction.type = RenderInstruction::DrawPixel;
+        instruction.arguments.append(p);
+        _instructions.append(instruction);
+    }
+
     inline void drawLine(QPointF p1, QPointF p2){
         p1 = transform.map(p1);
         p2 = transform.map(p2);

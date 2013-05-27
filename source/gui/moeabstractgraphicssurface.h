@@ -5,6 +5,7 @@
 #include "moegraphicscontainer.h"
 #include "renderrecorder.h"
 
+#include <QElapsedTimer>
 #include <QThreadStorage>
 #include <QSharedPointer>
 #include <QWeakPointer>
@@ -179,6 +180,9 @@ private slots:
         forceRenderTimer.stop();
         renderState = NotReady;
 
+        QElapsedTimer timer;
+        timer.start();
+
         RenderRecorder* p = new RenderRecorder(this, repaintRegion);
 
         render(p, repaintRegion);
@@ -191,6 +195,9 @@ private slots:
             }
         } else
             qCritical() << "Render requested, but the backend has been destroyed.";
+
+        if(timer.elapsed() > 250)
+            qWarning() << "Took" << timer.elapsed() << "ms to generate rendering instructions.";
 
         p->deleteLater();
 
