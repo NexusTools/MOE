@@ -2,6 +2,9 @@
 
 #include <QDomDocument>
 
+
+QThreadStorage<QHashString> MoeResourceRequest::boundPaths;
+
 inline void merge(QVariantMap& map, QDomNode& node) {
     QDomNodeList childs = node.childNodes();
     if(!childs.isEmpty()) {
@@ -72,18 +75,15 @@ void MoeResourceRequest::completeCallback(QByteArray dat){
             QStringList children;
             QRegularExpression regExp("<[^>]*((src|href|source|file)=(?<src>\"[^\"]+|'[^']+|[^\\s\"'>]+))[^>]+", QRegularExpression::CaseInsensitiveOption);
             QRegularExpressionMatchIterator i = regExp.globalMatch(dat);
-            QString base = _url.toString();
-            if(!base.endsWith('/'))
-                base += '/';
 
             while(i.hasNext()) {
                 QRegularExpressionMatch match = i.next();
                 QString fileMatch = match.captured("src");
                 if(fileMatch.startsWith('"') || fileMatch.startsWith('\''))
                     fileMatch = fileMatch.mid(1);
-                QString resolved(MoeUrl::locate(fileMatch, base).toString());
-                if(resolved.startsWith(base)) {
-                    resolved = resolved.mid(base.length());
+                QString resolved(MoeUrl::locate(fileMatch, _realBase).toString());
+                if(resolved.startsWith(_realBase)) {
+                    resolved = resolved.mid(_realBase.length());
                     if(resolved.endsWith('/'))
                         resolved = resolved.left(resolved.length()-1);
                     if(resolved.contains('/'))

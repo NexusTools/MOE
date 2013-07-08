@@ -420,6 +420,7 @@ void MoeEngine::mainLoop() {
     }
 
     {
+        MoeResourceRequest::reset();
         MoeResourceRequest* initRequest = new MoeResourceRequest(loader);
         connect(initRequest, SIGNAL(receivedString(QString)), this, SLOT(eval(QString)));
         connect(initRequest, SIGNAL(error(QString)), this, SLOT(abort(QString)));

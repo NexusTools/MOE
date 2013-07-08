@@ -8,10 +8,13 @@
 #include <QStringList>
 #include <QMetaMethod>
 #include <QJsonValue>
+#include <QHash>
 
 #include "../core/moeobject.h"
 #include "../core/moeengine.h"
 #include "moeurl.h"
+
+typedef QHash<QString, QString> QHashString;
 
 class MoeResourceRequest : public MoeObject
 {
@@ -33,6 +36,24 @@ public:
 
     inline QUrl url() const{
         return _url;
+    }
+
+    static inline void reset() {
+        bindPath("res://", "qrc:/");
+        bindPath("data://", "qrc:/resources/");
+        bindPath("libs://", "qrc:/libraries/");
+        bindPath("examples://", "qrc:/examples/");
+        bindPath("settings://", "qrc:/settings/");
+        bindPath("loaders://", "qrc:/loaders/");
+    }
+
+    static inline void bindPath(QString from, QString to) {
+        if(!to.endsWith('/'))
+            to += '/';
+        if(!from.endsWith('/'))
+            from += '/';
+        qDebug() << "Binding" << from << to;
+        boundPaths.localData().insert(from, to);
     }
 
 protected slots:
@@ -64,6 +85,20 @@ signals:
 private:
     inline void init(QUrl resource){
         _url = resource;
+
+        QString fetch = resource.toString();
+        qDebug() << "Looking up" << fetch;
+        QHashIterator<QString, QString> i(boundPaths.localData());
+        while(i.hasNext()) {
+            i.next();
+            if(fetch.startsWith(i.key())) {
+                fetch = i.value() + fetch.mid(i.key().length());
+                qDebug() << i.key() << i.value() << fetch;
+                resource = QUrl(fetch);
+                break;
+            }
+        }
+        _realBase = fetch;
         transferDelegate = TransferDelegate::getInstance(resource);
     }
 
@@ -89,8 +124,11 @@ private:
     QMetaObject::Connection errorConnection;
 
     QUrl _url;
-    static QThreadStorage<QString> context;
+    QString _realBase;
     TransferDelegateReference transferDelegate;
+
+    static QThreadStorage<QString> context;
+    static QThreadStorage<QHashString> boundPaths;
 };
 
 #endif // MOERESOURCEREQUEST_H

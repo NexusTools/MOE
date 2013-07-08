@@ -187,9 +187,10 @@ private slots:
 
         render(p, repaintRegion);
         if(backend()) {
-            if(backend()->renderInstructions(p->instructions(), repaintRegion, _localGeometry.size())) {
+            if(backend()->renderInstructions(p->instructions(),
+                                             repaintRegion, _localGeometry.size()))
                 repaintRegion = QRect();
-            } else {
+            else {
                 backend()->markReadyForFrame();
                 qWarning() << "Render requested, but nothing to render.";
             }

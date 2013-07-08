@@ -281,7 +281,7 @@ leftButtons.buttonChanged.connect(function(btn){
         break;
 
     case "Examples":
-        loadChildSelectionSubmenu("../examples/");
+        loadChildSelectionSubmenu("examples://");
         break;
 
     case "Downloaded":
@@ -293,7 +293,7 @@ leftButtons.buttonChanged.connect(function(btn){
         return;
 
     case "Settings":
-        changeContent("settings:/");
+        changeContent("settings://");
         return;
 
     case "Quit":
@@ -335,7 +335,7 @@ rightButtons.buttonChanged.connect(function(btn, index){
 function start(size) {
     if(size.width < 1 || size.height < 1)
         return;
-    var moeLogoDownload = ResourceRequest(Url("../resources/logo.png"));
+    var moeLogoDownload = ResourceRequest(Url("data://logo.png"));
     moeLogoDownload.receivedData.connect(function(data){
         moeLogo.load(data);
         moeLogo.animate("opacity", 1, 30);
