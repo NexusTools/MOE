@@ -36,7 +36,7 @@ inline void _exit(int i) {
 void MoeEngine::startWithArguments(QVariantMap args) {
     _arguments = args;
 
-    QUrl loader(MoeUrl::locate(args.value("loader", "standard.js").toString(), ":/loaders/"));
+    QUrl loader(MoeUrl::locate(args.value("loader", "standard.js").toString(), "loaders://"));
     if(args.contains("example"))
         startContent(QString(":/examples/%1/").arg(args.value("example").toString()), loader);
     else if(args.contains("content") || args.contains(""))
@@ -167,7 +167,7 @@ void MoeEngine::changeFileContext(QString context) {
 
 void MoeEngine::startContent(QString content, QUrl _loader) {
     if(_loader.isRelative())
-        _loader = MoeUrl::locate(_loader.toString(), "qrc:/loaders/");
+        _loader = MoeUrl::locate(_loader.toString(), "loaders://");
     if(QThread::currentThread() != this) {
         if(isRunning()) {
             QMetaMethod startContent = metaObject()->method(metaObject()->indexOfMethod("startContent(QString,QUrl)"));
@@ -469,7 +469,7 @@ initializeEngine:
     __moe_registerScriptConverters(_scriptEngine);
 
     qDebug() << "Initializing new engine context";
-    MoeUrl::setDefaultContext(":/loaders/");
+    MoeUrl::setDefaultContext("loaders://");
 
     setupGlobalObject();
     mainLoop();
