@@ -52,7 +52,9 @@ void TransferDelegate::startRequest(){
             _error = "File doesn't exist";
         else {
             if(info.isDir()) {
-                data = "<html><head></head><body><h1></h1><hr /><ul>";
+                data = "<html><head></head><body><h1>Directory listing: ";
+                data += info.absoluteFilePath();
+                data += "</h1><hr /><ul>";
                 foreach(QFileInfo childInfo, info.dir().entryInfoList()) {
                     data += "<a href='";
                     data += childInfo.absoluteFilePath();
