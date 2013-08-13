@@ -9,15 +9,18 @@
 #include <QMap>
 #include <QUrl>
 
-class MoeEngine;
+#include <moeenginecore.h>
+
+class MoeClientEngine;
 class QEventLoop;
 class QScriptEngine;
 
-typedef QPointer<MoeEngine> MoeEnginePointer;
+typedef QPointer<MoeClientEngine> MoeEnginePointer;
 
-class MoeEngine : public QThread
+class MoeClientEngine : public QThread, public MoeEngineCore
 {
     Q_OBJECT
+
     Q_PROPERTY(QString version READ version)
     Q_PROPERTY(QVariantMap arguments READ arguments)
     Q_ENUMS(State)
@@ -35,8 +38,8 @@ public:
         Changing // Content is being changed
     };
 
-    MoeEngine();
-    virtual ~MoeEngine();
+    MoeClientEngine();
+    virtual ~MoeClientEngine();
     bool event(QEvent *event);
 
     inline bool isActive() const{
@@ -50,7 +53,7 @@ public:
     static void registerQDebugHandler();
     inline QScriptEngine* scriptEngine() const{return _scriptEngine;}
     static inline MoeEnginePointer current() {return _engine.localData();}
-    inline MoeEnginePointer engine() const{return MoeEnginePointer((MoeEngine*)this);}
+    inline MoeEnginePointer engine() const{return MoeEnginePointer((MoeClientEngine*)this);}
     inline void makeCurrent() const{_engine.setLocalData(MoeEnginePointer(engine()));}
 
     Q_INVOKABLE void changeFileContext(QString context);
@@ -96,7 +99,7 @@ signals:
     void changingContent();
     void crashed(QString reason);
     void uncaughtException(QScriptValue);
-    void stateChanged(MoeEngine::State state);
+    void stateChanged(MoeClientEngine::State state);
 
 protected:
     void stopExecution(QString reason, bool crashed, State newState);

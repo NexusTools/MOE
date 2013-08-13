@@ -14,7 +14,7 @@ class CrashDialog : public QDialog
     Q_OBJECT
     
 public:
-   static inline void init(MoeEngine* engine, bool quitOnClose =true) {
+   static inline void init(MoeClientEngine* engine, bool quitOnClose =true) {
         new CrashDialog(engine, quitOnClose);
    }
     
@@ -23,7 +23,7 @@ public slots:
     void setWrapError(bool);
 
 private:
-    explicit CrashDialog(MoeEngine* engine, bool quitOnClose);
+    explicit CrashDialog(MoeClientEngine* engine, bool quitOnClose);
     ~CrashDialog();
 
     Ui::CrashDialog *ui;

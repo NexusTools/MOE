@@ -53,4 +53,19 @@ HEADERS  += gui/moeabstractgraphicssurface.h \
 
 FORMS    += debug/crashdialog.ui
 
+win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../lib/release/ -lMoeGameEngine
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../lib/debug/ -lMoeGameEngine
+else:unix: LIBS += -L$$OUT_PWD/../lib/ -lMoeGameEngine
+
+INCLUDEPATH += $$PWD/../lib
+DEPENDPATH += $$PWD/../lib
+
+win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../extern/ModularCore/release/ -lModularCore
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../extern/ModularCore/debug/ -lModularCore
+else:unix: LIBS += -L$$OUT_PWD/../extern/ModularCore/ -lModularCore
+
+INCLUDEPATH += $$PWD/../extern/ModularCore
+DEPENDPATH += $$PWD/../extern/ModularCore
+
+include(../extern/GitProjectVersionQt/version.pri)
 include(../data/resources.pri)

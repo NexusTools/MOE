@@ -22,17 +22,17 @@ QThreadStorage<MoeObjectPtrMap> MoeObject::instances;
 
 MoeObject::MoeObject(MoeObject* parent) : QObject(parent)
 {
-    Q_ASSERT(!MoeEngine::current().isNull());
-    moveToThread(MoeEngine::current().data());
+    Q_ASSERT(!MoeClientEngine::current().isNull());
+    moveToThread(MoeClientEngine::current().data());
     instances.localData().insert(ptr(), this);
     connect(engine(), SIGNAL(cleanup()), this, SLOT(cleanup()));
     connect(engine(), SIGNAL(destroyed()), this, SLOT(deleteLater()));
     connect(engine()->scriptEngine(), SIGNAL(destroyed()), this, SLOT(deleteLater()));
 }
 
-MoeEngine* MoeObject::engine() const
+MoeClientEngine* MoeObject::engine() const
 {
-    return qobject_cast<MoeEngine*>(thread());
+    return qobject_cast<MoeClientEngine*>(thread());
 }
 
 QString MoeObject::toString() const {

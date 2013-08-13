@@ -3,7 +3,7 @@
 
 
 
-CrashDialog::CrashDialog(MoeEngine* engine, bool quitOnClose) :
+CrashDialog::CrashDialog(MoeClientEngine* engine, bool quitOnClose) :
     ui(new Ui::CrashDialog)
 {
     ui->setupUi(this);

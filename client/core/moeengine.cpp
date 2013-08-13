@@ -18,9 +18,9 @@
 #include <QDebug>
 #include <QFile>
 
-QThreadStorage<MoeEnginePointer> MoeEngine::_engine;
+QThreadStorage<MoeEnginePointer> MoeClientEngine::_engine;
 
-MoeEngine::MoeEngine() {
+MoeClientEngine::MoeClientEngine() {
     makeCurrent();
     _scriptEngine = 0;
     _state = Stopped;
@@ -33,7 +33,7 @@ inline void _exit(int i) {
     exit(i);
 }
 
-void MoeEngine::startWithArguments(QVariantMap args) {
+void MoeClientEngine::startWithArguments(QVariantMap args) {
     _arguments = args;
 
     QUrl loader(MoeUrl::locate(args.value("loader", "standard.js").toString(), "loaders://"));
@@ -45,7 +45,7 @@ void MoeEngine::startWithArguments(QVariantMap args) {
         startContent(":/content-select/", loader);
 }
 
-bool MoeEngine::event(QEvent *event){
+bool MoeClientEngine::event(QEvent *event){
     if(event->type() == QEvent::DeferredDelete) {
         if(QThread::currentThread() == this) {
             abort("Engine marked for deletion", Deleted);
@@ -56,7 +56,7 @@ bool MoeEngine::event(QEvent *event){
     return QObject::event(event);
 }
 
-MoeEngine::~MoeEngine()
+MoeClientEngine::~MoeClientEngine()
 {
     //qDebug() << "Destroying MoeEngine";
     if(QThread::isRunning() && this != QThread::currentThread())
@@ -149,7 +149,7 @@ void customMessageHandler(QtMsgType type, const QMessageLogContext& ctx, const Q
         abort();
 }
 
-void MoeEngine::registerQDebugHandler() {
+void MoeClientEngine::registerQDebugHandler() {
     static bool registered = false;
     if(registered)
         return;
@@ -158,14 +158,14 @@ void MoeEngine::registerQDebugHandler() {
     qInstallMessageHandler(customMessageHandler);
 }
 
-void MoeEngine::changeFileContext(QString context) {
+void MoeClientEngine::changeFileContext(QString context) {
     if(_scriptEngine)
         MoeUrl::setDefaultContext(context);
     else
         initContentPath = context;
 }
 
-void MoeEngine::startContent(QString content, QUrl _loader) {
+void MoeClientEngine::startContent(QString content, QUrl _loader) {
     if(_loader.isRelative())
         _loader = MoeUrl::locate(_loader.toString(), "loaders://");
     if(QThread::currentThread() != this) {
@@ -190,7 +190,7 @@ void MoeEngine::startContent(QString content, QUrl _loader) {
 
 }
 
-void MoeEngine::timerEvent(QTimerEvent* ev) {
+void MoeClientEngine::timerEvent(QTimerEvent* ev) {
     if(_scriptEngine) {
         if(_timers.contains(ev->timerId())) {
             _timers.take(ev->timerId()).call();
@@ -202,12 +202,12 @@ void MoeEngine::timerEvent(QTimerEvent* ev) {
     }
 }
 
-void MoeEngine::setState(State state)
+void MoeClientEngine::setState(State state)
 {
     if(_state == state || _state == Deleted)
         return;
 
-    static QMetaEnum stateEnum = MoeEngine::staticMetaObject.enumerator(MoeEngine::staticMetaObject.indexOfEnumerator("State"));
+    static QMetaEnum stateEnum = MoeClientEngine::staticMetaObject.enumerator(MoeClientEngine::staticMetaObject.indexOfEnumerator("State"));
     qDebug() << "Engine state changed" << stateEnum.key(state) << "from" << stateEnum.key(_state);
 
     switch(state){
@@ -230,12 +230,12 @@ void MoeEngine::setState(State state)
     _state = state;
 }
 
-void MoeEngine::quit(QString message)
+void MoeClientEngine::quit(QString message)
 {
     stopExecution(message.isEmpty() ? "Engine Quit" : message, false, Stopping);
 }
 
-void MoeEngine::debug(QVariant value)
+void MoeClientEngine::debug(QVariant value)
 {
     if(_scriptEngine) {
         int line = 0;
@@ -294,11 +294,11 @@ void MoeEngine::debug(QVariant value)
         qWarning() << "Engine not running.";
 }
 
-void MoeEngine::exitEventLoop() {
+void MoeClientEngine::exitEventLoop() {
     exit(0);
 }
 
-void MoeEngine::eval(QString script) {
+void MoeClientEngine::eval(QString script) {
     if(loader.isEmpty())
         _scriptEngine->evaluate(script);
     else {
@@ -307,7 +307,7 @@ void MoeEngine::eval(QString script) {
     }
 }
 
-void MoeEngine::exceptionThrown(QScriptValue exception)
+void MoeClientEngine::exceptionThrown(QScriptValue exception)
 {
     if(_state == Starting || _state == Running) {
         if(!_error.isEmpty()) {
@@ -354,12 +354,12 @@ QScriptValue __eval_func__(QScriptContext* ctx, QScriptEngine* eng) {
     return result;
 }
 
-void MoeEngine::processEvents(qint32 until) {
+void MoeClientEngine::processEvents(qint32 until) {
     QTimer::singleShot(until, Qt::PreciseTimer, this, SLOT(exitEventLoop()));
     exec();
 }
 
-void MoeEngine::setupGlobalObject() {
+void MoeClientEngine::setupGlobalObject() {
     QScriptValue globalObject = _scriptEngine->globalObject();
     globalObject.setProperty("global", globalObject, QScriptValue::SkipInEnumeration);
     globalObject.setProperty("eval", _scriptEngine->newFunction(__eval_func__));
@@ -399,9 +399,9 @@ void MoeEngine::setupGlobalObject() {
     }
 }
 
-static QMetaMethod tickSignal = QMetaMethod::fromSignal(&MoeEngine::tick);
-static QMetaMethod preciseTickSignal = QMetaMethod::fromSignal(&MoeEngine::preciseTick);
-void MoeEngine::mainLoop() {
+static QMetaMethod tickSignal = QMetaMethod::fromSignal(&MoeClientEngine::tick);
+static QMetaMethod preciseTickSignal = QMetaMethod::fromSignal(&MoeClientEngine::preciseTick);
+void MoeClientEngine::mainLoop() {
     qDebug() << "Preparing main loop";
     QMetaMethod emitTick = metaObject()->method(metaObject()->indexOfMethod("emitTick()"));
     Q_ASSERT(emitTick.isValid());
@@ -457,7 +457,7 @@ void MoeEngine::mainLoop() {
     }
 }
 
-void MoeEngine::run()
+void MoeClientEngine::run()
 {
     makeCurrent();
     _error.clear();
@@ -504,11 +504,11 @@ initializeEngine:
     qDebug() << "Engine thread finished";
 }
 
-void MoeEngine::emitTick() {
+void MoeClientEngine::emitTick() {
     emit tick();
 }
 
-void MoeEngine::stopExecution(QString reason, bool crash, State newState)
+void MoeClientEngine::stopExecution(QString reason, bool crash, State newState)
 {
     if(_state == Deleted)
         return;
@@ -526,13 +526,13 @@ void MoeEngine::stopExecution(QString reason, bool crash, State newState)
     exitEventLoop();
 }
 
-void MoeEngine::registerClass(const QMetaObject* metaObject)
+void MoeClientEngine::registerClass(const QMetaObject* metaObject)
 {
     if(!_classes.contains(metaObject))
         _classes.append(metaObject);
 }
 
-void MoeEngine::inject(QString key, QVariant val)
+void MoeClientEngine::inject(QString key, QVariant val)
 {
     if(val.canConvert(QMetaType::QObjectStar)) {
         QObject *obj = ((QObject*)val.value<QObject*>());

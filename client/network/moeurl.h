@@ -10,7 +10,7 @@ class MoeUrl : public MoeObject
 {
     Q_OBJECT
 
-    friend class MoeEngine;
+    friend class MoeClientEngine;
 public:
     Q_INVOKABLE inline explicit MoeUrl(QString path, QString context =QString()) {setUrl(path, context);}
     Q_INVOKABLE void setUrl(QString path, QString context =QString()) {_url=locate(path, context);}

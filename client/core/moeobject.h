@@ -10,7 +10,7 @@
 #include <QScriptValue>
 #include <QThreadStorage>
 
-class MoeEngine;
+class MoeClientEngine;
 class MoeObject;
 
 struct AnimationState;
@@ -24,7 +24,7 @@ class MoeObject : public QObject, public QScriptable
 {
     Q_OBJECT
 
-    friend class MoeEngine;
+    friend class MoeClientEngine;
 public:
     Q_INVOKABLE explicit MoeObject(MoeObject* parent =NULL);
     virtual ~MoeObject() {
@@ -32,7 +32,7 @@ public:
         instances.localData().remove(ptr());
     }
 
-    virtual MoeEngine* engine() const;
+    virtual MoeClientEngine* engine() const;
 
     inline MoeObjectPtr ptr() const{return (MoeObjectPtr)this;}
     template<typename T> static inline T* instance(MoeObjectPtr ptr) {

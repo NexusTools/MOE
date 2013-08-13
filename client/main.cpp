@@ -25,13 +25,13 @@ int main(int argc, char *argv[])
             MoeGraphicsSurface::setDefaultType(MoeGraphicsSurface::GLWidget);
     }
 
-    MoeEngine::registerQDebugHandler();
+    MoeClientEngine::registerQDebugHandler();
     if(parser.contains("stress")) {
         int count = parser.value("stress", 15).toInt();
-        QList<MoeEngine*> engines;
+        QList<MoeClientEngine*> engines;
         forever {
             {
-                QList<MoeEngine*>::iterator iter = engines.begin();
+                QList<MoeClientEngine*>::iterator iter = engines.begin();
                 while(iter != engines.end()) {
                     if((*iter)->isFinished()) {
                         (*iter)->deleteLater();
@@ -41,13 +41,13 @@ int main(int argc, char *argv[])
                 }
             }
             while(engines.size() < count) {
-                MoeEngine* engine = new MoeEngine();
+                MoeClientEngine* engine = new MoeClientEngine();
                 engine->startContent("qrc:/examples/crash/");
                 engines << engine;
             }
         }
     } else {
-        MoeEngine* engine = new MoeEngine();
+        MoeClientEngine* engine = new MoeClientEngine();
         if(!isHeadless)
             CrashDialog::init(engine);
         engine->startWithArguments(parser.toMap());
