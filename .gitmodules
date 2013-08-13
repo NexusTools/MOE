@@ -1,3 +1,18 @@
 [submodule "data"]
 	path = data
 	url = git@github.com:NexusTools/MoeSharedData.git
+[submodule "extern/GenericUI"]
+	path = extern/GenericUI
+	url = https://github.com/NexusTools/GenericUI.git
+[submodule "extern/GitProjectVersionQt"]
+	path = extern/GitProjectVersionQt
+	url = https://github.com/NexusTools/GitProjectVersionQt.git
+[submodule "extern/InputManager"]
+	path = extern/InputManager
+	url = https://github.com/NexusTools/InputManager.git
+[submodule "extern/ModularCore"]
+	path = extern/ModularCore
+	url = https://github.com/NexusTools/ModularCore.git
+[submodule "extern/NexusComm"]
+	path = extern/NexusComm
+	url = https://github.com/NexusTools/NexusComm.git

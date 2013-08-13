@@ -1,6 +1,6 @@
 TEMPLATE = subdirs
 
-SUBDIRS +=  \
+SUBDIRS +=  extern \
 #			lib \
 #			server \
 			client
