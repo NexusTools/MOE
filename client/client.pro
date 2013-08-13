@@ -16,39 +16,26 @@ QMAKE_CXXFLAGS+="-std=c++0x"
 
 SOURCES += debug/crashdialog.cpp \
     main.cpp \
-    gui/moeabstractgraphicssurface.cpp \
-    core/moeengine.cpp \
+	gui/moeabstractgraphicssurface.cpp \
     gui/moegraphicscontainer.cpp \
     gui/moegraphicsimage.cpp \
     gui/moegraphicsobject.cpp \
     gui/moegraphicssurface.cpp \
-    gui/moegraphicstext.cpp \
-    network/moeresourcerequest.cpp \
-    core/moeobject.cpp \
-    core/moescriptregisters.cpp \
-    core/qargumentparser.cpp \
-    network/transferdelegate.cpp \
+	gui/moegraphicstext.cpp \
 	gui/widgetsurfacebackend.cpp
 
 HEADERS  += gui/moeabstractgraphicssurface.h \
     gui/abstractsurfacebackend.h \
-    debug/crashdialog.h \
-    core/moeengine.h \
+	debug/crashdialog.h \
     gui/moegraphicscontainer.h \
     gui/moegraphicsimage.h \
     gui/moegraphicsobject.h \
     gui/moegraphicssurface.h \
-    gui/moegraphicstext.h \
-    core/moeobject.h \
-    network/moeresourcerequest.h \
-    core/moescriptregisters.h \
-    network/moeurl.h \
-    core/qargumentparser.h \
+	gui/moegraphicstext.h \
     gui/qpaintersurfacebackend.h \
     gui/renderbuffer.h \
     gui/renderinstruction.h \
-    gui/renderrecorder.h \
-    network/transferdelegate.h \
+	gui/renderrecorder.h \
 	gui/widgetsurfacebackend.h
 
 FORMS    += debug/crashdialog.ui

@@ -3,7 +3,7 @@
 
 #include "moegraphicsobject.h"
 
-#include "../network/moeresourcerequest.h"
+#include <network/moeresourcerequest.h>
 
 class RenderBuffer;
 

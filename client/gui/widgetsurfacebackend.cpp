@@ -1,6 +1,7 @@
 #include "widgetsurfacebackend.h"
 #include "moegraphicssurface.h"
-#include "../core/moeengine.h"
+
+#include <core/moeengine.h>
 
 #include <QtOpenGL/QGLShaderProgram>
 #include <QApplication>

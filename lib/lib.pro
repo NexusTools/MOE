@@ -1,6 +1,6 @@
 QT		-= gui
 
-QT       += core script
+QT       += core script network xml
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -17,11 +17,22 @@ unix:!symbian {
 }
 
 HEADERS += \
-    moeenginecore.h \
+	network/moeresourcerequest.h \
+	network/moeurl.h \
+	network/transferdelegate.h \
+	core/moeengine.h \
+	core/moeobject.h \
+	core/moescriptregisters.h \
+	core/qargumentparser.h \
     moe-macros.h
 
 SOURCES += \
-    moeenginecore.cpp
+	core/moeengine.cpp \
+	core/moeobject.cpp \
+	core/moescriptregisters.cpp \
+	core/qargumentparser.cpp \
+	network/transferdelegate.cpp \
+	network/moeresourcerequest.cpp
 
 INCLUDEPATH += $$PWD/../extern/GitProjectVersionQt
 
