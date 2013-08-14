@@ -35,7 +35,7 @@ inline void _exit(int i) {
 void MoeEngine::startWithArguments(QVariantMap args) {
     _arguments = args;
 
-    QUrl loader(MoeUrl::locate(args.value("loader", "standard.js").toString(), "loaders://"));
+    QUrl loader(MoeUrl::locate(args.value("loader").toString(), "loaders://"));
     if(args.contains("example"))
         startContent(QString(":/examples/%1/").arg(args.value("example").toString()), loader);
     else if(args.contains("content") || args.contains(""))
@@ -174,14 +174,14 @@ void MoeEngine::startContent(QString content, QUrl _loader) {
             startContent.invoke(this, Qt::QueuedConnection, Q_ARG(QString, content), Q_ARG(QUrl, _loader));
         } else {
             initContentPath = content;
-            loader = _loader;
+            _loader = _loader;
             start();
         }
     } else {
         if(_state == Running) {
             qDebug() << "Changing content" << content << _loader;
             initContentPath = content;
-            loader = _loader;
+            _loader = _loader;
             stopExecution("Changing content", false, Changing);
         } else
             qCritical() << "Cannot change content from this state" << _state;
@@ -298,11 +298,11 @@ void MoeEngine::exitEventLoop() {
 }
 
 void MoeEngine::eval(QString script) {
-    if(loader.isEmpty())
+    if(_loader.isEmpty())
         _scriptEngine->evaluate(script);
     else {
-        _scriptEngine->evaluate(script, loader.toString());
-        loader.clear();
+        _scriptEngine->evaluate(script, _loader);
+        _loader.clear();
     }
 }
 
@@ -437,7 +437,7 @@ void MoeEngine::mainLoop() {
         initContentPath.clear();
     }
     if(moeContentPlugin)
-        moeContentPlugin->startImpl(loader);
+        moeContentPlugin->startImpl(_loader);
     else
         abort("No content plugin loaded.");
 
@@ -510,7 +510,7 @@ initializeEngine:
         goto initializeEngine;
     }
 
-    loader.clear();
+    _loader.clear();
     initContentPath.clear();
     if(_state == Deleted) {
         deleteLater();

@@ -15,7 +15,7 @@ public:
 protected:
     inline explicit MoeContentPlugin(MoeEngine* eng) : MoePlugin(eng) {}
 
-    virtual void startImpl(QUrl loader);
+    virtual void startImpl(QString loader);
     virtual void stopImpl() {}
 
 

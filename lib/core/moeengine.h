@@ -62,7 +62,7 @@ public:
 
     Q_INVOKABLE void changeFileContext(QString context);
     void startWithArguments(QVariantMap args =QVariantMap());
-    Q_INVOKABLE void startContent(QString content, QUrl loaderPath =QUrl("./standard.js"));
+    Q_INVOKABLE void startContent(QString content, QUrl loaderPath =QUrl());
 
     inline QString error() const{return _error;}
     inline QString version() const{return "0.1 dev";}
@@ -144,7 +144,7 @@ private:
     QMap<int, QScriptValue> _timers;
     QList<const QMetaObject*> _classes;
 
-    QUrl loader;
+    QString _loader;
     QString initContentPath;
 };
 

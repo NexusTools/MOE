@@ -10,7 +10,9 @@ QString MoeContentPlugin::name() const{
     return moduleName();
 }
 
-void MoeContentPlugin::startImpl(QUrl loader) {
+void MoeContentPlugin::startImpl(QString _loader) {
+    QUrl loader = _loader.isEmpty() ? QUrl("loaders://native.js") : MoeUrl::locate(_loader, "loaders://");
+
     MoeUrl::setDefaultContext(path());
     {
         MoeResourceRequest::reset();
@@ -19,6 +21,10 @@ void MoeContentPlugin::startImpl(QUrl loader) {
         connect(initRequest, SIGNAL(error(QString)), engine(), SLOT(abort(QString)));
         connect(initRequest, SIGNAL(completed(bool)), engine(), SLOT(deleteLater()), Qt::QueuedConnection);
     }
+}
+
+void MoeScriptContent::startImpl(QString _loader) {
+    MoeContentPlugin::startImpl(_loader.isEmpty() ? "loaders://standard.js" : _loader);
 }
 
 QString MoeScriptContent::name() const{

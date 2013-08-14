@@ -12,6 +12,9 @@ public:
     virtual QString name() const;
     virtual QString path() const;
 
+protected:
+    void startImpl(QString loader);
+
 private:
     QString _path;
 };
