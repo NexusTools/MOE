@@ -7,6 +7,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = MoeGameEngine
 TEMPLATE = lib
 
+DEFINES += MOEGAMEENGINE_LIBRARY
+
 unix:!symbian {
 	maemo5 {
 		target.path = /opt/usr/lib
@@ -26,7 +28,8 @@ HEADERS += \
 	core/moecontentplugin.h \
 	core/moescriptregisters.h \
 	core/qargumentparser.h \
-    moe-macros.h
+    moe-macros.h \
+    global.h
 
 SOURCES += \
 	core/moeengine.cpp \
@@ -38,8 +41,8 @@ SOURCES += \
 
 INCLUDEPATH += $$PWD/../extern/GitProjectVersionQt
 
-win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../extern/ModularCore/release/ -lModularCore
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../extern/ModularCore/debug/ -lModularCore
+win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../extern/ModularCore/release/ -lModularCore0
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../extern/ModularCore/debug/ -lModularCore0
 else:unix: LIBS += -L$$OUT_PWD/../extern/ModularCore/ -lModularCore
 
 INCLUDEPATH += $$PWD/../extern/ModularCore

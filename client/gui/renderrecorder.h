@@ -5,9 +5,10 @@
 #include "renderbuffer.h"
 #include "renderinstruction.h"
 
-#include <QVariantList>
 #include <QTransform>
 #include <QPainter>
+
+#undef DrawText
 
 class MoeAbstractGraphicsSurface;
 

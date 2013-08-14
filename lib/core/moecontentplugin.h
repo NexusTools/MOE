@@ -3,7 +3,7 @@
 
 #include "moeplugin.h"
 
-class MoeContentPlugin : public MoePlugin
+class MOEGAMEENGINE_EXPORT MoeContentPlugin : public MoePlugin
 {
     Q_OBJECT
 protected:

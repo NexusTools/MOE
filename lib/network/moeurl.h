@@ -5,7 +5,9 @@
 #include <QObject>
 #include <QUrl>
 
-class MoeUrl : public QObject
+#include "global.h"
+
+class MOEGAMEENGINE_EXPORT MoeUrl : public QObject
 {
     Q_OBJECT
 

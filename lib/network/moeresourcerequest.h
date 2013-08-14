@@ -8,11 +8,12 @@
 #include <QMetaMethod>
 #include <QHash>
 
+#include "global.h"
 #include "moeurl.h"
 
 typedef QHash<QString, QString> QHashString;
 
-class MoeResourceRequest : public QObject
+class MOEGAMEENGINE_EXPORT MoeResourceRequest : public QObject
 {
     Q_OBJECT
 

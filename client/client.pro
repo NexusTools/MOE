@@ -43,15 +43,15 @@ HEADERS  += gui/moeabstractgraphicssurface.h \
 
 FORMS    += debug/crashdialog.ui
 
-win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../lib/release/ -lMoeGameEngine
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../lib/debug/ -lMoeGameEngine
+win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../lib/release/ -lMoeGameEngine0
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../lib/debug/ -lMoeGameEngine0
 else:unix: LIBS += -L$$OUT_PWD/../lib/ -lMoeGameEngine
 
 INCLUDEPATH += $$PWD/../lib
 DEPENDPATH += $$PWD/../lib
 
-win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../extern/ModularCore/release/ -lModularCore
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../extern/ModularCore/debug/ -lModularCore
+win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../extern/ModularCore/release/ -lModularCore0
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../extern/ModularCore/debug/ -lModularCore0
 else:unix: LIBS += -L$$OUT_PWD/../extern/ModularCore/ -lModularCore
 
 INCLUDEPATH += $$PWD/../extern/ModularCore

@@ -4,7 +4,9 @@
 #include <QVariantMap>
 #include <QStringList>
 
-class QArgumentParser : public QObject
+#include "global.h"
+
+class MOEGAMEENGINE_EXPORT QArgumentParser : public QObject
 {
     Q_OBJECT
 public:

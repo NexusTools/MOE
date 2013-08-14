@@ -10,6 +10,8 @@
 #include <QScriptValue>
 #include <QThreadStorage>
 
+#include "global.h"
+
 class MoeEngine;
 class MoeObject;
 
@@ -20,7 +22,7 @@ typedef quintptr MoeObjectPtr;
 typedef QPointer<MoeObject> MoeObjectPointer;
 typedef QMap<MoeObjectPtr, MoeObjectPointer> MoeObjectPtrMap;
 
-class MoeObject : public QObject, public QScriptable
+class MOEGAMEENGINE_EXPORT MoeObject : public QObject, public QScriptable
 {
     Q_OBJECT
 

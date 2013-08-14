@@ -11,6 +11,7 @@
 
 #include <modularcore.h>
 
+#include "global.h"
 #include "moe-macros.h"
 
 class MoeEngine;
@@ -19,7 +20,7 @@ class QScriptEngine;
 
 typedef QPointer<MoeEngine> MoeEnginePointer;
 
-class MoeEngine : public QThread, public ModularCore
+class MOEGAMEENGINE_EXPORT MoeEngine : public QThread, public ModularCore
 {
     Q_OBJECT
     MODULAR_CORE

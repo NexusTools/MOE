@@ -6,15 +6,16 @@
 #include <QMutexLocker>
 #include <QMetaMethod>
 #include <QDebug>
-
 #include <QTimer>
+
+#include "global.h"
 
 class TransferDelegate;
 
 typedef QWeakPointer<TransferDelegate> WeakTransferDelegate;
 typedef QSharedPointer<TransferDelegate> TransferDelegateReference;
 
-class TransferDelegate : public QObject
+class MOEGAMEENGINE_EXPORT TransferDelegate : public QObject
 {
     Q_OBJECT
 public:
