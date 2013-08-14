@@ -417,7 +417,18 @@ void MoeEngine::mainLoop() {
         MoeUrl contentUrl(initContentPath, ":/");
         if(contentUrl.isFile()) {
             if(contentUrl.isLibrary()) {
+                try {
+                    Module::Ref contentModule = loadModule(contentUrl.fileInfo().absoluteFilePath(), ModularCore::NameTypePair(QString(), "Content"));
+                    if(contentModule.isNull())
+                        throw "Failed to load specified module for unknown reason.";
 
+                    contentModule->load(Module::LoadFlags(Module::StrictVerify | Module::ExportSymbols));
+                    moeContentPlugin = contentModule->createCompatiblePlugin<MoeContentPlugin>();
+                } catch(QString err) {
+                    abort(err);
+                } catch(const char* err) {
+                    abort(err);
+                }
             } else
                 abort(QString("Cannot handle requsted content: %1").arg(contentUrl.toString()));
         } else
