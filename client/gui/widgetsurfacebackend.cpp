@@ -70,12 +70,17 @@ bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
                     if(_type == MoeGraphicsSurface::GLWidget) {
                         ((QGLWidget*)_widget)->makeCurrent();
 
+                        QGLFramebufferObjectFormat bufferFormat;
+                        bufferFormat.setInternalTextureFormat(GL_RGB8);
+                        bufferFormat.setMipmap(false);
+                        bufferFormat.setSamples(QGLFramebufferObject::hasOpenGLFramebufferBlit() ? 16 : 0);
+
                         if(!glfbo)
-                            glfbo = new QGLFramebufferObject(bufferSize());
+                            glfbo = new QGLFramebufferObject(bufferSize(), bufferFormat);
                         else if(glfbo->size() != bufferSize()) {
                             delete glfbo;
                             qDebug() << "Resizing FBO" << bufferSize();
-                            glfbo = new QGLFramebufferObject(bufferSize());
+                            glfbo = new QGLFramebufferObject(bufferSize(), bufferFormat);
                         }
 
                         //qDebug() << "Rendering to GLFBO" << glfbo->size();
@@ -90,6 +95,19 @@ bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
                     p.setRenderHint(QPainter::Antialiasing);
                     paint(p);
                     p.end();
+
+                    if(glfbo && glfbo->format().samples()) {
+                        if(!sglfbo)
+                            sglfbo = new QGLFramebufferObject(bufferSize());
+                        else if(sglfbo->size() != bufferSize()) {
+                            delete sglfbo;
+                            sglfbo = new QGLFramebufferObject(bufferSize());
+                        }
+
+                        QGLFramebufferObject::blitFramebuffer(
+                                    sglfbo, QRect(QPoint(0,0), bufferSize()),
+                                    glfbo, QRect(QPoint(0,0), bufferSize()));
+                    }
                 }
 
                 p.begin(_widget);
@@ -97,9 +115,10 @@ bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
                 if(_type == MoeGraphicsSurface::GLWidget) {
                     Q_ASSERT(qobject_cast<QGLWidget*>(_widget) != 0);
                     if(glfbo) {
-                        p.beginNativePainting();
-                        ((QGLWidget*)_widget)->drawTexture(geom, glfbo->texture());
-                        p.endNativePainting();
+                        if(glfbo->format().samples())
+                            ((QGLWidget*)_widget)->drawTexture(geom, sglfbo->texture());
+                        else
+                            ((QGLWidget*)_widget)->drawTexture(geom, glfbo->texture());
                     } else
                         p.fillRect(geom, Qt::darkMagenta);
                 } else {
@@ -216,7 +235,10 @@ void WidgetSurfaceBackend::createWidget(QString title, QSize size, int type, QWi
 
             case MoeGraphicsSurface::GLWidget:
             {
-                widget = new QGLWidget();
+                QGLFormat format;
+                format.setVersion(2, 0);
+                format.setProfile(QGLFormat::CompatibilityProfile);
+                widget = new QGLWidget(format);
                 break;
             }
 

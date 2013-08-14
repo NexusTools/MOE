@@ -52,7 +52,7 @@ private:
 
     // Buffers
     QPixmap pixmap;
-    QGLFramebufferObject* glfbo;
+    QGLFramebufferObject* glfbo, *sglfbo;
 
     QWidget* _widget;
     QRect _repaintRect;

@@ -2,12 +2,10 @@
 #define MOERESOURCEREQUEST_H
 
 #include "transferdelegate.h"
-#include <QRegularExpression>
 #include <QThreadStorage>
 #include <QScriptEngine>
 #include <QStringList>
 #include <QMetaMethod>
-#include <QJsonValue>
 #include <QHash>
 
 #include "moeurl.h"

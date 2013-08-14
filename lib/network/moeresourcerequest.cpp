@@ -1,5 +1,6 @@
 #include "moeresourcerequest.h"
 
+#include <QRegularExpression>
 #include <QDomDocument>
 
 
