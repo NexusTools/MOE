@@ -22,6 +22,8 @@ HEADERS += \
 	network/transferdelegate.h \
 	core/moeengine.h \
 	core/moeobject.h \
+	core/moeplugin.h \
+	core/moecontentplugin.h \
 	core/moescriptregisters.h \
 	core/qargumentparser.h \
     moe-macros.h
