@@ -1,7 +1,8 @@
 #include "gui/moegraphicssurface.h"
 #include "core/qargumentparser.h"
 #include "debug/crashdialog.h"
-#include "core/moeengine.h"
+
+#include "moeclientengine.h"
 
 #include <QApplication>
 #include <QMessageBox>
@@ -25,13 +26,13 @@ int main(int argc, char *argv[])
             MoeGraphicsSurface::setDefaultType(MoeGraphicsSurface::GLWidget);
     }
 
-    MoeClientEngine::registerQDebugHandler();
+    MoeEngine::registerQDebugHandler();
     if(parser.contains("stress")) {
         int count = parser.value("stress", 15).toInt();
-        QList<MoeClientEngine*> engines;
+        QList<MoeEngine*> engines;
         forever {
             {
-                QList<MoeClientEngine*>::iterator iter = engines.begin();
+                QList<MoeEngine*>::iterator iter = engines.begin();
                 while(iter != engines.end()) {
                     if((*iter)->isFinished()) {
                         (*iter)->deleteLater();
@@ -41,7 +42,7 @@ int main(int argc, char *argv[])
                 }
             }
             while(engines.size() < count) {
-                MoeClientEngine* engine = new MoeClientEngine();
+                MoeEngine* engine = new MoeEngine();
                 engine->startContent("qrc:/examples/crash/");
                 engines << engine;
             }

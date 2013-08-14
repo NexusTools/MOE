@@ -14,28 +14,6 @@
 #include <QDebug>
 #include <QFile>
 
-/*inline QScriptValue renderRecorderToScriptValue(QScriptEngine *engine, RenderRecorder* const &in)
-{
-    return engine->newQObject(in);
-}
-
-inline void renderRecorderFromScriptValue(const QScriptValue &object, RenderRecorder* &out)
-{
-    out = qobject_cast<RenderRecorder*>(object.toQObject());
-}
-
-inline QScriptValue graphicsContainerToScriptValue(QScriptEngine *engine, MoeGraphicsContainer* const &in)
-{
-    return engine->newQObject(in);
-}
-
-inline void graphicsContainerFromScriptValue(const QScriptValue &object, MoeGraphicsContainer* &out)
-{
-    out = qobject_cast<MoeGraphicsContainer*>(object.toQObject());
-}*/
-
-
-
 QScriptValue qrectToScriptValue(QScriptEngine *engine, QRect const &in)
 {
     QScriptValue rect = engine->newObject();
@@ -263,26 +241,6 @@ void qbrushFromScriptValue(const QScriptValue &object, QBrush &out)
     out = QBrush(color);
 }
 
-/*QScriptValue qfontToScriptValue(QScriptEngine *engine, QFont const &in)
-{
-    QScriptValue font = engine->newObject();
-    font.setProperty("family", in.family());
-    font.setProperty("size", in.pointSize());
-    return font;
-}
-
-void qfontFromScriptValue(const QScriptValue &object, QFont &out)
-{
-    if(object.isString()) {
-        // TODO: Implement CSS Font Parsing
-    } else if(object.isObject()) {
-        out = QFont(object.property("family").toString(), object.property("size").toInt32());
-        return;
-    }
-
-    object.engine()->currentContext()->throwError(QString("Font types expect a valid css font string, or font object."));
-}*/
-
 QScriptValue qcursorToScriptValue(QScriptEngine *engine, QCursor const &in)
 {
     switch(in.shape()) {
@@ -354,9 +312,6 @@ void qurlFromScriptValue(const QScriptValue &object, QUrl &out)
 void __moe_registerScriptConverters(QScriptEngine* eng) {
     qRegisterMetaType<QRgb>("QRgb");
 
-    //qScriptRegisterMetaType<RenderRecorder*>(eng, renderRecorderToScriptValue, renderRecorderFromScriptValue);
-    //qScriptRegisterMetaType<MoeGraphicsContainer*>(eng, graphicsContainerToScriptValue, graphicsContainerFromScriptValue);
-
     qScriptRegisterMetaType<QCursor>(eng, qcursorToScriptValue, qcursorFromScriptValue);
 
     qScriptRegisterMetaType<QPointF>(eng, qpointfToScriptValue, qpointfFromScriptValue);
@@ -370,6 +325,5 @@ void __moe_registerScriptConverters(QScriptEngine* eng) {
 
     qScriptRegisterMetaType<QBrush>(eng, qbrushToScriptValue, qbrushFromScriptValue);
     qScriptRegisterMetaType<QColor>(eng, qcolorToScriptValue, qcolorFromScriptValue);
-    //qScriptRegisterMetaType<QFont>(eng, qfontToScriptValue, qfontFromScriptValue);
     qScriptRegisterMetaType<QUrl>(eng, qurlToScriptValue, qurlFromScriptValue);
 }

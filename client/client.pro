@@ -22,7 +22,9 @@ SOURCES += debug/crashdialog.cpp \
     gui/moegraphicsobject.cpp \
     gui/moegraphicssurface.cpp \
 	gui/moegraphicstext.cpp \
-	gui/widgetsurfacebackend.cpp
+	gui/widgetsurfacebackend.cpp \
+	moeclientengine.cpp \
+	clientscriptconverters.cpp
 
 HEADERS  += gui/moeabstractgraphicssurface.h \
     gui/abstractsurfacebackend.h \
@@ -36,7 +38,8 @@ HEADERS  += gui/moeabstractgraphicssurface.h \
     gui/renderbuffer.h \
     gui/renderinstruction.h \
 	gui/renderrecorder.h \
-	gui/widgetsurfacebackend.h
+	gui/widgetsurfacebackend.h \
+	moeclientengine.h
 
 FORMS    += debug/crashdialog.ui
 

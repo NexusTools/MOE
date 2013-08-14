@@ -13,13 +13,13 @@
 
 #include "moe-macros.h"
 
-class MoeClientEngine;
+class MoeEngine;
 class QEventLoop;
 class QScriptEngine;
 
-typedef QPointer<MoeClientEngine> MoeEnginePointer;
+typedef QPointer<MoeEngine> MoeEnginePointer;
 
-class MoeClientEngine : public QThread, public ModularCore
+class MoeEngine : public QThread, public ModularCore
 {
     Q_OBJECT
     MODULAR_CORE
@@ -41,8 +41,8 @@ public:
         Changing // Content is being changed
     };
 
-    MoeClientEngine();
-    virtual ~MoeClientEngine();
+    MoeEngine();
+    virtual ~MoeEngine();
     bool event(QEvent *event);
 
     inline bool isActive() const{
@@ -56,7 +56,7 @@ public:
     static void registerQDebugHandler();
     inline QScriptEngine* scriptEngine() const{return _scriptEngine;}
     static inline MoeEnginePointer current() {return _engine.localData();}
-    inline MoeEnginePointer engine() const{return MoeEnginePointer((MoeClientEngine*)this);}
+    inline MoeEnginePointer engine() const{return MoeEnginePointer((MoeEngine*)this);}
     inline void makeCurrent() const{_engine.setLocalData(MoeEnginePointer(engine()));}
 
     Q_INVOKABLE void changeFileContext(QString context);
@@ -102,7 +102,7 @@ signals:
     void changingContent();
     void crashed(QString reason);
     void uncaughtException(QScriptValue);
-    void stateChanged(MoeClientEngine::State state);
+    void stateChanged(MoeEngine::State state);
 
 protected:
     void stopExecution(QString reason, bool crashed, State newState);
@@ -110,6 +110,9 @@ protected:
     inline void abort(QString reason, bool crashed) {
         stopExecution(reason, crashed, crashed ? Crashed : Stopping);
     }
+
+    virtual void initializeScriptEngine(QScriptEngine*) {}
+    virtual void initializeContentEnvironment(QScriptEngine*, QScriptValue) {}
 
     Q_INVOKABLE void emitTick();
     void timerEvent(QTimerEvent *);
