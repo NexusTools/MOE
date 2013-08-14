@@ -29,7 +29,8 @@ HEADERS += \
 	core/moescriptregisters.h \
 	core/qargumentparser.h \
     moe-macros.h \
-    global.h
+    global.h \
+    core/moescriptcontent.h
 
 SOURCES += \
 	core/moeengine.cpp \
@@ -37,7 +38,8 @@ SOURCES += \
 	core/moescriptregisters.cpp \
 	core/qargumentparser.cpp \
 	network/transferdelegate.cpp \
-	network/moeresourcerequest.cpp
+	network/moeresourcerequest.cpp \
+    core/moecontentplugin.cpp
 
 INCLUDEPATH += $$PWD/../extern/GitProjectVersionQt
 

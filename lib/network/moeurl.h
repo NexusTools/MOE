@@ -2,6 +2,8 @@
 #define URL_H
 
 #include <QThreadStorage>
+#include <QFileInfo>
+#include <QLibrary>
 #include <QObject>
 #include <QUrl>
 
@@ -33,19 +35,43 @@ public:
         return _url.toString();
     }
 
+    inline bool isLocalFile() const{
+        return _url.isLocalFile();
+    }
+
+    inline QFileInfo fileInfo() const{
+        if(isLocalFile())
+            return QFileInfo(_url.toLocalFile());
+
+        return QFileInfo();
+    }
+
+    inline bool isFile() const{
+        return isLocalFile() && fileInfo().isFile();
+    }
+
+    inline bool isLibrary() const{
+        return isFile() && QLibrary::isLibrary(_url.toLocalFile());
+    }
+
+    inline bool isDirectory() const{
+        return isLocalFile() && fileInfo().isDir();
+    }
+
     inline QUrl url() const{
         return _url;
     }
 
     static QUrl locate(QString path, QString context =QString());
 
+    inline static void setDefaultContext(QString _context) {context.setLocalData(locate(_context));}
+    inline static QUrl defaultContext() {return context.localData().isEmpty() || context.localData().isRelative() ? QUrl("qrc:/loaders/") : context.localData();}
+
 private:
     static QThreadStorage<QUrl> context;
     QUrl _url;
 
     static QUrl urlFromString(QString path);
-    inline static void setDefaultContext(QString _context) {context.setLocalData(locate(_context));}
-    inline static QUrl defaultContext() {return context.localData().isEmpty() || context.localData().isRelative() ? QUrl("qrc:/loaders/") : context.localData();}
 
 };
 

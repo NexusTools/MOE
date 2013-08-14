@@ -3,6 +3,7 @@
 
 #include "moeobject.h"
 #include "moeengine.h"
+#include "moescriptcontent.h"
 #include "moescriptregisters.h"
 
 #include <QAbstractEventDispatcher>
@@ -168,7 +169,7 @@ void MoeEngine::startContent(QString content, QUrl _loader) {
         _loader = MoeUrl::locate(_loader.toString(), "loaders://");
     if(QThread::currentThread() != this) {
         if(isRunning()) {
-            QMetaMethod startContent = metaObject()->method(metaObject()->indexOfMethod("startContent(QString,QUrl)"));
+            static QMetaMethod startContent = metaObject()->method(metaObject()->indexOfMethod("startContent(QString,QUrl)"));
             Q_ASSERT(startContent.isValid());
             startContent.invoke(this, Qt::QueuedConnection, Q_ARG(QString, content), Q_ARG(QUrl, _loader));
         } else {
@@ -407,20 +408,27 @@ void MoeEngine::mainLoop() {
     timer.start();
 
     connect(_scriptEngine, SIGNAL(signalHandlerException(QScriptValue)), this, SLOT(exceptionThrown(QScriptValue)));
-    if(initContentPath.isEmpty())
-        MoeUrl::setDefaultContext(":/content-select/");
-    else {
-        MoeUrl::setDefaultContext(initContentPath);
+
+    MoeContentPlugin* moeContentPlugin = 0;
+    {
+        if(initContentPath.isEmpty())
+            initContentPath = "content-select";
+
+        MoeUrl contentUrl(initContentPath, ":/");
+        if(contentUrl.isFile()) {
+            if(contentUrl.isLibrary()) {
+
+            } else
+                abort(QString("Cannot handle requsted content: %1").arg(contentUrl.toString()));
+        } else
+            moeContentPlugin = new MoeScriptContent(contentUrl.toString(), this);
+
         initContentPath.clear();
     }
-
-    {
-        MoeResourceRequest::reset();
-        MoeResourceRequest* initRequest = new MoeResourceRequest(loader);
-        connect(initRequest, SIGNAL(receivedString(QString)), this, SLOT(eval(QString)));
-        connect(initRequest, SIGNAL(error(QString)), this, SLOT(abort(QString)));
-        connect(initRequest, SIGNAL(completed(bool)), this, SLOT(deleteLater()), Qt::QueuedConnection);
-    }
+    if(moeContentPlugin)
+        moeContentPlugin->startImpl(loader);
+    else
+        abort("No content plugin loaded.");
 
     if(_state == Starting) {
         setState(Running);
@@ -450,6 +458,9 @@ void MoeEngine::mainLoop() {
 
         qDebug() << "Content finished, cleaning up";
     }
+
+    if(moeContentPlugin)
+        moeContentPlugin->deleteLater();
 }
 
 void MoeEngine::run()
