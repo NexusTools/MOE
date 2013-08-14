@@ -16,6 +16,7 @@
 WidgetSurfaceBackend::WidgetSurfaceBackend(QString title, QSize size, int type, QWidget* parent) : QPainterSurfaceBackend(QRect())
 {
     glfbo = 0;
+    sglfbo = 0;
     _widget = 0;
     _type = type;
     _ownsWidget = true;
@@ -31,9 +32,15 @@ WidgetSurfaceBackend::WidgetSurfaceBackend(QWidget* widget) : QPainterSurfaceBac
     _widget = 0;
     _type = 0;
     glfbo = 0;
+    sglfbo = 0;
 }
 
 WidgetSurfaceBackend::~WidgetSurfaceBackend() {
+    if(glfbo)
+        delete glfbo;
+    if(sglfbo)
+        delete sglfbo;
+
     if(_ownsWidget && _widget) {
         qDebug() << "Caching surface widget of type" << _type;
         _widget->setWindowTitle("Changing Content (MOE Game Engine)");
@@ -83,7 +90,6 @@ bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
                             glfbo = new QGLFramebufferObject(bufferSize(), bufferFormat);
                         }
 
-                        //qDebug() << "Rendering to GLFBO" << glfbo->size();
                         p.begin(glfbo);
                     } else {
                         if(pixmap.size() != bufferSize())
