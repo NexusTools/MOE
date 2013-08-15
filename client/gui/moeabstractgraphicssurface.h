@@ -5,6 +5,8 @@
 #include "moegraphicscontainer.h"
 #include "renderrecorder.h"
 
+#include <core/moeengine.h>
+
 #include <QElapsedTimer>
 #include <QThreadStorage>
 #include <QSharedPointer>
@@ -59,6 +61,7 @@ public slots:
 signals:
     void connected();
     void disconnected();
+    void renderTime(qreal);
 
 protected slots:
     inline void setGeometry(QRect rect) {
@@ -203,6 +206,7 @@ private slots:
         if(timer.elapsed() > 250)
             qWarning() << "Took" << timer.elapsed() << "ms to generate rendering instructions.";
 
+        emit renderTime((qreal)timer.elapsed()/(qreal)engine()->tickWait());
     }
 
     inline void disconnectQuit() {

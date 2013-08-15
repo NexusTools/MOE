@@ -60,6 +60,8 @@ public:
     inline MoeEnginePointer engine() const{return MoeEnginePointer((MoeEngine*)this);}
     inline void makeCurrent() const{_engine.setLocalData(MoeEnginePointer(engine()));}
 
+    inline int tickWait() const{return _tickWait;}
+
     Q_INVOKABLE void loadNativeModule(QString name);
     Q_INVOKABLE void changeFileContext(QString context);
     void startWithArguments(QVariantMap args =QVariantMap());
