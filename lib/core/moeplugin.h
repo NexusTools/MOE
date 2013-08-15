@@ -10,6 +10,7 @@ class MoeEngine;
 class MOEGAMEENGINE_EXPORT MoePlugin : public ModulePlugin
 {
     Q_OBJECT
+
 public:
     inline explicit MoePlugin() {}
 
@@ -20,6 +21,7 @@ public:
 
 protected:
     inline explicit MoePlugin(MoeEngine* eng) : ModulePlugin((ModularCore*)eng) {}
+
 };
 
 #endif // MOEPLUGIN_H

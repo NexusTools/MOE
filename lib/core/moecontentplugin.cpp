@@ -1,6 +1,11 @@
 #include "moeengine.h"
+#include "moemodule.h"
 #include "moescriptcontent.h"
 #include "network/moeresourcerequest.h"
+
+QString MoeModule::name() const{
+    return metaObject()->className();
+}
 
 QString MoePlugin::path() const{
     return QString(":/%1/").arg(name());

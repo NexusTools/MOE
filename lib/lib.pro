@@ -31,7 +31,7 @@ HEADERS += \
     moe-macros.h \
     global.h \
     core/moescriptcontent.h \
-    core/moelibrary.h
+    core/moemodule.h
 
 SOURCES += \
 	core/moeengine.cpp \

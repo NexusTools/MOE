@@ -3,7 +3,7 @@
 
 #include "moeobject.h"
 #include "moeengine.h"
-#include "moelibrary.h"
+#include "moemodule.h"
 #include "moescriptcontent.h"
 #include "moescriptregisters.h"
 
@@ -24,6 +24,9 @@ MoeEngine::MoeEngine() {
     makeCurrent();
     _scriptEngine = 0;
     _state = Stopped;
+
+    registerType("Module", "modules", "Dependancies");
+    registerType("Content", "content", "Dependancies");
 
     moveToThread(this);
     setTicksPerSecond(24);
@@ -363,12 +366,14 @@ void MoeEngine::loadNativeModule(QString name) {
     qDebug() << "Loading native module" << name;
 
     try {
-        Module::Ref module = loadModule(name, "Library");
+        Module::Ref module = loadModule(name, "Module");
         module->load(Module::LoadFlags(Module::Library));
     } catch(QString err) {
         _scriptEngine->currentContext()->throwError(err);
+        qWarning() << err;
     } catch(const char* err) {
         _scriptEngine->currentContext()->throwError(err);
+        qWarning() << err;
     }
 }
 
@@ -376,22 +381,37 @@ void MoeEngine::moduleLoaded(const Module::Ref module) {
     if(_state != Running)
         return;
 
-    static QMetaMethod _registerModule = staticMetaObject.method(staticMetaObject.indexOfMethod("registerModule(const Module::Ref)"));
-    _registerModule.invoke(this, Qt::QueuedConnection, Q_ARG(const Module::Ref, module));
+    if(QThread::currentThread() == this)
+        registerModule(module);
+    else {
+        qDebug() << "Passing loaded module to Engine Thread" << module->name();
+        static QMetaMethod _registerModule = staticMetaObject.method(staticMetaObject.indexOfMethod("registerModule(const Module::Ref)"));
+        _registerModule.invoke(this, Qt::QueuedConnection, Q_ARG(const Module::Ref, module));
+    }
     _loadedModules << module;
 }
 
 void MoeEngine::registerModule(const Module::Ref module) {
+    qDebug() << "Registering Module" << module->name();
+
     QScriptValue globalObject = _scriptEngine->globalObject();
-    foreach(const QMetaObject* metaObject, module->findCompatiblePlugins<MoeLibrary>())
-        globalObject.setProperty(metaObject->className(), _scriptEngine->newQMetaObject(metaObject));
+    foreach(const QMetaObject* metaObject, module->findCompatiblePlugins<MoeModule>())
+        globalObject.setProperty(metaObject->className(), _scriptEngine->newQMetaObject(metaObject), QScriptValue::ReadOnly);
+
+    foreach(MoePlugin* instance, module->instances<MoePlugin>()) {
+        qDebug() << "Adding instance" << instance->name();
+        globalObject.setProperty(
+                    instance->name(),
+                    _scriptEngine->newQObject(instance),
+                    QScriptValue::ReadOnly);
+    }
 
 }
 
 void MoeEngine::setupGlobalObject() {
     QScriptValue globalObject = _scriptEngine->globalObject();
-    globalObject.setProperty("global", globalObject, QScriptValue::SkipInEnumeration);
-    globalObject.setProperty("eval", _scriptEngine->newFunction(__eval_func__));
+    globalObject.setProperty("global", globalObject, QScriptValue::SkipInEnumeration | QScriptValue::ReadOnly);
+    globalObject.setProperty("eval", _scriptEngine->newFunction(__eval_func__), QScriptValue::ReadOnly);
 
     QList<const QMetaObject*> classesToLoad = _classes;
     classesToLoad.append(&MoeUrl::staticMetaObject);
@@ -401,7 +421,7 @@ void MoeEngine::setupGlobalObject() {
         QString key(metaObject->className());
         if(key.startsWith("Moe"))
             key = key.mid(3);
-        globalObject.setProperty(key, _scriptEngine->newQMetaObject(metaObject));
+        globalObject.setProperty(key, _scriptEngine->newQMetaObject(metaObject), QScriptValue::Undeletable);
     }
 
     QVariant engine;
@@ -422,13 +442,13 @@ void MoeEngine::setupGlobalObject() {
         globalObject.setProperty(iterator.key(), _scriptEngine->newVariant(iterator.value()));
     }
 
-    foreach(Module::Ref module, modulesByType("Content"))
-        foreach(const QMetaObject* metaObject, module->findCompatiblePlugins<MoeLibrary>())
-            globalObject.setProperty(metaObject->className(), _scriptEngine->newQMetaObject(metaObject));
+    foreach(Module::Ref module, modulesByType("Module")) {
+        foreach(const QMetaObject* metaObject, module->findCompatiblePlugins<MoeModule>())
+            globalObject.setProperty(metaObject->className(), _scriptEngine->newQMetaObject(metaObject), QScriptValue::Undeletable);
 
-    foreach(Module::Ref module, modulesByType("Library"))
-        foreach(const QMetaObject* metaObject, module->findCompatiblePlugins<MoeLibrary>())
-            globalObject.setProperty(metaObject->className(), _scriptEngine->newQMetaObject(metaObject));
+        foreach(MoePlugin* plugin, module->instances<MoePlugin>())
+            globalObject.setProperty(plugin->name(), _scriptEngine->newQObject(plugin), QScriptValue::Undeletable);
+    }
 
     initializeContentEnvironment(_scriptEngine, globalObject);
 }
@@ -465,10 +485,16 @@ void MoeEngine::mainLoop() {
                     if(moeContentPlugin) {
                         QScriptValue globalObject = _scriptEngine->globalObject();
 
-                        foreach(const QMetaObject* metaObject, contentModule->findCompatiblePlugins<MoeLibrary>())
-                            globalObject.setProperty(metaObject->className(), _scriptEngine->newQMetaObject(metaObject));
+                        foreach(const QMetaObject* metaObject, contentModule->findCompatiblePlugins<MoeModule>())
+                            globalObject.setProperty(metaObject->className(), _scriptEngine->newQMetaObject(metaObject), QScriptValue::Undeletable);
 
-                        globalObject.setProperty(moeContentPlugin->metaObject()->className(), _scriptEngine->newQObject(moeContentPlugin));
+                        foreach(MoePlugin* plugin, contentModule->instances<MoePlugin>())
+                            globalObject.setProperty(
+                                        plugin->name(),
+                                        _scriptEngine->newQObject(plugin),
+                                        QScriptValue::Undeletable);
+
+                        globalObject.setProperty(moeContentPlugin->metaObject()->className(), _scriptEngine->newQObject(moeContentPlugin), QScriptValue::Undeletable);
                     }
                 } catch(QString err) {
                     abort(err);
