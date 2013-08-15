@@ -60,6 +60,7 @@ public:
     inline MoeEnginePointer engine() const{return MoeEnginePointer((MoeEngine*)this);}
     inline void makeCurrent() const{_engine.setLocalData(MoeEnginePointer(engine()));}
 
+    Q_INVOKABLE void loadNativeModule(QString name);
     Q_INVOKABLE void changeFileContext(QString context);
     void startWithArguments(QVariantMap args =QVariantMap());
     Q_INVOKABLE void startContent(QString content, QUrl loaderPath =QUrl());
@@ -115,11 +116,14 @@ protected:
     virtual void initializeScriptEngine(QScriptEngine*) {}
     virtual void initializeContentEnvironment(QScriptEngine*, QScriptValue) {}
 
+    Q_INVOKABLE void registerModule(const Module::Ref);
+
     Q_INVOKABLE void emitTick();
     void timerEvent(QTimerEvent *);
     void setState(State);
 
     void setupGlobalObject();
+    virtual void moduleLoaded(const Module::Ref);
     void processEvents(qint32 until);
     void mainLoop();
     void run();
@@ -140,6 +144,7 @@ private:
     QVariantMap _arguments;
     QVariantMap _environment;
 
+    Module::List _loadedModules;
     QScriptEngine* _scriptEngine;
     QMap<int, QScriptValue> _timers;
     QList<const QMetaObject*> _classes;

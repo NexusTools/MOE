@@ -3,6 +3,7 @@
 
 #include "moeobject.h"
 #include "moeengine.h"
+#include "moelibrary.h"
 #include "moescriptcontent.h"
 #include "moescriptregisters.h"
 
@@ -358,6 +359,35 @@ void MoeEngine::processEvents(qint32 until) {
     exec();
 }
 
+void MoeEngine::loadNativeModule(QString name) {
+    qDebug() << "Loading native module" << name;
+
+    try {
+        Module::Ref module = loadModule(name, "Library");
+        module->load(Module::LoadFlags(Module::Library));
+    } catch(QString err) {
+        _scriptEngine->currentContext()->throwError(err);
+    } catch(const char* err) {
+        _scriptEngine->currentContext()->throwError(err);
+    }
+}
+
+void MoeEngine::moduleLoaded(const Module::Ref module) {
+    if(_state != Running)
+        return;
+
+    static QMetaMethod _registerModule = staticMetaObject.method(staticMetaObject.indexOfMethod("registerModule(const Module::Ref)"));
+    _registerModule.invoke(this, Qt::QueuedConnection, Q_ARG(const Module::Ref, module));
+    _loadedModules << module;
+}
+
+void MoeEngine::registerModule(const Module::Ref module) {
+    QScriptValue globalObject = _scriptEngine->globalObject();
+    foreach(const QMetaObject* metaObject, module->findCompatiblePlugins<MoeLibrary>())
+        globalObject.setProperty(metaObject->className(), _scriptEngine->newQMetaObject(metaObject));
+
+}
+
 void MoeEngine::setupGlobalObject() {
     QScriptValue globalObject = _scriptEngine->globalObject();
     globalObject.setProperty("global", globalObject, QScriptValue::SkipInEnumeration);
@@ -393,7 +423,11 @@ void MoeEngine::setupGlobalObject() {
     }
 
     foreach(Module::Ref module, modulesByType("Content"))
-        foreach(const QMetaObject* metaObject, module->findCompatiblePlugins<MoePlugin>())
+        foreach(const QMetaObject* metaObject, module->findCompatiblePlugins<MoeLibrary>())
+            globalObject.setProperty(metaObject->className(), _scriptEngine->newQMetaObject(metaObject));
+
+    foreach(Module::Ref module, modulesByType("Library"))
+        foreach(const QMetaObject* metaObject, module->findCompatiblePlugins<MoeLibrary>())
             globalObject.setProperty(metaObject->className(), _scriptEngine->newQMetaObject(metaObject));
 
     initializeContentEnvironment(_scriptEngine, globalObject);
@@ -426,8 +460,16 @@ void MoeEngine::mainLoop() {
                     if(contentModule.isNull())
                         throw "Failed to load specified module for unknown reason.";
 
-                    contentModule->load(Module::LoadFlags(Module::StrictVerify | Module::ExportSymbols));
+                    contentModule->load(Module::StrictVerify);
                     moeContentPlugin = contentModule->createCompatiblePlugin<MoeContentPlugin>();
+                    if(moeContentPlugin) {
+                        QScriptValue globalObject = _scriptEngine->globalObject();
+
+                        foreach(const QMetaObject* metaObject, contentModule->findCompatiblePlugins<MoeLibrary>())
+                            globalObject.setProperty(metaObject->className(), _scriptEngine->newQMetaObject(metaObject));
+
+                        globalObject.setProperty(moeContentPlugin->metaObject()->className(), _scriptEngine->newQObject(moeContentPlugin));
+                    }
                 } catch(QString err) {
                     abort(err);
                 } catch(const char* err) {
@@ -440,7 +482,7 @@ void MoeEngine::mainLoop() {
 
         initContentPath.clear();
     }
-    _scriptEngine->globalObject().setProperty(moeContentPlugin->metaObject()->className(), _scriptEngine->newQObject(moeContentPlugin));
+
     if(moeContentPlugin)
         moeContentPlugin->startImpl(_loader);
     else
@@ -497,6 +539,7 @@ initializeEngine:
     setupGlobalObject();
     mainLoop();
 
+    _loadedModules.clear();
     foreach(int timerId, _timers.keys())
         killTimer(timerId);
     _timers.clear();

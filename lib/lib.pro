@@ -30,7 +30,8 @@ HEADERS += \
 	core/qargumentparser.h \
     moe-macros.h \
     global.h \
-    core/moescriptcontent.h
+    core/moescriptcontent.h \
+    core/moelibrary.h
 
 SOURCES += \
 	core/moeengine.cpp \
