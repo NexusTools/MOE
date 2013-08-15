@@ -392,6 +392,10 @@ void MoeEngine::setupGlobalObject() {
         globalObject.setProperty(iterator.key(), _scriptEngine->newVariant(iterator.value()));
     }
 
+    foreach(Module::Ref module, modulesByType("Content"))
+        foreach(const QMetaObject* metaObject, module->findCompatiblePlugins<MoePlugin>())
+            globalObject.setProperty(metaObject->className(), _scriptEngine->newQMetaObject(metaObject));
+
     initializeContentEnvironment(_scriptEngine, globalObject);
 }
 
@@ -436,6 +440,7 @@ void MoeEngine::mainLoop() {
 
         initContentPath.clear();
     }
+    _scriptEngine->globalObject().setProperty(moeContentPlugin->metaObject()->className(), _scriptEngine->newQObject(moeContentPlugin));
     if(moeContentPlugin)
         moeContentPlugin->startImpl(_loader);
     else
