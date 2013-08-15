@@ -3,7 +3,7 @@
 
 #include "moeplugin.h"
 
-class MoeModule : public MoePlugin
+class MOEGAMEENGINE_EXPORT MoeModule : public MoePlugin
 {
 public:
     virtual QString name() const;
