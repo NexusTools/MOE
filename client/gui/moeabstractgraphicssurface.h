@@ -39,6 +39,9 @@ public:
     inline int mouseButtons() const{return _mouseButtons;}
     inline QPoint mousePos() const{return _mousePos;}
 
+    Q_INVOKABLE virtual bool hasOpenGL() const=0;
+    Q_INVOKABLE virtual QString lastOpenGLError() const=0;
+
 public slots:
     virtual void openUrl(QUrl url) {qWarning() << this << "openUrl method isn't implemented" << url;}
 

@@ -32,11 +32,16 @@ public:
     BackendWidgetType backendWidgetType() {return (BackendWidgetType)((WidgetSurfaceBackend*)backend())->type();}
     QWidget* backendWidget() {return ((WidgetSurfaceBackend*)backend())->widget();}
 
+
+    virtual bool hasOpenGL() const{return widgetType == GLWidget;}
+    virtual QString lastOpenGLError() const{return _oglError.isEmpty() ? "No Error" : _oglError;}
+
 private:
     inline explicit MoeGraphicsSurface(QWidget* widget) : MoeAbstractGraphicsSurface(new WidgetSurfaceBackend(widget)) {}
     void initWidget(QWidget*);
 
     BackendWidgetType widgetType;
+    QString _oglError;
     QWidget* _widget;
 
     static BackendWidgetType _defaultType;

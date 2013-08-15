@@ -367,6 +367,9 @@ void MoeEngine::loadNativeModule(QString name) {
 
     try {
         Module::Ref module = loadModule(name, "Module");
+        if(module.isNull())
+            throw "Failed to load module for unknown reason.";
+
         module->load(Module::LoadFlags(Module::Library));
     } catch(QString err) {
         _scriptEngine->currentContext()->throwError(err);
