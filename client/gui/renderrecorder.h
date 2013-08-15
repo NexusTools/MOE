@@ -22,6 +22,7 @@ public:
     explicit inline RenderRecorder(MoeAbstractGraphicsSurface* s, QRect rect) {
         surface = s;
         cbrush = QColor(Qt::darkMagenta);
+        _instructions.reserve(1024);
         _brush = cbrush;
         cPenThick = 1;
         penThick = cPenThick;

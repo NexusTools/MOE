@@ -183,11 +183,11 @@ private slots:
         QElapsedTimer timer;
         timer.start();
 
-        RenderRecorder* p = new RenderRecorder(this, repaintRegion);
+        RenderRecorder p(this, repaintRegion);
 
-        render(p, repaintRegion);
+        render(&p, repaintRegion);
         if(backend()) {
-            if(backend()->renderInstructions(p->instructions(),
+            if(backend()->renderInstructions(p.instructions(),
                                              repaintRegion, _localGeometry.size()))
                 repaintRegion = QRect();
             else {
@@ -199,8 +199,6 @@ private slots:
 
         if(timer.elapsed() > 250)
             qWarning() << "Took" << timer.elapsed() << "ms to generate rendering instructions.";
-
-        p->deleteLater();
 
     }
 
