@@ -270,11 +270,11 @@ void WidgetSurfaceBackend::initWidget(QWidget* widget) {
 
         _type = MoeGraphicsSurface::GLWidget;
         if(!QGLShader::hasOpenGLShaders(QGLShader::Vertex)) {
-            qCritical() << "OpenGL Vertex Shaders missing.\nFalling back to Widget surface type.";
+            emit OpenGLError("OpenGL Vertex Shaders missing.\nFalling back to Widget surface type.");
             _type = MoeGraphicsSurface::Widget;
         } else {
             if(!QGLFramebufferObject::hasOpenGLFramebufferObjects()) {
-                qWarning() << "OpenGL Frame Buffer Objects missing.\nFalling back to Widget surface type.";
+                emit OpenGLError("OpenGL Frame Buffer Objects missing.\nFalling back to Widget surface type.");
                 _type = MoeGraphicsSurface::Widget;
             }
         }
@@ -283,13 +283,13 @@ void WidgetSurfaceBackend::initWidget(QWidget* widget) {
                 widget->deleteLater();
                 createWidget(widget->windowTitle(), widget->size(), _type, qobject_cast<QWidget*>(widget->parent()));
             } else {
-                qCritical() << "Cannot use fallback since this surface isn't owned by MOE.\nDestroying backend...";
+                emit OpenGLError("Cannot use fallback since this surface isn't owned by MOE.\nDestroying backend...");
                 deleteLater();
             }
             return;
         }
     } else if(_type == MoeGraphicsSurface::GLWidget) {
-        qWarning() << "Attempted to use" << widget << "as QGLWidget";
+        emit OpenGLError(QString("Attempted to use `%1` as QGLWidget").arg(widget->metaObject()->className()));
         _type = MoeGraphicsSurface::Widget;
     }
 

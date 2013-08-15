@@ -47,6 +47,9 @@ protected slots:
     void initWidget(QWidget*);
     void repaintRect();
 
+signals:
+    void OpenGLError(QString);
+
 private:
     int _type;
 

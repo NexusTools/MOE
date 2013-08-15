@@ -251,6 +251,7 @@ protected:
         setGeometry(backend->geom());
     }
 
+    inline AbstractSurfaceBackend* backend() const{return _backend.data();}
 
     inline void repaint(QRect region =QRect()){
         if(!_connected)
