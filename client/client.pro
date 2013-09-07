@@ -24,7 +24,10 @@ SOURCES += debug/crashdialog.cpp \
 	gui/moegraphicstext.cpp \
 	gui/widgetsurfacebackend.cpp \
 	moeclientengine.cpp \
-	clientscriptconverters.cpp
+	clientscriptconverters.cpp \
+    opengl/moeglgraphicsview.cpp \
+    opengl/moeglslshaderprogram.cpp \
+    opengl/moeglvertexmodel.cpp
 
 HEADERS  += gui/moeabstractgraphicssurface.h \
     gui/abstractsurfacebackend.h \
@@ -39,7 +42,10 @@ HEADERS  += gui/moeabstractgraphicssurface.h \
     gui/renderinstruction.h \
 	gui/renderrecorder.h \
 	gui/widgetsurfacebackend.h \
-	moeclientengine.h
+	moeclientengine.h \
+    opengl/moeglgraphicsview.h \
+    opengl/moeglvertexmodel.h \
+    opengl/moeglslshaderprogram.h
 
 FORMS    += debug/crashdialog.ui
 
