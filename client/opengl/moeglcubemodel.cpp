@@ -55,6 +55,4 @@ MoeGLCubeModel::MoeGLCubeModel()
     addVertex(QVector3D( -1, -1,  1), Qt::black);
     addVertex(QVector3D(  1, -1, -1), Qt::black);
     addVertex(QVector3D(  1, -1,  1), Qt::black);
-
-    compile();
 }

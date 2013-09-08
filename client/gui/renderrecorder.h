@@ -2,9 +2,12 @@
 #define RENDERRECORDER_H
 
 #include <core/moeobject.h>
+
 #include "renderbuffer.h"
 #include "renderinstruction.h"
+#include "opengl/gltypes.h"
 
+#include <QMatrix4x4>
 #include <QTransform>
 #include <QPainter>
 
@@ -33,12 +36,60 @@ public:
         opacity = 1;
     }
 
-    inline void updateGLScene(RenderBuffer* buff, QSize size) {
+    inline void resizeGLScene(RenderBuffer* buff, QSize size) {
         RenderInstruction instruction;
-        instruction.type = RenderInstruction::UpdateGLScene;
+        instruction.type = RenderInstruction::ResizeGLScene;
         instruction.arguments.append(buff->id());
         instruction.arguments.append(size);
         _instructions.append(instruction);
+    }
+
+    inline void updateGLMatrix(RenderBuffer* buff, QMatrix4x4 matrix) {
+        RenderInstruction instruction;
+        instruction.type = RenderInstruction::UpdateGLMatrix;
+        instruction.arguments.append(buff->id());
+        instruction.arguments.append(QVariant::fromValue<QMatrix4x4>(matrix));
+        _instructions.append(instruction);
+    }
+
+    inline void beginRenderGLScene(RenderBuffer* buff) {
+        RenderInstruction instruction;
+        instruction.type = RenderInstruction::BeginRenderGLScene;
+        instruction.arguments.append(buff->id());
+        _instructions.append(instruction);
+    }
+
+    inline void finishRenderGLScene() {
+        RenderInstruction instruction;
+        instruction.type = RenderInstruction::FinishRenderGLScene;
+        _instructions.append(instruction);
+    }
+
+    inline void updateGLModel(MoeObjectPtr ptr, vec3::list vectors, vec3::list colours) {
+        RenderInstruction instruction;
+        instruction.type = RenderInstruction::AllocateGLModel;
+        instruction.arguments.append(QVariant::fromValue<MoeObjectPtr>(ptr));
+        instruction.arguments.append(QVariant::fromValue<vec3::list>(vectors));
+        instruction.arguments.append(QVariant::fromValue<vec3::list>(colours));
+        _instructions.append(instruction);
+
+    }
+
+    inline void updateGLModelMatrix(MoeObjectPtr ptr, QMatrix4x4 matrix) {
+        RenderInstruction instruction;
+        instruction.type = RenderInstruction::UpdateGLModelMatrix;
+        instruction.arguments.append(QVariant::fromValue<MoeObjectPtr>(ptr));
+        instruction.arguments.append(QVariant::fromValue<QMatrix4x4>(matrix));
+        _instructions.append(instruction);
+
+    }
+
+    inline void renderGLModel(MoeObjectPtr ptr) {
+        RenderInstruction instruction;
+        instruction.type = RenderInstruction::RenderGLModel;
+        instruction.arguments.append(QVariant::fromValue<MoeObjectPtr>(ptr));
+        _instructions.append(instruction);
+
     }
 
     inline QColor pen() const{return _pen;}

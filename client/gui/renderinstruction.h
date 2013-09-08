@@ -20,7 +20,6 @@ struct RenderInstruction {
         UpdateOpacity,
         UpdateClipRect,
         UpdateTransform,
-        UpdateGLScene,
         UpdateFont,
 
         RenderBuffer,
@@ -29,7 +28,19 @@ struct RenderInstruction {
         QueryBufferMetaData,
         StartBufferPaint,
         EndBufferPaint,
-        DestroyBuffer
+        DestroyBuffer,
+
+        // OpenGL
+        ResizeGLScene,
+        UpdateGLMatrix,
+        BeginRenderGLScene,
+        FinishRenderGLScene,
+
+        AllocateGLModel,
+        RenderGLModel,
+        UpdateGLModel,
+        UpdateGLModelMatrix,
+        DestroyGLModel
     } type;
 
     QVariantList arguments;

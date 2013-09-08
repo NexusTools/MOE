@@ -29,7 +29,8 @@ SOURCES += debug/crashdialog.cpp \
     opengl/moeglgraphicsview.cpp \
     opengl/moeglslshaderprogram.cpp \
     opengl/moeglvertexmodel.cpp \
-    opengl/moeglcubemodel.cpp
+    opengl/moeglcubemodel.cpp \
+    opengl/moeglscene.cpp
 
 HEADERS  += gui/moeabstractgraphicssurface.h \
     gui/abstractsurfacebackend.h \
@@ -48,7 +49,9 @@ HEADERS  += gui/moeabstractgraphicssurface.h \
     opengl/moeglgraphicsview.h \
     opengl/moeglvertexmodel.h \
     opengl/moeglslshaderprogram.h \
-    opengl/moeglcubemodel.h
+    opengl/moeglcubemodel.h \
+    opengl/moeglscene.h \
+    opengl/gltypes.h
 
 FORMS    += debug/crashdialog.ui
 

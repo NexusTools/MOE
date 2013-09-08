@@ -7,7 +7,7 @@ class MoeGLCubeModel : public MoeGLVertexModel
 {
     Q_OBJECT
 public:
-    explicit MoeGLCubeModel();
+    Q_INVOKABLE explicit MoeGLCubeModel();
     
 };
 
