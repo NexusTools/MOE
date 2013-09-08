@@ -33,6 +33,14 @@ public:
         opacity = 1;
     }
 
+    inline void updateGLScene(RenderBuffer* buff, QSize size) {
+        RenderInstruction instruction;
+        instruction.type = RenderInstruction::UpdateGLScene;
+        instruction.arguments.append(buff->id());
+        instruction.arguments.append(size);
+        _instructions.append(instruction);
+    }
+
     inline QColor pen() const{return _pen;}
     inline QBrush brush() const{return _brush;}
 

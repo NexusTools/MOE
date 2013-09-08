@@ -20,6 +20,7 @@ struct RenderInstruction {
         UpdateOpacity,
         UpdateClipRect,
         UpdateTransform,
+        UpdateGLScene,
         UpdateFont,
 
         RenderBuffer,

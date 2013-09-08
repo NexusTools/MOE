@@ -3,10 +3,12 @@
 
 #include "abstractsurfacebackend.h"
 
+#include <QGLFramebufferObject>
 #include <QApplication>
 #include <QPainter>
 #include <QDebug>
 
+#include <GL/glu.h>
 
 class QPainterSurfaceBackend : public AbstractSurfaceBackend {
 public:
@@ -77,7 +79,7 @@ public:
                     break;
 
                 case RenderInstruction::DrawText:
-                    p.drawText(inst.arguments.at(0).toRectF(), inst.arguments.at(1).toString());
+                    p.drawText(inst.arguments.at(0).toRectF(), Qt::AlignCenter, inst.arguments.at(1).toString());
                     break;
 
                 case RenderInstruction::UpdatePen:
@@ -116,10 +118,105 @@ public:
                         p.setTransform(inst.arguments.first().value<QTransform>());
                 break;
 
+                case RenderInstruction::UpdateGLScene:
+                {
+                    quintptr id = inst.arguments.first().value<quintptr>();
+                    QSize size = inst.arguments.at(1).toSize();
+
+                    QGLFramebufferObjectFormat bufferFormat;
+                    bufferFormat.setInternalTextureFormat(GL_RGBA8);
+                    bufferFormat.setMipmap(true);
+
+                    QGLFramebufferObject* fbo = glBuffers.value(id);
+                    if(!fbo) {
+                        fbo = new QGLFramebufferObject(bufferSize(), bufferFormat);
+                        glBuffers.insert(id, fbo);
+                    } else if(fbo->size() != size) {
+                        delete fbo;
+                        qDebug() << "Resizing FBO" << bufferSize();
+                        fbo = new QGLFramebufferObject(bufferSize(), bufferFormat);
+                        glBuffers.insert(id, fbo);
+                    }
+
+                    p.end();
+                    if(fbo->bind()) {
+                        glClearColor(0, 0, 0, 1);
+                        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+                        glViewport(0, 0, size.width(), size.height());
+                        glMatrixMode(GL_PROJECTION);
+                        glLoadIdentity();
+                        gluPerspective(65.0, (float)size.width() / size.height(), 0, 10000);
+                        glMatrixMode(GL_MODELVIEW);
+
+                        //Multi-colored side - FRONT
+                        glBegin(GL_POLYGON);
+
+                        glColor3f( 1.0, 0.0, 0.0 );     glVertex3f(  0.5, -0.5, -0.5 );      // P1 is red
+                        glColor3f( 0.0, 1.0, 0.0 );     glVertex3f(  0.5,  0.5, -0.5 );      // P2 is green
+                        glColor3f( 0.0, 0.0, 1.0 );     glVertex3f( -0.5,  0.5, -0.5 );      // P3 is blue
+                        glColor3f( 1.0, 0.0, 1.0 );     glVertex3f( -0.5, -0.5, -0.5 );      // P4 is purple
+
+                        glEnd();
+
+                        // White side - BACK
+                        glBegin(GL_POLYGON);
+                        glColor3f(   1.0,  1.0, 1.0 );
+                        glVertex3f(  0.5, -0.5, 0.5 );
+                        glVertex3f(  0.5,  0.5, 0.5 );
+                        glVertex3f( -0.5,  0.5, 0.5 );
+                        glVertex3f( -0.5, -0.5, 0.5 );
+                        glEnd();
+
+                        // Purple side - RIGHT
+                        glBegin(GL_POLYGON);
+                        glColor3f(  1.0,  0.0,  1.0 );
+                        glVertex3f( 0.5, -0.5, -0.5 );
+                        glVertex3f( 0.5,  0.5, -0.5 );
+                        glVertex3f( 0.5,  0.5,  0.5 );
+                        glVertex3f( 0.5, -0.5,  0.5 );
+                        glEnd();
+
+                        // Green side - LEFT
+                        glBegin(GL_POLYGON);
+                        glColor3f(   0.0,  1.0,  0.0 );
+                        glVertex3f( -0.5, -0.5,  0.5 );
+                        glVertex3f( -0.5,  0.5,  0.5 );
+                        glVertex3f( -0.5,  0.5, -0.5 );
+                        glVertex3f( -0.5, -0.5, -0.5 );
+                        glEnd();
+
+                        // Blue side - TOP
+                        glBegin(GL_POLYGON);
+                        glColor3f(   0.0,  0.0,  1.0 );
+                        glVertex3f(  0.5,  0.5,  0.5 );
+                        glVertex3f(  0.5,  0.5, -0.5 );
+                        glVertex3f( -0.5,  0.5, -0.5 );
+                        glVertex3f( -0.5,  0.5,  0.5 );
+                        glEnd();
+
+                        // Red side - BOTTOM
+                        glBegin(GL_POLYGON);
+                        glColor3f(   1.0,  0.0,  0.0 );
+                        glVertex3f(  0.5, -0.5, -0.5 );
+                        glVertex3f(  0.5, -0.5,  0.5 );
+                        glVertex3f( -0.5, -0.5,  0.5 );
+                        glVertex3f( -0.5, -0.5, -0.5 );
+                        glEnd();
+
+                        glFlush();
+                        fbo->release();
+                    } else
+                        qWarning() << "Cannot bind FBO";
+                    begin(p);
+                    break;
+                }
+
                 case RenderInstruction::BufferLoadImage:
                 {
                     quintptr id = inst.arguments.first().value<quintptr>();
                     QByteArray data = inst.arguments.at(1).toByteArray();
+
                     QPixmap buffer;
                     buffer.loadFromData(data);
                     renderBuffers.insert(id, buffer);
@@ -132,13 +229,16 @@ public:
                     QRectF dest = inst.arguments.at(1).toRectF();
                     QPixmap buffer = renderBuffers.value(id);
 
-                    if(buffer.isNull())
-                        if(!renderBuffers.contains(id)) {
+                    if(buffer.isNull()) {
+                        QGLFramebufferObject* fbo = glBuffers.value(id);
+                        if(fbo)
+                            blitBuffer(dest.toRect(), fbo);
+                        else if(!renderBuffers.contains(id)) {
                             p.drawTiledPixmap(dest, getCheckerBoardImage());
                             return;
                         } else
                             p.drawTiledPixmap(dest, getCheckerBoardImage(Qt::red));
-                    else {
+                    } else {
                         QSizeF scaledSize(buffer.size().scaled(dest.width(), dest.height(), Qt::KeepAspectRatio));
                         p.drawPixmap(QRectF(dest.topLeft() + QPointF(dest.width()/2-scaledSize.width()/2,
                                            dest.height()/2-scaledSize.height()/2), scaledSize), buffer,
@@ -194,6 +294,7 @@ private:
     QRect pendingPaintRect;
     QSize pendingBufferSize;
     QMap<quintptr, QPixmap> renderBuffers;
+    QMap<quintptr, QGLFramebufferObject*> glBuffers;
     RenderInstructions pendingInstructions;
 };
 

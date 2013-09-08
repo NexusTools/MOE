@@ -63,6 +63,21 @@ WidgetSurfaceBackend::~WidgetSurfaceBackend() {
     }
 }
 
+void WidgetSurfaceBackend::blitBuffer(QRect dest, QGLFramebufferObject* fbo) {
+    /*if(QGLFramebufferObject::hasOpenGLFramebufferBlit())
+        QGLFramebufferObject::blitFramebuffer(fbo,
+               QRect(QPoint(0, 0), dest.size()), glfbo, dest);
+    else*/
+        glfbo->drawTexture(dest, fbo->texture());
+}
+
+void WidgetSurfaceBackend::begin(QPainter& p){
+    if(glfbo)
+        p.begin(glfbo);
+    else
+        p.begin(&pixmap);
+}
+
 bool WidgetSurfaceBackend::eventFilter(QObject * obj, QEvent * event) {
     if(obj == _widget) {
         switch(event->type()) {

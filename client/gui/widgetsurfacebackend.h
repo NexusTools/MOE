@@ -14,6 +14,8 @@ typedef QCache<int, QWidget> SurfaceCache;
 class WidgetSurfaceBackend : public QPainterSurfaceBackend
 {
     Q_OBJECT
+
+    friend class QPainterSurfaceBackend;
 public:
     explicit WidgetSurfaceBackend(QString title, QSize size, int type, QWidget* parent);
     explicit WidgetSurfaceBackend(QWidget*);
@@ -38,6 +40,8 @@ public:
     }
 
     bool eventFilter(QObject *, QEvent *);
+    void blitBuffer(QRect, QGLFramebufferObject*);
+    void begin(QPainter&);
 
     inline QWidget* widget() const{return _widget;}
     inline int type() const{return _type;}

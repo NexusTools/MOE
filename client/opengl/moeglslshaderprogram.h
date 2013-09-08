@@ -3,15 +3,13 @@
 
 #include <core/moeobject.h>
 
+#include <QGLShaderProgram>
+
 class MoeGLSLShaderProgram : public MoeObject
 {
     Q_OBJECT
 public:
     Q_INVOKABLE explicit MoeGLSLShaderProgram();
-    
-signals:
-    
-public slots:
     
 };
 

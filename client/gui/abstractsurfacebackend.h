@@ -8,12 +8,17 @@
 #include <QDebug>
 #include <QRect>
 
+class QGLFramebufferObject;
+
 class AbstractSurfaceBackend : public QObject {
     Q_OBJECT
 
     friend class MoeAbstractGraphicsSurface;
 public:
     virtual bool renderInstructions(RenderInstructions instructions, QRect, QSize) =0;
+    virtual void blitBuffer(QRect, QGLFramebufferObject*) =0;
+    virtual void begin(QPainter&) =0;
+
     inline QRect geom() const{return _geom;}
     inline QPoint pos() const{return _geom.topLeft();}
     inline QSize size() const{return _geom.size();}

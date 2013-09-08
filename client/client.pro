@@ -11,6 +11,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = MoeGameLauncher
 TEMPLATE = app
 
+LIBS += -lGLU
 
 QMAKE_CXXFLAGS+="-std=c++0x"
 
