@@ -12,3 +12,8 @@ void MoeGLGraphicsView::render(RenderRecorder * p, QRect geom) {
     }
     p->drawBuffer(renderBuffer, localGeometry());
 }
+
+void MoeGLGraphicsView::update(){
+    needsUpdate = true;
+    repaint();
+}

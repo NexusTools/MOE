@@ -3,10 +3,12 @@
 
 #include "abstractsurfacebackend.h"
 
-#include <QGLFramebufferObject>
 #include <QApplication>
 #include <QPainter>
 #include <QDebug>
+
+#include <QGLFramebufferObject>
+#include <QGLShaderProgram>
 
 #include <GL/glu.h>
 
@@ -122,6 +124,7 @@ public:
                 {
                     quintptr id = inst.arguments.first().value<quintptr>();
                     QSize size = inst.arguments.at(1).toSize();
+                    qDebug() << "Updating GL Scene" << size;
 
                     QGLFramebufferObjectFormat bufferFormat;
                     bufferFormat.setInternalTextureFormat(GL_RGBA8);
@@ -129,18 +132,18 @@ public:
 
                     QGLFramebufferObject* fbo = glBuffers.value(id);
                     if(!fbo) {
-                        fbo = new QGLFramebufferObject(bufferSize(), bufferFormat);
+                        fbo = new QGLFramebufferObject(size, bufferFormat);
                         glBuffers.insert(id, fbo);
                     } else if(fbo->size() != size) {
                         delete fbo;
-                        qDebug() << "Resizing FBO" << bufferSize();
-                        fbo = new QGLFramebufferObject(bufferSize(), bufferFormat);
+                        qDebug() << "Resizing FBO" << size;
+                        fbo = new QGLFramebufferObject(size, bufferFormat);
                         glBuffers.insert(id, fbo);
                     }
 
                     p.end();
                     if(fbo->bind()) {
-                        glClearColor(0, 0, 0, 1);
+                        glClearColor(0, 0, 0, 0);
                         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
                         glViewport(0, 0, size.width(), size.height());
@@ -148,6 +151,15 @@ public:
                         glLoadIdentity();
                         gluPerspective(65.0, (float)size.width() / size.height(), 0, 10000);
                         glMatrixMode(GL_MODELVIEW);
+                        glEnable(GL_DEPTH_TEST);
+                        glEnable(GL_CULL_FACE);
+                        glDepthFunc(GL_LEQUAL);
+                        glPushMatrix();
+
+                        static float rot = 0;
+                        glTranslatef(0, 0, -2);
+                        glRotatef(rot, 1, 0, 0);
+                        rot+=2;
 
                         //Multi-colored side - FRONT
                         glBegin(GL_POLYGON);
@@ -204,8 +216,12 @@ public:
                         glVertex3f( -0.5, -0.5, -0.5 );
                         glEnd();
 
+                        glPopMatrix();
                         glFlush();
                         fbo->release();
+
+                        glDisable(GL_CULL_FACE);
+                        glDisable(GL_DEPTH_TEST);
                     } else
                         qWarning() << "Cannot bind FBO";
                     begin(p);

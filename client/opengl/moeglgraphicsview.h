@@ -12,6 +12,7 @@ public:
     Q_INVOKABLE explicit MoeGLGraphicsView(MoeObject* parent =0)
             : MoeGraphicsObject(parent) {renderBuffer = 0;needsUpdate=true;}
     virtual void render(RenderRecorder*, QRect);
+    Q_INVOKABLE void update();
 
 private:
     RenderBuffer* renderBuffer;
