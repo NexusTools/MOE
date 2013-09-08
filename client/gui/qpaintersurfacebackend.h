@@ -2,6 +2,7 @@
 #define QPAINTERSURFACEBACKEND_H
 
 #include "abstractsurfacebackend.h"
+#include "opengl/moeglcubemodel.h"
 
 #include <QApplication>
 #include <QPainter>
@@ -9,21 +10,9 @@
 #include <QFile>
 
 #include <QGLFramebufferObject>
-#include <QGLShaderProgram>
 #include <QMatrix4x4>
-#include <QGLBuffer>
 
 #include <GL/glu.h>
-
-
-inline QString getSource(QString fName){
-    QFile file(fName);
-    if(file.open(QFile::ReadOnly))
-        return QString::fromUtf8(file.readAll());
-    else
-        qWarning() << file.errorString() << fName;
-    return "";
-}
 
 class QPainterSurfaceBackend : public AbstractSurfaceBackend {
 public:
@@ -157,143 +146,16 @@ public:
                     p.end();
                     if(fbo->bind()) {
                         glViewport(0, 0, size.width(), size.height());
+
+                        glClearColor(0, 0, 0, 0);
                         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
                         glEnable(GL_DEPTH_TEST);
                         glEnable(GL_CULL_FACE);
                         glLoadIdentity();
 
-                        static int matrixAttrib;
-                        static int colourAttrib;
-                        static int vertexAttrib;
-                        static QGLShaderProgram shaderProgram;
+                        static MoeGLCubeModel cubeModel;
 
-                        if(!shaderProgram.isLinked()) {
-                            qDebug() << "Generating shader program for first time";
-                            shaderProgram.addShaderFromSourceCode(QGLShader::Vertex, getSource(":/shaders/matrix.vert"));
-                            shaderProgram.addShaderFromSourceCode(QGLShader::Fragment, getSource(":/shaders/colour.frag"));
-                            if(!shaderProgram.link())
-                                qWarning() << shaderProgram.log();
-
-                            vertexAttrib = shaderProgram.attributeLocation("vertexPosition");
-                            colourAttrib = shaderProgram.attributeLocation("vertexColour");
-                            matrixAttrib = shaderProgram.uniformLocation("matrix");
-                        }
-
-
-                        shaderProgram.bind();
-
-
-                        GLfloat vertices[] = {
-                            // Front
-                            -1, -1,  1,
-                             1, -1,  1,
-                            -1,  1,  1,
-
-                             1,  1,  1,
-                            -1,  1,  1,
-                             1, -1,  1,
-
-                            // Left
-                            -1, -1, -1,
-                            -1, -1,  1,
-                            -1,  1, -1,
-
-                            -1, -1,  1,
-                            -1,  1,  1,
-                            -1,  1, -1,
-
-                            // Back
-                            -1,  1, -1,
-                             1, -1, -1,
-                            -1, -1, -1,
-
-                             1, -1, -1,
-                            -1,  1, -1,
-                             1,  1, -1,
-
-                            // Right
-                             1, -1, -1,
-                             1,  1, -1,
-                             1, -1,  1,
-
-                             1, -1,  1,
-                             1,  1, -1,
-                             1,  1,  1,
-
-                            // Top
-                             1,  1, -1,
-                            -1,  1, -1,
-                            -1,  1,  1,
-
-                             1,  1, -1,
-                            -1,  1,  1,
-                             1,  1,  1,
-
-                            // Bottom
-                            -1, -1, -1,
-                             1, -1, -1,
-                            -1, -1,  1,
-
-                            -1, -1,  1,
-                             1, -1, -1,
-                             1, -1,  1
-                            };
-
-                        GLfloat colors[] = {
-                            // Front
-                            0.0f, 1.0f, 0.0f,
-                            0.0f, 1.0f, 0.0f,
-                            0.0f, 1.0f, 0.0f,
-
-                            0.0f, 1.0f, 0.0f,
-                            0.0f, 1.0f, 0.0f,
-                            0.0f, 1.0f, 0.0f,
-
-                            // Left
-                            1.0f, 1.0f, 0.0f,
-                            1.0f, 1.0f, 0.0f,
-                            1.0f, 1.0f, 0.0f,
-
-                            1.0f, 1.0f, 0.0f,
-                            1.0f, 1.0f, 0.0f,
-                            1.0f, 1.0f, 0.0f,
-
-                            // Back
-                            0.0f, 1.0f, 1.0f,
-                            0.0f, 1.0f, 1.0f,
-                            0.0f, 1.0f, 1.0f,
-
-                            0.0f, 1.0f, 1.0f,
-                            0.0f, 1.0f, 1.0f,
-                            0.0f, 1.0f, 1.0f,
-
-                            // Right
-                            1.0f, 0.0f, 1.0f,
-                            1.0f, 0.0f, 1.0f,
-                            1.0f, 0.0f, 1.0f,
-
-                            1.0f, 0.0f, 1.0f,
-                            1.0f, 0.0f, 1.0f,
-                            1.0f, 0.0f, 1.0f,
-
-                            // Top
-                            1.0f, 0.0f, 0.0f,
-                            1.0f, 0.0f, 0.0f,
-                            1.0f, 0.0f, 0.0f,
-
-                            1.0f, 0.0f, 0.0f,
-                            1.0f, 0.0f, 0.0f,
-                            1.0f, 0.0f, 0.0f,
-
-                            // Bottmo
-                            0.0f, 0.0f, 1.0f,
-                            0.0f, 0.0f, 1.0f,
-                            0.0f, 0.0f, 1.0f,
-
-                            0.0f, 0.0f, 1.0f,
-                            0.0f, 0.0f, 1.0f,
-                            0.0f, 0.0f, 1.0f
-                        };
                         QMatrix4x4 matrix;
                         matrix.perspective(45, size.width()/size.height(), 0.1, 1000);
 
@@ -302,19 +164,8 @@ public:
                         matrix.rotate(rot, 0.3, 1, 0);
                         rot++;
 
-                        shaderProgram.setAttributeArray(vertexAttrib, GL_FLOAT, vertices, 3);
-                        shaderProgram.setAttributeArray(colourAttrib, GL_FLOAT, colors, 3);
-                        shaderProgram.enableAttributeArray(vertexAttrib);
-                        shaderProgram.enableAttributeArray(colourAttrib);
-                        shaderProgram.setUniformValue(matrixAttrib, matrix);
+                        cubeModel.render(matrix);
 
-                        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-                        shaderProgram.disableAttributeArray(colourAttrib);
-                        shaderProgram.disableAttributeArray(vertexAttrib);
-                        shaderProgram.release();
-
-                        glPopMatrix();
                         glFlush();
                         fbo->release();
 
