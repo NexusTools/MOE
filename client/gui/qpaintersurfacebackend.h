@@ -6,11 +6,24 @@
 #include <QApplication>
 #include <QPainter>
 #include <QDebug>
+#include <QFile>
 
 #include <QGLFramebufferObject>
 #include <QGLShaderProgram>
+#include <QMatrix4x4>
+#include <QGLBuffer>
 
 #include <GL/glu.h>
+
+
+inline QString getSource(QString fName){
+    QFile file(fName);
+    if(file.open(QFile::ReadOnly))
+        return QString::fromUtf8(file.readAll());
+    else
+        qWarning() << file.errorString() << fName;
+    return "";
+}
 
 class QPainterSurfaceBackend : public AbstractSurfaceBackend {
 public:
@@ -143,85 +156,170 @@ public:
 
                     p.end();
                     if(fbo->bind()) {
-                        glClearColor(0, 0, 0, 0);
-                        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
                         glViewport(0, 0, size.width(), size.height());
-                        glMatrixMode(GL_PROJECTION);
-                        glLoadIdentity();
-                        gluPerspective(65.0, (float)size.width() / size.height(), 0, 10000);
-                        glMatrixMode(GL_MODELVIEW);
+                        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
                         glEnable(GL_DEPTH_TEST);
                         glEnable(GL_CULL_FACE);
-                        glDepthFunc(GL_LEQUAL);
-                        glPushMatrix();
+                        glLoadIdentity();
 
-                        static float rot = 0;
-                        glTranslatef(0, 0, -2);
-                        glRotatef(rot, 1, 0, 0);
-                        rot+=2;
+                        static int matrixAttrib;
+                        static int colourAttrib;
+                        static int vertexAttrib;
+                        static QGLShaderProgram shaderProgram;
 
-                        //Multi-colored side - FRONT
-                        glBegin(GL_POLYGON);
+                        if(!shaderProgram.isLinked()) {
+                            qDebug() << "Generating shader program for first time";
+                            shaderProgram.addShaderFromSourceCode(QGLShader::Vertex, getSource(":/shaders/matrix.vert"));
+                            shaderProgram.addShaderFromSourceCode(QGLShader::Fragment, getSource(":/shaders/colour.frag"));
+                            if(!shaderProgram.link())
+                                qWarning() << shaderProgram.log();
 
-                        glColor3f( 1.0, 0.0, 0.0 );     glVertex3f(  0.5, -0.5, -0.5 );      // P1 is red
-                        glColor3f( 0.0, 1.0, 0.0 );     glVertex3f(  0.5,  0.5, -0.5 );      // P2 is green
-                        glColor3f( 0.0, 0.0, 1.0 );     glVertex3f( -0.5,  0.5, -0.5 );      // P3 is blue
-                        glColor3f( 1.0, 0.0, 1.0 );     glVertex3f( -0.5, -0.5, -0.5 );      // P4 is purple
+                            vertexAttrib = shaderProgram.attributeLocation("vertexPosition");
+                            colourAttrib = shaderProgram.attributeLocation("vertexColour");
+                            matrixAttrib = shaderProgram.uniformLocation("matrix");
+                        }
 
-                        glEnd();
 
-                        // White side - BACK
-                        glBegin(GL_POLYGON);
-                        glColor3f(   1.0,  1.0, 1.0 );
-                        glVertex3f(  0.5, -0.5, 0.5 );
-                        glVertex3f(  0.5,  0.5, 0.5 );
-                        glVertex3f( -0.5,  0.5, 0.5 );
-                        glVertex3f( -0.5, -0.5, 0.5 );
-                        glEnd();
+                        shaderProgram.bind();
 
-                        // Purple side - RIGHT
-                        glBegin(GL_POLYGON);
-                        glColor3f(  1.0,  0.0,  1.0 );
-                        glVertex3f( 0.5, -0.5, -0.5 );
-                        glVertex3f( 0.5,  0.5, -0.5 );
-                        glVertex3f( 0.5,  0.5,  0.5 );
-                        glVertex3f( 0.5, -0.5,  0.5 );
-                        glEnd();
 
-                        // Green side - LEFT
-                        glBegin(GL_POLYGON);
-                        glColor3f(   0.0,  1.0,  0.0 );
-                        glVertex3f( -0.5, -0.5,  0.5 );
-                        glVertex3f( -0.5,  0.5,  0.5 );
-                        glVertex3f( -0.5,  0.5, -0.5 );
-                        glVertex3f( -0.5, -0.5, -0.5 );
-                        glEnd();
+                        GLfloat vertices[] = {
+                            // Front
+                            -1, -1,  1,
+                             1, -1,  1,
+                            -1,  1,  1,
 
-                        // Blue side - TOP
-                        glBegin(GL_POLYGON);
-                        glColor3f(   0.0,  0.0,  1.0 );
-                        glVertex3f(  0.5,  0.5,  0.5 );
-                        glVertex3f(  0.5,  0.5, -0.5 );
-                        glVertex3f( -0.5,  0.5, -0.5 );
-                        glVertex3f( -0.5,  0.5,  0.5 );
-                        glEnd();
+                             1,  1,  1,
+                            -1,  1,  1,
+                             1, -1,  1,
 
-                        // Red side - BOTTOM
-                        glBegin(GL_POLYGON);
-                        glColor3f(   1.0,  0.0,  0.0 );
-                        glVertex3f(  0.5, -0.5, -0.5 );
-                        glVertex3f(  0.5, -0.5,  0.5 );
-                        glVertex3f( -0.5, -0.5,  0.5 );
-                        glVertex3f( -0.5, -0.5, -0.5 );
-                        glEnd();
+                            // Left
+                            -1, -1, -1,
+                            -1, -1,  1,
+                            -1,  1, -1,
+
+                            -1, -1,  1,
+                            -1,  1,  1,
+                            -1,  1, -1,
+
+                            // Back
+                            -1,  1, -1,
+                             1, -1, -1,
+                            -1, -1, -1,
+
+                             1, -1, -1,
+                            -1,  1, -1,
+                             1,  1, -1,
+
+                            // Right
+                             1, -1, -1,
+                             1,  1, -1,
+                             1, -1,  1,
+
+                             1, -1,  1,
+                             1,  1, -1,
+                             1,  1,  1,
+
+                            // Top
+                             1,  1, -1,
+                            -1,  1, -1,
+                            -1,  1,  1,
+
+                             1,  1, -1,
+                            -1,  1,  1,
+                             1,  1,  1,
+
+                            // Bottom
+                            -1, -1, -1,
+                             1, -1, -1,
+                            -1, -1,  1,
+
+                            -1, -1,  1,
+                             1, -1, -1,
+                             1, -1,  1
+                            };
+
+                        GLfloat colors[] = {
+                            // Front
+                            0.0f, 1.0f, 0.0f,
+                            0.0f, 1.0f, 0.0f,
+                            0.0f, 1.0f, 0.0f,
+
+                            0.0f, 1.0f, 0.0f,
+                            0.0f, 1.0f, 0.0f,
+                            0.0f, 1.0f, 0.0f,
+
+                            // Left
+                            1.0f, 1.0f, 0.0f,
+                            1.0f, 1.0f, 0.0f,
+                            1.0f, 1.0f, 0.0f,
+
+                            1.0f, 1.0f, 0.0f,
+                            1.0f, 1.0f, 0.0f,
+                            1.0f, 1.0f, 0.0f,
+
+                            // Back
+                            0.0f, 1.0f, 1.0f,
+                            0.0f, 1.0f, 1.0f,
+                            0.0f, 1.0f, 1.0f,
+
+                            0.0f, 1.0f, 1.0f,
+                            0.0f, 1.0f, 1.0f,
+                            0.0f, 1.0f, 1.0f,
+
+                            // Right
+                            1.0f, 0.0f, 1.0f,
+                            1.0f, 0.0f, 1.0f,
+                            1.0f, 0.0f, 1.0f,
+
+                            1.0f, 0.0f, 1.0f,
+                            1.0f, 0.0f, 1.0f,
+                            1.0f, 0.0f, 1.0f,
+
+                            // Top
+                            1.0f, 0.0f, 0.0f,
+                            1.0f, 0.0f, 0.0f,
+                            1.0f, 0.0f, 0.0f,
+
+                            1.0f, 0.0f, 0.0f,
+                            1.0f, 0.0f, 0.0f,
+                            1.0f, 0.0f, 0.0f,
+
+                            // Bottmo
+                            0.0f, 0.0f, 1.0f,
+                            0.0f, 0.0f, 1.0f,
+                            0.0f, 0.0f, 1.0f,
+
+                            0.0f, 0.0f, 1.0f,
+                            0.0f, 0.0f, 1.0f,
+                            0.0f, 0.0f, 1.0f
+                        };
+                        QMatrix4x4 matrix;
+                        matrix.perspective(45, size.width()/size.height(), 0.1, 1000);
+
+                        static int rot = 0;
+                        matrix.translate(0, 0, -6);
+                        matrix.rotate(rot, 0.3, 1, 0);
+                        rot++;
+
+                        shaderProgram.setAttributeArray(vertexAttrib, GL_FLOAT, vertices, 3);
+                        shaderProgram.setAttributeArray(colourAttrib, GL_FLOAT, colors, 3);
+                        shaderProgram.enableAttributeArray(vertexAttrib);
+                        shaderProgram.enableAttributeArray(colourAttrib);
+                        shaderProgram.setUniformValue(matrixAttrib, matrix);
+
+                        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+                        shaderProgram.disableAttributeArray(colourAttrib);
+                        shaderProgram.disableAttributeArray(vertexAttrib);
+                        shaderProgram.release();
 
                         glPopMatrix();
                         glFlush();
                         fbo->release();
 
-                        glDisable(GL_CULL_FACE);
                         glDisable(GL_DEPTH_TEST);
+                        glDisable(GL_CULL_FACE);
                     } else
                         qWarning() << "Cannot bind FBO";
                     begin(p);
