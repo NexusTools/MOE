@@ -125,7 +125,6 @@ public:
                 {
                     quintptr id = inst.arguments.first().value<quintptr>();
                     QSize size = inst.arguments.at(1).toSize();
-                    qDebug() << "Updating GL Scene" << size;
 
                     QGLFramebufferObjectFormat bufferFormat;
                     bufferFormat.setInternalTextureFormat(GL_RGBA8);
@@ -151,7 +150,6 @@ public:
                         glBuffers.insert(id, glBuffer);
                     } else if(glBuffer->fbo->size() != size) {
                         delete glBuffer->fbo;
-                        qDebug() << "Resizing FBO" << size;
                         glBuffer->fbo = new QGLFramebufferObject(size, bufferFormat);
                         glBuffers.insert(id, glBuffer);
                     }
@@ -164,7 +162,6 @@ public:
 
                     GLRenderBuffer* glBuffer = glBuffers.value(id);
                     if(glBuffer) {
-                        qWarning() << "Updating View Camera Matrix" << id;
                         glBuffer->camMatrix = inst.arguments.at(1).value<QMatrix4x4>();
                     } else
                         qWarning() << "Buffer Not Initialized" << id;
@@ -200,11 +197,7 @@ public:
                             break;
                         }
 
-                        QMatrix4x4 matrix;
-                        matrix.perspective(45, glBuffer->fbo->width()/glBuffer->fbo->height(), 0.1, 1000);
-                        matrix.translate(0, 0, -8);
-
-                        glBuffer->shaderProgram.setUniformValue(glBuffer->attrib.camMatrix, matrix);
+                        glBuffer->shaderProgram.setUniformValue(glBuffer->attrib.camMatrix, glBuffer->camMatrix);
                         glBuffer->shaderProgram.enableAttributeArray(glBuffer->attrib.vector);
                         glBuffer->shaderProgram.enableAttributeArray(glBuffer->attrib.colour);
 
@@ -224,7 +217,6 @@ public:
                         break;
                     }
 
-                    qWarning() << "Finished Rendering 3D Buffer";
                     activeGLBuffer->shaderProgram.disableAttributeArray(activeGLBuffer->attrib.vector);
                     activeGLBuffer->shaderProgram.disableAttributeArray(activeGLBuffer->attrib.colour);
                     activeGLBuffer->shaderProgram.release();
@@ -244,8 +236,6 @@ public:
                     MoeObjectPtr ptr = inst.arguments.first().value<MoeObjectPtr>();
                     vec3::list vectors = inst.arguments.at(1).value<vec3::list>();
                     vec3::list colours = inst.arguments.at(2).value<vec3::list>();
-
-                    qDebug() << "Allocating model with" << vectors.size() << "vectors." << ptr;
 
                     GLModel* model = glModels.value(ptr);
                     if(!model) {
@@ -267,9 +257,6 @@ public:
                     } else
                         qWarning() << "Failed to allocate colour buffer...";
 
-                    qDebug() << "Allocated model" << model->vectors.size() << model->colours.size();
-
-
                     break;
                 }
 
@@ -284,7 +271,6 @@ public:
                     }
 
                     model->matrix = inst.arguments.at(1).value<QMatrix4x4>();
-                    qWarning() << "Updating Model Matrix" << model->matrix << ptr;
 
                     break;
                 }
@@ -303,7 +289,6 @@ public:
                         qWarning() << "Attempted To Render Unallocated Model" << ptr;
                         break;
                     }
-                    qWarning() << "Rendering Model" << ptr;
 
                     activeGLBuffer->shaderProgram.setUniformValue(activeGLBuffer->attrib.matrix, model->matrix);
 

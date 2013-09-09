@@ -22,12 +22,16 @@ public:
     virtual void render(RenderRecorder*, QRect);
 
     Q_INVOKABLE inline void camTranslate(qreal x, qreal y, qreal z) {
-        matrix.position += vec3(x, y, z);
+        matrix.position.x += x;
+        matrix.position.y += y;
+        matrix.position.z += z;
         matrix.needsUpdate = true;
         update();
     }
     Q_INVOKABLE inline void camRotate(qreal x, qreal y, qreal z) {
-        matrix.rotation += vec3(x, y, z);
+        matrix.rotation.x += x;
+        matrix.rotation.y += y;
+        matrix.rotation.z += z;
         matrix.needsUpdate = true;
         update();
     }

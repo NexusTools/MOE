@@ -33,7 +33,9 @@ public:
 
 
     Q_INVOKABLE inline void translate(qreal x, qreal y, qreal z) {
-        matrix.position += vec3(x, y, z);
+        matrix.position.x += x;
+        matrix.position.y += y;
+        matrix.position.z += z;
         matrix.needsUpdate = true;
         emit contentChanged();
     }

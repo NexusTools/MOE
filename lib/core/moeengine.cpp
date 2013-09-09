@@ -29,7 +29,7 @@ MoeEngine::MoeEngine() {
     registerType("Content", "content", "Dependancies");
 
     moveToThread(this);
-    setTicksPerSecond(24);
+    setTicksPerSecond(50);
 }
 
 inline void _exit(int i) {
