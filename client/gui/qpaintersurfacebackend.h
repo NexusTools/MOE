@@ -96,6 +96,7 @@ private:
             int matrix;
             int camMatrix;
             int texCoord;
+            int texture;
         } attrib;
         QGLShaderProgram program;
     };

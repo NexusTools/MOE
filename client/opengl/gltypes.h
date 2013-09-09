@@ -95,5 +95,7 @@ struct GLRawMatrix {
 
 Q_DECLARE_METATYPE(vec3)
 Q_DECLARE_METATYPE(vec3::list)
+Q_DECLARE_METATYPE(vec2)
+Q_DECLARE_METATYPE(vec2::list)
 
 #endif // GLTYPES_H

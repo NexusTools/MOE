@@ -140,12 +140,20 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                     continue;
                 }
 
+                glDisable(GL_CULL_FACE);
+                glDisable(GL_TEXTURE_2D);
+                glDisable(GL_DEPTH_TEST);
                 qDebug() << "Blitting buffer" << blitDest << source.size();
                 if(p.begin(glBuff->fbo)) {
-                    p.drawPixmap(blitDest, source);
+                    p.drawPixmap(QRect(QPoint(0,0),
+                        glBuff->fbo->size()), source);
                     p.end();
                 }
-
+                source.save("/home/luke/Desktop/source.png");
+                glBuff->fbo->toImage().save("/home/luke/Desktop/test.png");
+                glEnable(GL_TEXTURE_2D);
+                glEnable(GL_DEPTH_TEST);
+                glEnable(GL_CULL_FACE);
                 break;
             }
 
@@ -157,23 +165,11 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
 
                 QGLFramebufferObjectFormat bufferFormat;
                 bufferFormat.setInternalTextureFormat(GL_RGBA8);
-                bufferFormat.setMipmap(true);
+                bufferFormat.setSamples(0);
 
                 GLRenderBuffer* glBuffer = glBuffers.value(id);
                 if(!glBuffer) {
                     glBuffer = new GLRenderBuffer;
-
-                    /*glBuffer->shaderProgram.addShader(getShader(":/shaders/matrix.vert"));
-                    glBuffer->shaderProgram.addShader(getShader(":/shaders/colour.frag"));
-                    if(!glBuffer->shaderProgram.link()) {
-                        qWarning() << glBuffer->shaderProgram.log();
-                        return;
-                    }
-
-                    glBuffer->attrib.vector = glBuffer->shaderProgram.attributeLocation("vertexPosition");
-                    glBuffer->attrib.colour = glBuffer->shaderProgram.attributeLocation("vertexColour");
-                    glBuffer->attrib.matrix = glBuffer->shaderProgram.uniformLocation("modelMatrix");
-                    glBuffer->attrib.camMatrix = glBuffer->shaderProgram.uniformLocation("matrix");*/
 
                     glBuffer->fbo = new QGLFramebufferObject(size, bufferFormat);
                     glBuffers.insert(id, glBuffer);
@@ -216,19 +212,10 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                     glClearColor(0, 0, 0, 0);
                     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-                    glEnable(GL_DEPTH_TEST);
                     glEnable(GL_CULL_FACE);
+                    glEnable(GL_DEPTH_TEST);
+                    glEnable(GL_TEXTURE_2D);
                     glLoadIdentity();
-
-                    /*if(!glBuffer->shaderProgram.bind()) {
-                        qWarning() << "Cannot bind Shader Program";
-                        begin(p);
-                        break;
-                    }
-
-                    glBuffer->shaderProgram.setUniformValue(glBuffer->attrib.camMatrix, glBuffer->camMatrix);
-                    glBuffer->shaderProgram.enableAttributeArray(glBuffer->attrib.vector);
-                    glBuffer->shaderProgram.enableAttributeArray(glBuffer->attrib.colour);*/
 
                     activeGLBuffer = glBuffer;
                 } else {
@@ -246,13 +233,10 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                     break;
                 }
 
-                /*activeGLBuffer->shaderProgram.disableAttributeArray(activeGLBuffer->attrib.vector);
-                activeGLBuffer->shaderProgram.disableAttributeArray(activeGLBuffer->attrib.colour);
-                activeGLBuffer->shaderProgram.release();*/
-
                 activeGLBuffer->fbo->release();
                 activeGLBuffer = 0;
 
+                glDisable(GL_TEXTURE_2D);
                 glDisable(GL_DEPTH_TEST);
                 glDisable(GL_CULL_FACE);
                 begin(p);
@@ -265,6 +249,14 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                 MoeObjectPtr ptr = inst.arguments.first().value<MoeObjectPtr>();
                 vec3::list vectors = inst.arguments.at(1).value<vec3::list>();
                 vec3::list colours = inst.arguments.at(2).value<vec3::list>();
+                vec2::list textCoords;
+                if(inst.arguments.size() > 3)
+                    textCoords = inst.arguments.at(3).value<vec2::list>();
+
+                foreach(vec3 v, vectors)
+                    qDebug() << v.vector();
+                foreach(vec2 v, textCoords)
+                    qDebug() << v.vector();
 
                 GLModel* model = glModels.value(ptr);
                 if(!model) {
@@ -285,6 +277,17 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                     model->colours.release();
                 } else
                     qWarning() << "Failed to allocate colour buffer...";
+
+                if(!textCoords.isEmpty()) {
+                    if(!model->textCoords.isCreated())
+                        model->textCoords.create();
+                    if(model->textCoords.bind()) {
+                        model->textCoords.allocate(textCoords.data(), textCoords.size()*sizeof(vec2));
+                        model->textCoords.release();
+                    } else
+                        qWarning() << "Failed to allocate texture coordinate buffer...";
+                } else if(model->textCoords.isCreated())
+                    model->textCoords.destroy();
 
                 break;
             }
@@ -313,14 +316,14 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                     break;
                 }
 
-                MoeObjectPtr buffPtr = inst.arguments.first().value<MoeObjectPtr>();
+                MoeObjectPtr buffPtr = inst.arguments.at(1).value<MoeObjectPtr>();
                 GLRenderBuffer* buffer = glBuffers.value(buffPtr);
                 if(!buffer) {
                     qWarning() << "Attempted To Attach Unknown Render Buffer" << buffPtr;
                     break;
                 }
 
-                qWarning() << "Set Texture for Model" << ptr << buffer->fbo->texture();
+                qDebug() << "Set Texture for Model" << ptr << buffPtr << buffer->fbo->texture();
                 model->texture = buffer->fbo->texture();
                 break;
             }
@@ -336,23 +339,35 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                 }
 
                 QString shaderName = inst.arguments.at(1).toString();
-                qWarning() << "Set Shader for Model" << ptr << shaderName;
+                qDebug() << "Set Shader for Model" << ptr << shaderName;
                 model->shader = shaderPrograms.value(shaderName);
                 if(!model->shader) {
                     model->shader = new ShaderProgram;
 
-                    model->shader->program.addShader(getShader(":/shaders/matrix.vert"));
-                    model->shader->program.addShader(getShader(":/shaders/colour.frag")); //shaderName == "coloured" ? ":/shaders/colour.frag" : ":/shaders/texture.frag"));
+                    model->shader->program.addShader(getShader(shaderName == "coloured" ? ":/shaders/matrix.vert" : ":/shaders/matrix-texture.vert"));
+                    model->shader->program.addShader(getShader(shaderName == "coloured" ? ":/shaders/colour.frag" : ":/shaders/texture.frag"));
                     if(!model->shader->program.link()) {
                         qWarning() << model->shader->program.log();
                         return;
                     }
 
-                    model->shader->attrib.texCoord = model->shader->program.attributeLocation("texCoord");
                     model->shader->attrib.vector = model->shader->program.attributeLocation("vertexPosition");
                     model->shader->attrib.colour = model->shader->program.attributeLocation("vertexColour");
                     model->shader->attrib.matrix = model->shader->program.uniformLocation("modelMatrix");
                     model->shader->attrib.camMatrix = model->shader->program.uniformLocation("matrix");
+                    model->shader->attrib.texture = model->shader->program.uniformLocation("texture");
+                    model->shader->attrib.texCoord = model->shader->program.attributeLocation("texCoord");
+
+                    qDebug() << "Compiled Shader Program" << shaderName
+                                         << "Attributes"
+                                         << model->shader->attrib.vector
+                                         << model->shader->attrib.colour
+                                         << model->shader->attrib.texCoord
+                                         << "Uniforms"
+                                         << model->shader->attrib.matrix
+                                         << model->shader->attrib.camMatrix
+                                         << model->shader->attrib.texture;
+
                     shaderPrograms.insert(shaderName, model->shader);
                 }
                 break;
@@ -380,10 +395,9 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                 }
 
                 model->shader->program.setUniformValue(model->shader->attrib.camMatrix, activeGLBuffer->camMatrix);
+                model->shader->program.setUniformValue(model->shader->attrib.matrix, model->matrix);
                 model->shader->program.enableAttributeArray(model->shader->attrib.vector);
                 model->shader->program.enableAttributeArray(model->shader->attrib.colour);
-
-                model->shader->program.setUniformValue(model->shader->attrib.matrix, model->matrix);
 
                 if(!model->vectors.bind()) {
                     qWarning() << "Failed to bind Vector Buffer";
@@ -398,10 +412,40 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                 }
                 model->shader->program.setAttributeBuffer(model->shader->attrib.colour, GL_FLOAT, 0, 3);
 
+                if(model->textCoords.isCreated()) {
+                    if(model->shader->attrib.texCoord == -1) {
+                        qWarning() << "Texture Coordinate buffer compiled but shader has no texCoord attribute";
+                        break;
+                    }
+                    if(!model->texture) {
+                        qWarning() << "Texture Coordinate buffer compiled but shader has no texCoord attribute";
+                        break;
+                    }
+
+                    model->shader->program.enableAttributeArray(model->shader->attrib.texCoord);
+                    if(!model->textCoords.bind()) {
+                        qWarning() << "Failed to bind Colour Buffer";
+                        model->vectors.release();
+                        model->colours.release();
+                        break;
+                    }
+                    model->shader->program.setAttributeBuffer(model->shader->attrib.texCoord, GL_FLOAT, 0, 2);
+
+                    glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, model->texture);
+                    model->shader->program.setUniformValue(model->shader->attrib.texture, 0);
+                }
+
                 glDrawArrays(GL_TRIANGLES, 0, model->vectors.size());
-                //model->textCoords.release();
+                if(model->textCoords.isCreated()) {
+                    model->textCoords.release();
+                    model->shader->program.disableAttributeArray(model->shader->attrib.texCoord);
+                }
                 model->colours.release();
                 model->vectors.release();
+
+                model->shader->program.disableAttributeArray(model->shader->attrib.colour);
+                model->shader->program.disableAttributeArray(model->shader->attrib.vector);
 
                 model->shader->program.release();
 

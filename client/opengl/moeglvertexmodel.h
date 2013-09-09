@@ -27,7 +27,7 @@ public:
     inline int addVertex(vec3 vec, vec3 color, vec2 tex =vec2()) {
         int index = _colours.size();
         needsCompiling = true;
-        _texCoords << tex;
+        _texCoords << vec2(tex.x, 1-tex.y);
         _colours << color;
         _vectors << vec;
 
@@ -81,6 +81,7 @@ public:
 
 signals:
     void contentChanged();
+    void needsUpdateModel();
 
 private:
     GLRawMatrix matrix;

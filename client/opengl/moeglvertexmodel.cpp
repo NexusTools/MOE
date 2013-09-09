@@ -17,51 +17,57 @@ void MoeGLVertexModel::setTexture(MoeGLSpriteSheet *texture) {
     this->texture = texture;
     emit contentChanged();
     shaderProgram = texture ? "textured" : "coloured";
+    needsCompiling = true;
     textureChanged = true;
     shaderChanged = true;
+
+    emit needsUpdateModel();
 }
 
 void MoeGLVertexModel::render(RenderRecorder *p) {
     if(needsCompiling) {
-        p->allocateGLModel(ptr(), _vectors, _colours);
+        if(!texture)
+            _texCoords.clear();
+        p->allocateGLModel(ptr(), _vectors, _colours, _texCoords);
 
         _vectors.clear();
         _colours.clear();
-
+        _texCoords.clear();
         needsCompiling = false;
     }
-    if(texture && texture->needsUpdate) {
+    if(texture) {
         if(!texture->created) {
             p->allocateGLBuffer(texture->ptr(), texture->size());
             texture->created = true;
         }
-        {
-            MoeGLSpriteSheet::HashPTR::Iterator i = texture->blitBufferRequests.begin();
-            while(i != texture->blitBufferRequests.end()) {
-                qDebug() << i.key() << i.value();
-                i++;
+        if(texture->needsUpdate) {
+            {
+                MoeGLSpriteSheet::HashPTR::Iterator i = texture->blitBufferRequests.begin();
+                while(i != texture->blitBufferRequests.end()) {
+                    qDebug() << i.key() << i.value();
+                    i++;
+                }
+                texture->blitBufferRequests.clear();
             }
-            texture->blitBufferRequests.clear();
-        }
-        {
-            MoeGLSpriteSheet::HashData::Iterator i = texture->dataBufferRequests.begin();
-            while(i != texture->dataBufferRequests.end()) {
-                p->blitGLBuffer(texture->ptr(), i.key(), i.value());
-                qDebug() << i.key();
-                i++;
+            {
+                MoeGLSpriteSheet::HashData::Iterator i = texture->dataBufferRequests.begin();
+                while(i != texture->dataBufferRequests.end()) {
+                    p->blitGLBuffer(texture->ptr(), i.key(), i.value());
+                    qDebug() << i.key();
+                    i++;
+                }
+                texture->dataBufferRequests.clear();
             }
-            texture->dataBufferRequests.clear();
+            texture->needsUpdate = false;
         }
-
-        texture->needsUpdate = false;
-    }
-    if(textureChanged) {
-        p->updateGLModelTexture(ptr(), texture->ptr());
-        textureChanged = false;
     }
     if(shaderChanged) {
         p->updateGLModelShader(ptr(), shaderProgram);
         shaderChanged = false;
+    }
+    if(textureChanged) {
+        p->updateGLModelTexture(ptr(), texture->ptr());
+        textureChanged = false;
     }
     if(matrix.needsUpdate) {
         p->updateGLModelMatrix(ptr(), matrix.toMatrix4x4());

@@ -96,12 +96,15 @@ public:
         _instructions.append(instruction);
     }
 
-    inline void allocateGLModel(MoeObjectPtr ptr, vec3::list vectors, vec3::list colours) {
+    inline void allocateGLModel(MoeObjectPtr ptr, vec3::list vectors, vec3::list colours, vec2::list texCoords) {
         RenderInstruction instruction;
         instruction.type = RenderInstruction::AllocateGLModel;
         instruction.arguments.append(QVariant::fromValue<MoeObjectPtr>(ptr));
         instruction.arguments.append(QVariant::fromValue<vec3::list>(vectors));
         instruction.arguments.append(QVariant::fromValue<vec3::list>(colours));
+        if(!texCoords.isEmpty())
+            instruction.arguments.append(QVariant::fromValue<vec2::list>(texCoords));
+
         _instructions.append(instruction);
 
     }
