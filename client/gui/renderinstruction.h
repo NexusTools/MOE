@@ -35,7 +35,8 @@ struct RenderInstruction {
         DestroyBuffer,
 
         // OpenGL
-        ResizeGLScene,
+        AllocateGLBuffer,
+        BlitGLBuffer,
         UpdateGLMatrix,
         BeginRenderGLScene,
         FinishRenderGLScene,
@@ -44,6 +45,8 @@ struct RenderInstruction {
         RenderGLModel,
         UpdateGLModel,
         UpdateGLModelMatrix,
+        UpdateGLModelTexture,
+        UpdateGLModelShader,
         DestroyGLModel
     } type;
 

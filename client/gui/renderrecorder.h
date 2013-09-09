@@ -38,11 +38,40 @@ public:
         opacity = 1;
     }
 
-    inline void resizeGLScene(RenderBuffer* buff, QSize size) {
+    inline void allocateGLBuffer(RenderBuffer* buff, QSize size) {
+        allocateGLBuffer(buff->id(), size);
+    }
+
+    inline void allocateGLBuffer(MoeObjectPtr buffID, QSize size) {
         RenderInstruction instruction;
-        instruction.type = RenderInstruction::ResizeGLScene;
-        instruction.arguments.append(buff->id());
+        instruction.type = RenderInstruction::AllocateGLBuffer;
+        instruction.arguments.append(buffID);
         instruction.arguments.append(size);
+        _instructions.append(instruction);
+    }
+
+    inline void blitGLBuffer(MoeObjectPtr dest, QPoint pos, QByteArray data) {
+        RenderInstruction instruction;
+        instruction.type = RenderInstruction::BlitGLBuffer;
+        instruction.arguments.append(dest);
+        instruction.arguments.append(pos);
+        instruction.arguments.append(data);
+        _instructions.append(instruction);
+    }
+
+    inline void updateGLModelTexture(MoeObjectPtr model, MoeObjectPtr buffID) {
+        RenderInstruction instruction;
+        instruction.type = RenderInstruction::UpdateGLModelTexture;
+        instruction.arguments.append(model);
+        instruction.arguments.append(buffID);
+        _instructions.append(instruction);
+    }
+
+    inline void updateGLModelShader(MoeObjectPtr model, QString shaderName) {
+        RenderInstruction instruction;
+        instruction.type = RenderInstruction::UpdateGLModelShader;
+        instruction.arguments.append(model);
+        instruction.arguments.append(shaderName);
         _instructions.append(instruction);
     }
 
@@ -67,7 +96,7 @@ public:
         _instructions.append(instruction);
     }
 
-    inline void updateGLModel(MoeObjectPtr ptr, vec3::list vectors, vec3::list colours) {
+    inline void allocateGLModel(MoeObjectPtr ptr, vec3::list vectors, vec3::list colours) {
         RenderInstruction instruction;
         instruction.type = RenderInstruction::AllocateGLModel;
         instruction.arguments.append(QVariant::fromValue<MoeObjectPtr>(ptr));

@@ -14,6 +14,7 @@ public:
     Q_INVOKABLE explicit MoeGraphicsImage(MoeObject *parent = 0);
     void paintImpl(RenderRecorder*, QRect);
 
+    quintptr bufferID();
     QRgb mainColor();
 
 signals:

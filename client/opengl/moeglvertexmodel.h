@@ -11,20 +11,23 @@
 #include "gltypes.h"
 
 class RenderRecorder;
+class MoeGLSpriteSheet;
 class MoeGLScene;
 
 class MoeGLVertexModel : public MoeObject
 {
     Q_OBJECT
 public:
-    Q_INVOKABLE explicit MoeGLVertexModel();
+    Q_INVOKABLE explicit MoeGLVertexModel(MoeGLSpriteSheet* texture =0);
+    Q_INVOKABLE void setTexture(MoeGLSpriteSheet* texture =0);
 
-    Q_INVOKABLE inline int addVertex(QVector3D vec, QColor color) {
-        return addVertex(vec3(vec), vec3(color));
+    Q_INVOKABLE inline int addVertex(QVector3D vec, QColor color, QPoint texCoord =QPoint(0, 0)) {
+        return addVertex(vec3(vec), vec3(color), vec2(texCoord));
     }
-    inline int addVertex(vec3 vec, vec3 color) {
+    inline int addVertex(vec3 vec, vec3 color, vec2 tex =vec2()) {
         int index = _colours.size();
         needsCompiling = true;
+        _texCoords << tex;
         _colours << color;
         _vectors << vec;
 
@@ -81,10 +84,15 @@ signals:
 
 private:
     GLRawMatrix matrix;
+    QString shaderProgram;
 
     QVector<vec3> _vectors;
     QVector<vec3> _colours;
+    QVector<vec2> _texCoords;
+    MoeGLSpriteSheet* texture;
     bool needsCompiling;
+    bool textureChanged;
+    bool shaderChanged;
     
 };
 

@@ -14,6 +14,12 @@ void MoeGraphicsImage::paintImpl(RenderRecorder* p, QRect) {
     p->drawBuffer(renderBuffer, localGeometry());
 }
 
+quintptr MoeGraphicsImage::bufferID() {
+    if(!renderBuffer)
+        renderBuffer = RenderBuffer::instance(this);
+    return renderBuffer->id();
+}
+
 void MoeGraphicsImage::load(QByteArray data) {
     if(!renderBuffer)
         renderBuffer = RenderBuffer::instance(this);

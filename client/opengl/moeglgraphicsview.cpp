@@ -11,7 +11,7 @@ void MoeGLGraphicsView::render(RenderRecorder * p, QRect geom) {
 
     QSize cSize = size().toSize();
     if(reportedSize != cSize) {
-        p->resizeGLScene(renderBuffer, cSize);
+        p->allocateGLBuffer(renderBuffer, cSize);
         matrix.needsUpdate = true;
         reportedSize = cSize;
     }

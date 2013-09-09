@@ -89,24 +89,34 @@ protected:
     }
 
 private:
-    struct GLRenderBuffer {
-        QGLFramebufferObject* fbo;
-        QMatrix4x4 camMatrix;
-
-        QGLShaderProgram shaderProgram;
+    struct ShaderProgram {
         struct {
             int vector;
             int colour;
             int matrix;
             int camMatrix;
+            int texCoord;
         } attrib;
+        QGLShaderProgram program;
+    };
+    struct GLRenderBuffer {
+        inline GLRenderBuffer() {fbo=0;}
+
+        QGLFramebufferObject* fbo;
+        QMatrix4x4 camMatrix;
     };
     struct GLModel {
+        inline GLModel() {shader=0;}
+
+        GLuint texture;
         QGLBuffer vectors;
         QGLBuffer colours;
         QMatrix4x4 matrix;
+        QGLBuffer textCoords;
+        ShaderProgram* shader;
     };
 
+    QHash<QString, ShaderProgram*> shaderPrograms;
 
     QRect pendingPaintRect;
     QSize pendingBufferSize;

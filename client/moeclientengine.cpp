@@ -6,6 +6,7 @@
 #include "gui/moegraphicstext.h"
 
 #include "opengl/moeglscene.h"
+#include "opengl/moeglspritesheet.h"
 #include "opengl/moeglgraphicsview.h"
 #include "opengl/moeglslshaderprogram.h"
 #include "opengl/moeglvertexmodel.h"
@@ -28,6 +29,7 @@ void MoeClientEngine::initializeContentEnvironment(QScriptEngine* eng, QScriptVa
 
     // OpenGL - Might be moved to separate module
     classesToLoad.append(&MoeGLScene::staticMetaObject);
+    classesToLoad.append(&MoeGLSpriteSheet::staticMetaObject);
     classesToLoad.append(&MoeGLGraphicsView::staticMetaObject);
     classesToLoad.append(&MoeGLSLShaderProgram::staticMetaObject);
     classesToLoad.append(&MoeGLVertexModel::staticMetaObject);

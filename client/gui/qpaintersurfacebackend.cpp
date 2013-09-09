@@ -95,10 +95,65 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                     p.setTransform(inst.arguments.first().value<QTransform>());
             break;
 
-            case RenderInstruction::ResizeGLScene:
+            case RenderInstruction::BlitGLBuffer:
+            {
+                quintptr id = inst.arguments.first().value<quintptr>();
+                qDebug() << "Blitting GLBuffer" << id;
+                GLRenderBuffer* glBuff = glBuffers.value(id);
+                if(!glBuff) {
+                    qWarning() << "Unknown GLBuffer specified" << id;
+                    continue;
+                }
+
+                QVariant dest = inst.arguments.at(1);
+                QVariant data = inst.arguments.at(2);
+
+                QRect blitDest;
+                QPixmap source;
+
+                switch(data.type()) {
+                    case QVariant::ByteArray:
+                        if(!source.loadFromData(data.toByteArray()))
+                            source = getCheckerBoardImage(Qt::red);
+                        break;
+
+                    default:
+                        qWarning() << "Incompatible DataType Specified for Blitting Source";
+                    continue;
+                }
+
+                switch(dest.type()) {
+                    case QVariant::Point:
+                        blitDest = QRect(dest.toPoint(), source.size());
+                        break;
+
+                    case QVariant::Size:
+                        blitDest = QRect(QPoint(0, 0), dest.toSize());
+                        break;
+
+                    case QVariant::Rect:
+                        blitDest = dest.toRect();
+                        break;
+
+                    default:
+                        qWarning() << "Incompatible DataType Specified for Destination";
+                    continue;
+                }
+
+                qDebug() << "Blitting buffer" << blitDest << source.size();
+                if(p.begin(glBuff->fbo)) {
+                    p.drawPixmap(blitDest, source);
+                    p.end();
+                }
+
+                break;
+            }
+
+            case RenderInstruction::AllocateGLBuffer:
             {
                 quintptr id = inst.arguments.first().value<quintptr>();
                 QSize size = inst.arguments.at(1).toSize();
+                qDebug() << "Allocating GLBuffer" << id << size;
 
                 QGLFramebufferObjectFormat bufferFormat;
                 bufferFormat.setInternalTextureFormat(GL_RGBA8);
@@ -108,7 +163,7 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                 if(!glBuffer) {
                     glBuffer = new GLRenderBuffer;
 
-                    glBuffer->shaderProgram.addShader(getShader(":/shaders/matrix.vert"));
+                    /*glBuffer->shaderProgram.addShader(getShader(":/shaders/matrix.vert"));
                     glBuffer->shaderProgram.addShader(getShader(":/shaders/colour.frag"));
                     if(!glBuffer->shaderProgram.link()) {
                         qWarning() << glBuffer->shaderProgram.log();
@@ -118,7 +173,7 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                     glBuffer->attrib.vector = glBuffer->shaderProgram.attributeLocation("vertexPosition");
                     glBuffer->attrib.colour = glBuffer->shaderProgram.attributeLocation("vertexColour");
                     glBuffer->attrib.matrix = glBuffer->shaderProgram.uniformLocation("modelMatrix");
-                    glBuffer->attrib.camMatrix = glBuffer->shaderProgram.uniformLocation("matrix");
+                    glBuffer->attrib.camMatrix = glBuffer->shaderProgram.uniformLocation("matrix");*/
 
                     glBuffer->fbo = new QGLFramebufferObject(size, bufferFormat);
                     glBuffers.insert(id, glBuffer);
@@ -165,7 +220,7 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                     glEnable(GL_CULL_FACE);
                     glLoadIdentity();
 
-                    if(!glBuffer->shaderProgram.bind()) {
+                    /*if(!glBuffer->shaderProgram.bind()) {
                         qWarning() << "Cannot bind Shader Program";
                         begin(p);
                         break;
@@ -173,7 +228,7 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
 
                     glBuffer->shaderProgram.setUniformValue(glBuffer->attrib.camMatrix, glBuffer->camMatrix);
                     glBuffer->shaderProgram.enableAttributeArray(glBuffer->attrib.vector);
-                    glBuffer->shaderProgram.enableAttributeArray(glBuffer->attrib.colour);
+                    glBuffer->shaderProgram.enableAttributeArray(glBuffer->attrib.colour);*/
 
                     activeGLBuffer = glBuffer;
                 } else {
@@ -191,9 +246,9 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                     break;
                 }
 
-                activeGLBuffer->shaderProgram.disableAttributeArray(activeGLBuffer->attrib.vector);
+                /*activeGLBuffer->shaderProgram.disableAttributeArray(activeGLBuffer->attrib.vector);
                 activeGLBuffer->shaderProgram.disableAttributeArray(activeGLBuffer->attrib.colour);
-                activeGLBuffer->shaderProgram.release();
+                activeGLBuffer->shaderProgram.release();*/
 
                 activeGLBuffer->fbo->release();
                 activeGLBuffer = 0;
@@ -245,7 +300,61 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                 }
 
                 model->matrix = inst.arguments.at(1).value<QMatrix4x4>();
+                break;
+            }
 
+            case RenderInstruction::UpdateGLModelTexture:
+            {
+                MoeObjectPtr ptr = inst.arguments.first().value<MoeObjectPtr>();
+
+                GLModel* model = glModels.value(ptr);
+                if(!model) {
+                    qWarning() << "Attempted To Render Unallocated Model" << ptr;
+                    break;
+                }
+
+                MoeObjectPtr buffPtr = inst.arguments.first().value<MoeObjectPtr>();
+                GLRenderBuffer* buffer = glBuffers.value(buffPtr);
+                if(!buffer) {
+                    qWarning() << "Attempted To Attach Unknown Render Buffer" << buffPtr;
+                    break;
+                }
+
+                qWarning() << "Set Texture for Model" << ptr << buffer->fbo->texture();
+                model->texture = buffer->fbo->texture();
+                break;
+            }
+
+            case RenderInstruction::UpdateGLModelShader:
+            {
+                MoeObjectPtr ptr = inst.arguments.first().value<MoeObjectPtr>();
+
+                GLModel* model = glModels.value(ptr);
+                if(!model) {
+                    qWarning() << "Attempted To Render Unallocated Model" << ptr;
+                    break;
+                }
+
+                QString shaderName = inst.arguments.at(1).toString();
+                qWarning() << "Set Shader for Model" << ptr << shaderName;
+                model->shader = shaderPrograms.value(shaderName);
+                if(!model->shader) {
+                    model->shader = new ShaderProgram;
+
+                    model->shader->program.addShader(getShader(":/shaders/matrix.vert"));
+                    model->shader->program.addShader(getShader(":/shaders/colour.frag")); //shaderName == "coloured" ? ":/shaders/colour.frag" : ":/shaders/texture.frag"));
+                    if(!model->shader->program.link()) {
+                        qWarning() << model->shader->program.log();
+                        return;
+                    }
+
+                    model->shader->attrib.texCoord = model->shader->program.attributeLocation("texCoord");
+                    model->shader->attrib.vector = model->shader->program.attributeLocation("vertexPosition");
+                    model->shader->attrib.colour = model->shader->program.attributeLocation("vertexColour");
+                    model->shader->attrib.matrix = model->shader->program.uniformLocation("modelMatrix");
+                    model->shader->attrib.camMatrix = model->shader->program.uniformLocation("matrix");
+                    shaderPrograms.insert(shaderName, model->shader);
+                }
                 break;
             }
 
@@ -264,24 +373,37 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                     break;
                 }
 
-                activeGLBuffer->shaderProgram.setUniformValue(activeGLBuffer->attrib.matrix, model->matrix);
+                if(!model->shader->program.bind()) {
+                    qWarning() << "Cannot bind Shader Program";
+                    begin(p);
+                    break;
+                }
+
+                model->shader->program.setUniformValue(model->shader->attrib.camMatrix, activeGLBuffer->camMatrix);
+                model->shader->program.enableAttributeArray(model->shader->attrib.vector);
+                model->shader->program.enableAttributeArray(model->shader->attrib.colour);
+
+                model->shader->program.setUniformValue(model->shader->attrib.matrix, model->matrix);
 
                 if(!model->vectors.bind()) {
                     qWarning() << "Failed to bind Vector Buffer";
                     break;
                 }
-                activeGLBuffer->shaderProgram.setAttributeBuffer(activeGLBuffer->attrib.vector, GL_FLOAT, 0, 3);
+                model->shader->program.setAttributeBuffer(model->shader->attrib.vector, GL_FLOAT, 0, 3);
 
                 if(!model->colours.bind()) {
                     qWarning() << "Failed to bind Colour Buffer";
                     model->vectors.release();
                     break;
                 }
-                activeGLBuffer->shaderProgram.setAttributeBuffer(activeGLBuffer->attrib.colour, GL_FLOAT, 0, 3);
+                model->shader->program.setAttributeBuffer(model->shader->attrib.colour, GL_FLOAT, 0, 3);
 
                 glDrawArrays(GL_TRIANGLES, 0, model->vectors.size());
+                //model->textCoords.release();
                 model->colours.release();
                 model->vectors.release();
+
+                model->shader->program.release();
 
                 break;
             }
