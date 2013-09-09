@@ -4,6 +4,10 @@
 #include <QVariantList>
 #include <QVector>
 
+#ifdef DrawText
+#undef DrawText
+#endif
+
 struct RenderInstruction {
     enum Type {
         FillRect,

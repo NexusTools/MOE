@@ -11,7 +11,9 @@
 #include <QTransform>
 #include <QPainter>
 
+#ifdef DrawText
 #undef DrawText
+#endif
 
 class MoeAbstractGraphicsSurface;
 

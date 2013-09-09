@@ -12,6 +12,10 @@
 #include <QGLFramebufferObject>
 #include <QMatrix4x4>
 
+#ifdef DrawText
+#undef DrawText
+#endif
+
 class QPainterSurfaceBackend : public AbstractSurfaceBackend {
 public:
     inline bool renderInstructions(RenderInstructions instructions, QRect paintRect, QSize bufferSize) {
