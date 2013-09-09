@@ -6,7 +6,9 @@
 #include "moemodule.h"
 #include "moescriptcontent.h"
 #include "moescriptregisters.h"
+#include "moeenginesystemhook.h"
 
+#include <QCoreApplication>
 #include <QAbstractEventDispatcher>
 #include <QScriptEngine>
 #include <QElapsedTimer>
@@ -22,6 +24,7 @@ QThreadStorage<MoeEnginePointer> MoeEngine::_engine;
 
 MoeEngine::MoeEngine() {
     makeCurrent();
+    systemName = 0;
     _scriptEngine = 0;
     _state = Stopped;
 
@@ -168,6 +171,16 @@ void MoeEngine::changeFileContext(QString context) {
         initContentPath = context;
 }
 
+void MoeEngine::setApplicationName(QString name) {
+    emit applicationNameChanged(name);
+    thread()->setObjectName(name);
+}
+
+void MoeEngine::makeSystem(char **nameArg) {
+    MoeEngineSystemHook::setup(this, nameArg);
+    setApplicationName(metaObject()->className());
+}
+
 void MoeEngine::startContent(QString content, QUrl _loader) {
     if(_loader.isRelative())
         _loader = MoeUrl::locate(_loader.toString(), "loaders://");
@@ -190,7 +203,6 @@ void MoeEngine::startContent(QString content, QUrl _loader) {
         } else
             qCritical() << "Cannot change content from this state" << _state;
     }
-
 }
 
 void MoeEngine::timerEvent(QTimerEvent* ev) {
@@ -618,6 +630,7 @@ void MoeEngine::stopExecution(QString reason, bool crash, State newState)
     if(_scriptEngine)
         _scriptEngine->abortEvaluation();
 
+    setApplicationName(QString(metaObject()->className()) + " - Crashed");
     exitEventLoop();
 }
 

@@ -8,7 +8,7 @@ QT       += core gui network script opengl xml
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = MoeGameClient
+TARGET = MoeGameLauncher
 TEMPLATE = app
 
 QMAKE_CXXFLAGS+="-std=c++0x"

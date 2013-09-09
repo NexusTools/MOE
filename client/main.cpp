@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
         }
     } else {
         MoeClientEngine* engine = new MoeClientEngine();
+        engine->makeSystem(&argv[0]);
         if(!isHeadless)
             CrashDialog::init(engine);
         engine->startWithArguments(parser.toMap());

@@ -59,6 +59,7 @@ public:
     static inline MoeEnginePointer current() {return _engine.localData();}
     inline MoeEnginePointer engine() const{return MoeEnginePointer((MoeEngine*)this);}
     inline void makeCurrent() const{_engine.setLocalData(MoeEnginePointer(engine()));}
+    void makeSystem(char** nameArg =0);
 
     inline int tickWait() const{return _tickWait;}
 
@@ -66,6 +67,7 @@ public:
     Q_INVOKABLE void changeFileContext(QString context);
     void startWithArguments(QVariantMap args =QVariantMap());
     Q_INVOKABLE void startContent(QString content, QUrl loaderPath =QUrl());
+    Q_INVOKABLE void setApplicationName(QString name);
 
     inline QString error() const{return _error;}
     inline QString version() const{return "0.1 dev";}
@@ -105,6 +107,7 @@ signals:
     void cleanup();
     void changingContent();
     void crashed(QString reason);
+    void applicationNameChanged(QString);
     void uncaughtException(QScriptValue);
     void stateChanged(MoeEngine::State state);
 
@@ -143,6 +146,7 @@ private:
     State _state;
     int _tickWait;
 
+    char** systemName;
     QVariantMap _arguments;
     QVariantMap _environment;
 

@@ -18,6 +18,7 @@ QString MoeContentPlugin::name() const{
 void MoeContentPlugin::startImpl(QString _loader) {
     QUrl loader = _loader.isEmpty() ? QUrl("loaders://native.js") : MoeUrl::locate(_loader, "loaders://");
 
+    engine()->setApplicationName(metaObject()->className());
     MoeUrl::setDefaultContext(path());
     {
         MoeResourceRequest::reset();

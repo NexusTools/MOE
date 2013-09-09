@@ -8,10 +8,6 @@ class MoeClientEngine : public MoeEngine
     Q_OBJECT
 public:
     explicit inline MoeClientEngine() {}
-    
-signals:
-    
-public slots:
 
 protected:
     virtual void initializeScriptEngine(QScriptEngine* eng);
