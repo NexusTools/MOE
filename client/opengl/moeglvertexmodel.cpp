@@ -17,7 +17,6 @@ void MoeGLVertexModel::setTexture(MoeGLSpriteSheet *texture) {
     this->texture = texture;
     emit contentChanged();
     shaderProgram = texture ? "textured" : "coloured";
-    needsCompiling = true;
     textureChanged = true;
     shaderChanged = true;
 

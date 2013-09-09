@@ -90,6 +90,32 @@ protected:
 
 private:
     struct ShaderProgram {
+        bool link(QString name) {
+            if(!program.link())
+                return false;
+
+            attrib.vector = program.attributeLocation("vertexPosition");
+            attrib.colour = program.attributeLocation("vertexColour");
+            attrib.matrix = program.uniformLocation("modelMatrix");
+            attrib.camMatrix = program.uniformLocation("matrix");
+            attrib.texture = program.uniformLocation("texture");
+            attrib.texCoord = program.attributeLocation("texCoord");
+
+            qDebug() << "Compiled Shader Program" << name
+                                 << "Attributes"
+                                 << attrib.vector
+                                 << attrib.colour
+                                 << attrib.texCoord
+                                 << "Uniforms"
+                                 << attrib.matrix
+                                 << attrib.camMatrix
+                                 << attrib.texture;
+
+            return true;
+        }
+
+        inline QString log() const{return program.log();}
+
         struct {
             int vector;
             int colour;
@@ -101,13 +127,20 @@ private:
         QGLShaderProgram program;
     };
     struct GLRenderBuffer {
-        inline GLRenderBuffer() {fbo=0;}
+        inline GLRenderBuffer() : fbo(0), shadow(0),
+            lightColor(Qt::white), lightPos(0, 2, 2), shadowFBO(0) {}
 
         QGLFramebufferObject* fbo;
         QMatrix4x4 camMatrix;
+
+        float shadow;
+        QColor lightColor;
+        QVector3D lightPos;
+        QMatrix4x4 shadowMatrix;
+        QGLFramebufferObject* shadowFBO;
     };
     struct GLModel {
-        inline GLModel() {shader=0;}
+        inline GLModel() : texture(0), shader(0) {}
 
         GLuint texture;
         QGLBuffer vectors;
@@ -116,6 +149,64 @@ private:
         QGLBuffer textCoords;
         ShaderProgram* shader;
     };
+
+    inline QGLShader* getShader(QString path, QGLShader::ShaderTypeBit type=
+                                                (QGLShader::ShaderTypeBit)-1) {
+        static QHash<QString, QGLShader*> shaders;
+        QGLShader* shader = shaders.value(path);
+        if(!shader) {
+            if(type == -1) {
+                if(path.endsWith(".vert"))
+                    type = QGLShader::Vertex;
+                else if(path.endsWith(".frag"))
+                    type = QGLShader::Fragment;
+                else if(path.endsWith(".geom"))
+                    type = QGLShader::Geometry;
+                else
+                    throw "Invalid shader";
+            }
+            shader = new QGLShader(type);
+
+            if(!shader->compileSourceFile(path))
+                qWarning() << path << shader->log();
+        }
+        return shader;
+    }
+
+    inline ShaderProgram* getShaderProgram(QString name) {
+        ShaderProgram* shader = shaderPrograms.value(name);
+        if(!shader) {
+            shader = new ShaderProgram;
+
+            QString vert;
+            QString frag;
+            if(name == "coloured") {
+                vert = ":/shaders/matrix.vert";
+                frag = ":/shaders/colour.frag";
+            } else if(name == "textured") {
+                vert = ":/shaders/matrix-texture.vert";
+                frag = ":/shaders/texture.frag";
+            } else if(name == "shadow") {
+                vert = ":/shaders/shadow.vert";
+                frag = ":/shaders/shadow.frag";
+            } else if(name == "shadow-coloured") {
+                vert = ":/shaders/shadow-coloured.vert";
+                frag = ":/shaders/shadow-coloured.frag";
+            } else if(name == "shadow-textured") {
+                vert = ":/shaders/shadow-textured.vert";
+                frag = ":/shaders/shadow-textured.frag";
+            }
+
+            shader->program.addShader(getShader(vert));
+            shader->program.addShader(getShader(frag));
+            if(!shader->link(name))
+                qWarning() << shader->log();
+
+
+            shaderPrograms.insert(name, shader);
+        }
+        return shader;
+    }
 
     QHash<QString, ShaderProgram*> shaderPrograms;
 
@@ -127,6 +218,7 @@ private:
     QMap<quintptr, GLRenderBuffer*> glBuffers;
     QMap<quintptr, GLModel*> glModels;
     GLRenderBuffer* activeGLBuffer;
+    bool shadowPass;
 };
 
 #endif // QPAINTERSURFACEBACKEND_H

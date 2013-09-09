@@ -1,28 +1,5 @@
 #include "qpaintersurfacebackend.h"
 
-inline QGLShader* getShader(QString path, QGLShader::ShaderTypeBit type=
-                                            (QGLShader::ShaderTypeBit)-1) {
-    static QHash<QString, QGLShader*> shaders;
-    QGLShader* shader = shaders.value(path);
-    if(!shader) {
-        if(type == -1) {
-            if(path.endsWith(".vert"))
-                type = QGLShader::Vertex;
-            else if(path.endsWith(".frag"))
-                type = QGLShader::Fragment;
-            else if(path.endsWith(".geom"))
-                type = QGLShader::Geometry;
-            else
-                throw "Invalid shader";
-        }
-        shader = new QGLShader(type);
-
-        if(!shader->compileSourceFile(path))
-            qWarning() << path << shader->log();
-    }
-    return shader;
-}
-
 void QPainterSurfaceBackend::paint(QPainter& p) {
     activeGLBuffer = 0;
     p.setPen(Qt::black);
@@ -165,6 +142,7 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
 
                 QGLFramebufferObjectFormat bufferFormat;
                 bufferFormat.setInternalTextureFormat(GL_RGBA8);
+                bufferFormat.setAttachment(QGLFramebufferObject::Depth);
                 bufferFormat.setSamples(0);
 
                 GLRenderBuffer* glBuffer = glBuffers.value(id);
@@ -203,7 +181,6 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                     return;
                 }
 
-
                 p.end();
                 if(glBuffer->fbo->bind()) {
                     glViewport(0, 0, glBuffer->fbo->size().width(),
@@ -216,6 +193,11 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
                     glEnable(GL_DEPTH_TEST);
                     glEnable(GL_TEXTURE_2D);
                     glLoadIdentity();
+
+                    if(glBuffer->shadow && !shadowPass) {
+                        // Mark position for second-pass, start shadow shaders
+                        shadowPass = true;
+                    }
 
                     activeGLBuffer = glBuffer;
                 } else {
@@ -340,36 +322,7 @@ void QPainterSurfaceBackend::paint(QPainter& p) {
 
                 QString shaderName = inst.arguments.at(1).toString();
                 qDebug() << "Set Shader for Model" << ptr << shaderName;
-                model->shader = shaderPrograms.value(shaderName);
-                if(!model->shader) {
-                    model->shader = new ShaderProgram;
-
-                    model->shader->program.addShader(getShader(shaderName == "coloured" ? ":/shaders/matrix.vert" : ":/shaders/matrix-texture.vert"));
-                    model->shader->program.addShader(getShader(shaderName == "coloured" ? ":/shaders/colour.frag" : ":/shaders/texture.frag"));
-                    if(!model->shader->program.link()) {
-                        qWarning() << model->shader->program.log();
-                        return;
-                    }
-
-                    model->shader->attrib.vector = model->shader->program.attributeLocation("vertexPosition");
-                    model->shader->attrib.colour = model->shader->program.attributeLocation("vertexColour");
-                    model->shader->attrib.matrix = model->shader->program.uniformLocation("modelMatrix");
-                    model->shader->attrib.camMatrix = model->shader->program.uniformLocation("matrix");
-                    model->shader->attrib.texture = model->shader->program.uniformLocation("texture");
-                    model->shader->attrib.texCoord = model->shader->program.attributeLocation("texCoord");
-
-                    qDebug() << "Compiled Shader Program" << shaderName
-                                         << "Attributes"
-                                         << model->shader->attrib.vector
-                                         << model->shader->attrib.colour
-                                         << model->shader->attrib.texCoord
-                                         << "Uniforms"
-                                         << model->shader->attrib.matrix
-                                         << model->shader->attrib.camMatrix
-                                         << model->shader->attrib.texture;
-
-                    shaderPrograms.insert(shaderName, model->shader);
-                }
+                model->shader = getShaderProgram(shaderName);
                 break;
             }
 

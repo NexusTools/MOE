@@ -20,6 +20,7 @@ class MoeGLVertexModel : public MoeObject
 public:
     Q_INVOKABLE explicit MoeGLVertexModel(MoeGLSpriteSheet* texture =0);
     Q_INVOKABLE void setTexture(MoeGLSpriteSheet* texture =0);
+    Q_INVOKABLE bool hasTexture() const{return !!texture;}
 
     Q_INVOKABLE inline int addVertex(QVector3D vec, QColor color, QPoint texCoord =QPoint(0, 0)) {
         return addVertex(vec3(vec), vec3(color), vec2(texCoord));

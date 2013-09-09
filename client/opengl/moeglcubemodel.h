@@ -8,6 +8,9 @@ class MoeGLCubeModel : public MoeGLVertexModel
     Q_OBJECT
 public:
     Q_INVOKABLE explicit MoeGLCubeModel();
+
+public slots:
+    void genModel();
     
 };
 
