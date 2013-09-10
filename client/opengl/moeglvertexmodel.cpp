@@ -15,12 +15,12 @@ MoeGLVertexModel::MoeGLVertexModel(MoeGLSpriteSheet* texture)
 
 void MoeGLVertexModel::setTexture(MoeGLSpriteSheet *texture) {
     this->texture = texture;
-    emit contentChanged();
     shaderProgram = texture ? "textured" : "coloured";
     textureChanged = true;
     shaderChanged = true;
 
     emit needsUpdateModel();
+    emit contentChanged();
 }
 
 void MoeGLVertexModel::render(RenderRecorder *p) {
@@ -79,4 +79,5 @@ void MoeGLVertexModel::clear() {
     needsCompiling = true;
     _vectors.clear();
     _colours.clear();
+    _texCoords.clear();
 }

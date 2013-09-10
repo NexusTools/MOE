@@ -216,9 +216,10 @@ private:
 
     QMap<quintptr, QPixmap> renderBuffers;
     QMap<quintptr, GLRenderBuffer*> glBuffers;
+    RenderInstructions::Iterator shadowPass;
     QMap<quintptr, GLModel*> glModels;
     GLRenderBuffer* activeGLBuffer;
-    bool shadowPass;
+    bool inShadowPass;
 };
 
 #endif // QPAINTERSURFACEBACKEND_H

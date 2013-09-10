@@ -6,6 +6,9 @@ MoeGLCubeModel::MoeGLCubeModel() {
 }
 
 void MoeGLCubeModel::genModel() {
+    qDebug() << "Generating Cube Model" << hasTexture();
+    clear();
+
     // Top
     Qt::GlobalColor color = hasTexture() ? Qt::white : Qt::red;
 
