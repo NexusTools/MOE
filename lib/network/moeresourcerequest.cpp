@@ -61,7 +61,7 @@ void MoeResourceRequest::completeCallback(QByteArray dat){
     emit receivedData(dat);
     if(isSignalConnected(receivedJsonSignal)) {
         engine()->scriptEngine()->pushContext();
-        QScriptValue value = engine()->scriptEngine()->evaluate(QString("(%1)").arg(QString(dat)), "evalJSON");
+        QScriptValue value = engine()->scriptEngine()->evaluate(QString("(%1)").arg(QString(dat)), _url.toString());
         engine()->scriptEngine()->popContext();
         emit receivedJSON(value);
     }
