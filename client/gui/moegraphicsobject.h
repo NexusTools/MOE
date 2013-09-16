@@ -75,9 +75,9 @@ public:
 
     inline qreal x() const{return _geometry.x();}
     inline qreal y() const{return _geometry.y();}
-    inline QPointF pos() const{return _geometry.topLeft();}
+    Q_INVOKABLE inline QPointF pos() const{return _geometry.topLeft();}
 
-    inline QSizeF size() const{return _geometry.size();}
+    Q_INVOKABLE inline QSizeF size() const{return _geometry.size();}
     inline qreal width() const{return _geometry.width();}
     inline qreal height() const{return _geometry.height();}
 
