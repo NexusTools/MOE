@@ -1,4 +1,5 @@
 #include "moeresourcerequest.h"
+#include "core/moeengine.h"
 
 #include <QRegularExpression>
 #include <QDomDocument>
@@ -59,10 +60,10 @@ void MoeResourceRequest::completeCallback(QByteArray dat){
 
     emit receivedData(dat);
     if(isSignalConnected(receivedJsonSignal)) {
-        //engine()->scriptEngine()->pushContext();
-        //QScriptValue value = engine()->scriptEngine()->evaluate(QString("(%1)").arg(QString(dat)), "evalJSON");
-        //engine()->scriptEngine()->popContext();
-        //emit receivedJSON(value);
+        engine()->scriptEngine()->pushContext();
+        QScriptValue value = engine()->scriptEngine()->evaluate(QString("(%1)").arg(QString(dat)), "evalJSON");
+        engine()->scriptEngine()->popContext();
+        emit receivedJSON(value);
     }
     bool childListSignalConnected = isSignalConnected(receivedChildListSignal);
     bool stringSignalConnected = isSignalConnected(receivedStringSignal);
@@ -82,9 +83,13 @@ void MoeResourceRequest::completeCallback(QByteArray dat){
                 QString fileMatch = match.captured("src");
                 if(fileMatch.startsWith('"') || fileMatch.startsWith('\''))
                     fileMatch = fileMatch.mid(1);
-                QString resolved(MoeUrl::locate(fileMatch, _realBase).toString());
-                if(resolved.startsWith(_realBase)) {
-                    resolved = resolved.mid(_realBase.length());
+                QString base = _realBase;
+                if(!base.endsWith('/'))
+                    base += '/';
+                QString resolved(MoeUrl::locate(fileMatch, base).toString());
+                qDebug() << fileMatch << resolved << base;
+                if(resolved.startsWith(base)) {
+                    resolved = resolved.mid(base.length());
                     if(resolved.endsWith('/'))
                         resolved = resolved.left(resolved.length()-1);
                     if(resolved.contains('/'))

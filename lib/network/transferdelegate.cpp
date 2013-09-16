@@ -55,9 +55,11 @@ void TransferDelegate::startRequest(){
                 data = "<html><head></head><body><h1>Directory listing: ";
                 data += info.absoluteFilePath();
                 data += "</h1><hr /><ul>";
-                foreach(QFileInfo childInfo, info.dir().entryInfoList()) {
+                foreach(QFileInfo childInfo, QDir(info.absoluteFilePath()).entryInfoList()) {
                     data += "<a href='";
                     data += childInfo.absoluteFilePath();
+                    if(childInfo.isDir())
+                        data += '/';
                     data += "'>";
                     data += childInfo.fileName();
                     data += "</a>";
