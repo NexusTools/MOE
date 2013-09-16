@@ -22,10 +22,8 @@ typedef QPointer<MoeGraphicsObject> MoeGraphicsObjectPointer;
 class MoeGraphicsObject : public MoeObject
 {
     Q_OBJECT
-    Q_PROPERTY(QPointF pos READ pos WRITE setPos)
-    Q_PROPERTY(qreal posX READ posX WRITE setPosX)
-    Q_PROPERTY(qreal posY READ posY WRITE setPosY)
-    Q_PROPERTY(QSizeF size READ size WRITE setSize)
+    Q_PROPERTY(qreal x READ x WRITE setX)
+    Q_PROPERTY(qreal y READ y WRITE setY)
     Q_PROPERTY(qreal width READ width WRITE setWidth)
     Q_PROPERTY(qreal height READ height WRITE setHeight)
     Q_PROPERTY(qreal borderRadius READ borderRadius WRITE setBorderRadius)
@@ -75,8 +73,8 @@ public:
         if(_borderRadius==borderRadius)return;
         _borderRadius = borderRadius;repaint();}
 
-    inline qreal posX() const{return _geometry.x();}
-    inline qreal posY() const{return _geometry.y();}
+    inline qreal x() const{return _geometry.x();}
+    inline qreal y() const{return _geometry.y();}
     inline QPointF pos() const{return _geometry.topLeft();}
 
     inline QSizeF size() const{return _geometry.size();}
@@ -143,8 +141,8 @@ public slots:
     inline void repaint(QRectF rec) {repaint(QRect((int)qFloor(rec.x()),(int)qFloor(rec.y()),(int)qCeil(rec.width()),(int)qCeil(rec.height())));}
     inline void setPos(QPointF p) {setGeometry(QRectF(p, size()));}
     inline void setPos(qreal x, qreal y) {setPos(QPointF(x, y));}
-    inline void setPosX(qreal x) {setGeometry(QRectF(QPointF(x,posY()),size()));}
-    inline void setPosY(qreal y) {setGeometry(QRectF(QPointF(posX(),y),size()));}
+    inline void setX(qreal x) {setGeometry(QRectF(QPointF(x,y()),size()));}
+    inline void setY(qreal y) {setGeometry(QRectF(QPointF(x(),y),size()));}
     inline void setSize(QSizeF s) {setGeometry(QRectF(pos(), s));}
     inline void setSize(qreal w, qreal h) {setSize(QSizeF(w, h));}
     inline void setWidth(qreal w) {setGeometry(QRectF(pos(),QSizeF(w,height())));}
