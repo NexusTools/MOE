@@ -1,4 +1,4 @@
-This file is part of the NexusTools Massive Object-Oriented Game Engine,
+This file is part of the NexusTools Modular Object-Oriented Game Engine,
 Herein referred to as "MOE".
 
     MOE is free software: you can redistribute it and/or modify
